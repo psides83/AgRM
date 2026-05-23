@@ -1,170 +1,173 @@
 <svg xmlns="http://www.w3.org/2000/svg"
-      class="css-9txd9r"
-      focusable="false"
-      viewBox="0 0 32 32"
-      data-icon-name="Telehandler"
-      size="65"
-    >
-      <path
-        d="M19.1 24.4c-1.3 0-2.4-.6-3.3-1.5-.1.1-.3.1-.5.1h-6c-.2 0-.3 0-.5-.1-.8.9-2 1.5-3.2 1.5-1.8 0-3.4-1.2-4-2.8-.7-.1-1.3-.7-1.3-1.4 0-.8.2-1.7.6-2.4v-1.5c0-.8.5-1.6 1.2-1.8.3-.6.9-1.1 1.6-1.1l4.7-.5c-.1-.2-.2-.4-.2-.6V11c0-.6.4-1 1-1h6.3c.5 0 .9.3 1 .8l.1.5 5.3-1.1h.2c.2 0 .4.1.5.2l.1.1.8-.2v-.6c0-.6.4-1 1-1h1.1c.6 0 1 .4 1 1V13h4.2c.6 0 1 .4 1 1v.9c0 .6-.4 1-1 1h-4.3c-.2.3-.5.6-.9.6h-1.1c-.6 0-1-.4-1-1v-1.2l-.1-.3c-.1.1-.3.2-.5.3l-3.1.7c.5.2.8.7.8 1.2 1.7.6 2.8 2.2 2.8 4 0 2.3-1.9 4.2-4.3 4.2"
-        class="outline"
-        fill="#FFFFFF"
-      ></path>
-      <path d="M9.4 12.2h1.3l.3-1.3H9.4z" class="primary" fill="#367C2B"></path>
-      <path
-        d="m24.2 12.5-3.8.8-.3-1.4 3.8-.8z"
-        class="quaternary"
-        fill="#333"
-      ></path>
-      <path
-        d="M23 11.7h2.5v1.4H23z"
-        class="quaternary"
-        transform="rotate(45.069 24.298 12.46)"
-        fill="#333"
-      ></path>
-      <path
-        d="M11.3 10.9c-.6 0-1.1.4-1.2 1l-.8 4.5V18h7.5v-1.5L15.6 11h-4.3zm-1.2 5.6.6-3.9c.1-.6.6-1.1 1.2-1.1h3l.9 4.9h-5.7z"
-        class="quaternary"
-        fill="#333"
-      ></path>
-      <path
-        d="m10.1 16.5.6-3.9c.1-.6.6-1.1 1.2-1.1h3l.9 4.9h-5.7z"
-        class="window"
-        opacity=".3"
-        fill="#5dc9e8"
-      ></path>
-      <path
-        d="m8.5 14.3 1.3-.3.4 1.7-1.5.3z"
-        class="quaternary"
-        fill="#333"
-      ></path>
-      <path
-        d="M9.6 12.4h12.9v2.3H9.6z"
-        class="primary"
-        transform="rotate(-12.122 16.084 13.504)"
-        fill="#367C2B"
-      ></path>
-      <path
-        d="M10 12.7h11.9v.8H10z"
-        class="secondary"
-        transform="rotate(-12.122 16 13.114)"
-        fill="#FFDE00"
-      ></path>
-      <path
-        d="m9.2 13.7-5.3.5c-.5.1-1 .5-1 1.1h-.2c-.4 0-.7.4-.7.9v3.2c0 .5.3.9.7.9h4.8c.4 0 .7-.4.7-.9v-.7h1z"
-        class="primary"
-        fill="#367C2B"
-      ></path>
-      <path
-        d="M5.7 18h3.6v-2.5l-4.6.5c-.6.1-1.1.5-1.3 1.1l-.8 3.1 3-.3V18z"
-        class="shadow"
-        opacity=".3"
-        fill="#333"
-      ></path>
-      <path d="M5.7 18h13.4v3.8H5.7z" class="primary" fill="#367C2B"></path>
-      <path
-        d="M5.7 18h13.4v3.8H5.7z"
-        class="shadow"
-        opacity=".3"
-        fill="#333"
-      ></path>
-      <path
-        d="M15.4 22c-.2-.5-.4-1.1-.4-1.8 0-1.4.7-2.7 1.8-3.5.1-.1 0-.3-.1-.3H8.1c-.1 0-.2.2-.1.3 1.1.8 1.8 2.1 1.8 3.5 0 .6-.1 1.2-.4 1.8z"
-        class="primary"
-        fill="#367C2B"
-      ></path>
-      <circle
-        cx="5.7"
-        cy="20.1"
-        r="3.3"
-        class="quaternary"
-        fill="#333"
-      ></circle>
-      <circle
-        cx="5.7"
-        cy="20.1"
-        r="2.1"
-        class="secondary"
-        fill="#FFDE00"
-      ></circle>
-      <circle
-        cx="5.7"
-        cy="20.1"
-        r="1.6"
-        class="shadow"
-        opacity=".3"
-        fill="#333"
-      ></circle>
-      <circle
-        cx="5.7"
-        cy="20.1"
-        r=".6"
-        class="highlight"
-        opacity=".3"
-        fill="#fff"
-      ></circle>
-      <circle
-        cx="19.1"
-        cy="20.1"
-        r="3.3"
-        class="quaternary"
-        fill="#333"
-      ></circle>
-      <path
-        d="M15.2 20.5c-.2 0-.4-.2-.4-.4 0-2.4 1.9-4.3 4.3-4.3.2 0 .4.2.4.4s-.2.4-.4.4c-1.9 0-3.5 1.6-3.5 3.5.1.2-.1.4-.4.4M1.8 20.5c-.2 0-.4-.2-.4-.4 0-2.4 1.9-4.3 4.3-4.3.2 0 .4.2.4.4s-.2.4-.4.4c-1.9 0-3.5 1.6-3.5 3.5 0 .2-.2.4-.4.4"
-        class="quaternary"
-        fill="#333"
-      ></path>
-      <circle
-        cx="19.1"
-        cy="20.1"
-        r="2.1"
-        class="secondary"
-        fill="#FFDE00"
-      ></circle>
-      <circle
-        cx="19.1"
-        cy="20.1"
-        r="1.6"
-        class="shadow"
-        opacity=".3"
-        fill="#333"
-      ></circle>
-      <circle
-        cx="19.1"
-        cy="20.1"
-        r=".6"
-        class="highlight"
-        opacity=".3"
-        fill="#fff"
-      ></circle>
-      <path
-        d="M9 14v.6l-5.6.5.3-.4c.1-.2.3-.3.5-.3z"
-        class="secondary"
-        fill="#FFDE00"
-      ></path>
-      <path
-        d="m2.3 15.9.4.1c.3.1.4.3.4.6v.6c0 .2-.1.3-.2.4l-.7.7v-2.4z"
-        class="shadow"
-        opacity=".3"
-        fill="#333"
-      ></path>
-      <path
-        d="m2.3 15.9.4.1c.3.1.4.3.4.6v.6c0 .2-.1.3-.2.4l-.7.7v-2.4z"
-        class="shadow"
-        opacity=".3"
-        fill="#333"
-      ></path>
-      <path
-        d="M8.5 16.7s.6.4.8 1.1h5.4s.6-.8 1.4-1.1z"
-        class="highlight"
-        opacity=".3"
-        fill="#fff"
-      ></path>
-      <path d="M24.7 9.7h1.1v5.7h-1.1z" class="quaternary" fill="#333"></path>
-      <path
-        d="M27.6 11.6h.9v5.7h-.9z"
-        class="quaternary"
-        transform="rotate(90 28.059 14.424)"
-        fill="#333"
-      ></path></svg>
+        class="css-9txd9r"
+        focusable="false"
+        viewBox="0 0 32 32"
+        data-icon-name="Telehandler"
+      >
+        <path
+          d="M19.1 24.4c-1.3 0-2.4-.6-3.3-1.5-.1.1-.3.1-.5.1h-6c-.2 0-.3 0-.5-.1-.8.9-2 1.5-3.2 1.5-1.8 0-3.4-1.2-4-2.8-.7-.1-1.3-.7-1.3-1.4 0-.8.2-1.7.6-2.4v-1.5c0-.8.5-1.6 1.2-1.8.3-.6.9-1.1 1.6-1.1l4.7-.5c-.1-.2-.2-.4-.2-.6V11c0-.6.4-1 1-1h6.3c.5 0 .9.3 1 .8l.1.5 5.3-1.1h.2c.2 0 .4.1.5.2l.1.1.8-.2v-.6c0-.6.4-1 1-1h1.1c.6 0 1 .4 1 1V13h4.2c.6 0 1 .4 1 1v.9c0 .6-.4 1-1 1h-4.3c-.2.3-.5.6-.9.6h-1.1c-.6 0-1-.4-1-1v-1.2l-.1-.3c-.1.1-.3.2-.5.3l-3.1.7c.5.2.8.7.8 1.2 1.7.6 2.8 2.2 2.8 4 0 2.3-1.9 4.2-4.3 4.2"
+          class="outline"
+          fill="#FFFFFF"
+        ></path>
+        <path
+          d="M9.4 12.2h1.3l.3-1.3H9.4z"
+          class="primary"
+          fill="#367C2B"
+        ></path>
+        <path
+          d="m24.2 12.5-3.8.8-.3-1.4 3.8-.8z"
+          class="quaternary"
+          fill="#333"
+        ></path>
+        <path
+          d="M23 11.7h2.5v1.4H23z"
+          class="quaternary"
+          transform="rotate(45.069 24.298 12.46)"
+          fill="#333"
+        ></path>
+        <path
+          d="M11.3 10.9c-.6 0-1.1.4-1.2 1l-.8 4.5V18h7.5v-1.5L15.6 11h-4.3zm-1.2 5.6.6-3.9c.1-.6.6-1.1 1.2-1.1h3l.9 4.9h-5.7z"
+          class="quaternary"
+          fill="#333"
+        ></path>
+        <path
+          d="m10.1 16.5.6-3.9c.1-.6.6-1.1 1.2-1.1h3l.9 4.9h-5.7z"
+          class="window"
+          opacity=".3"
+          fill="#5dc9e8"
+        ></path>
+        <path
+          d="m8.5 14.3 1.3-.3.4 1.7-1.5.3z"
+          class="quaternary"
+          fill="#333"
+        ></path>
+        <path
+          d="M9.6 12.4h12.9v2.3H9.6z"
+          class="primary"
+          transform="rotate(-12.122 16.084 13.504)"
+          fill="#367C2B"
+        ></path>
+        <path
+          d="M10 12.7h11.9v.8H10z"
+          class="secondary"
+          transform="rotate(-12.122 16 13.114)"
+          fill="#FFDE00"
+        ></path>
+        <path
+          d="m9.2 13.7-5.3.5c-.5.1-1 .5-1 1.1h-.2c-.4 0-.7.4-.7.9v3.2c0 .5.3.9.7.9h4.8c.4 0 .7-.4.7-.9v-.7h1z"
+          class="primary"
+          fill="#367C2B"
+        ></path>
+        <path
+          d="M5.7 18h3.6v-2.5l-4.6.5c-.6.1-1.1.5-1.3 1.1l-.8 3.1 3-.3V18z"
+          class="shadow"
+          opacity=".3"
+          fill="#333"
+        ></path>
+        <path d="M5.7 18h13.4v3.8H5.7z" class="primary" fill="#367C2B"></path>
+        <path
+          d="M5.7 18h13.4v3.8H5.7z"
+          class="shadow"
+          opacity=".3"
+          fill="#333"
+        ></path>
+        <path
+          d="M15.4 22c-.2-.5-.4-1.1-.4-1.8 0-1.4.7-2.7 1.8-3.5.1-.1 0-.3-.1-.3H8.1c-.1 0-.2.2-.1.3 1.1.8 1.8 2.1 1.8 3.5 0 .6-.1 1.2-.4 1.8z"
+          class="primary"
+          fill="#367C2B"
+        ></path>
+        <circle
+          cx="5.7"
+          cy="20.1"
+          r="3.3"
+          class="quaternary"
+          fill="#333"
+        ></circle>
+        <circle
+          cx="5.7"
+          cy="20.1"
+          r="2.1"
+          class="secondary"
+          fill="#FFDE00"
+        ></circle>
+        <circle
+          cx="5.7"
+          cy="20.1"
+          r="1.6"
+          class="shadow"
+          opacity=".3"
+          fill="#333"
+        ></circle>
+        <circle
+          cx="5.7"
+          cy="20.1"
+          r=".6"
+          class="highlight"
+          opacity=".3"
+          fill="#fff"
+        ></circle>
+        <circle
+          cx="19.1"
+          cy="20.1"
+          r="3.3"
+          class="quaternary"
+          fill="#333"
+        ></circle>
+        <path
+          d="M15.2 20.5c-.2 0-.4-.2-.4-.4 0-2.4 1.9-4.3 4.3-4.3.2 0 .4.2.4.4s-.2.4-.4.4c-1.9 0-3.5 1.6-3.5 3.5.1.2-.1.4-.4.4M1.8 20.5c-.2 0-.4-.2-.4-.4 0-2.4 1.9-4.3 4.3-4.3.2 0 .4.2.4.4s-.2.4-.4.4c-1.9 0-3.5 1.6-3.5 3.5 0 .2-.2.4-.4.4"
+          class="quaternary"
+          fill="#333"
+        ></path>
+        <circle
+          cx="19.1"
+          cy="20.1"
+          r="2.1"
+          class="secondary"
+          fill="#FFDE00"
+        ></circle>
+        <circle
+          cx="19.1"
+          cy="20.1"
+          r="1.6"
+          class="shadow"
+          opacity=".3"
+          fill="#333"
+        ></circle>
+        <circle
+          cx="19.1"
+          cy="20.1"
+          r=".6"
+          class="highlight"
+          opacity=".3"
+          fill="#fff"
+        ></circle>
+        <path
+          d="M9 14v.6l-5.6.5.3-.4c.1-.2.3-.3.5-.3z"
+          class="secondary"
+          fill="#FFDE00"
+        ></path>
+        <path
+          d="m2.3 15.9.4.1c.3.1.4.3.4.6v.6c0 .2-.1.3-.2.4l-.7.7v-2.4z"
+          class="shadow"
+          opacity=".3"
+          fill="#333"
+        ></path>
+        <path
+          d="m2.3 15.9.4.1c.3.1.4.3.4.6v.6c0 .2-.1.3-.2.4l-.7.7v-2.4z"
+          class="shadow"
+          opacity=".3"
+          fill="#333"
+        ></path>
+        <path
+          d="M8.5 16.7s.6.4.8 1.1h5.4s.6-.8 1.4-1.1z"
+          class="highlight"
+          opacity=".3"
+          fill="#fff"
+        ></path>
+        <path d="M24.7 9.7h1.1v5.7h-1.1z" class="quaternary" fill="#333"></path>
+        <path
+          d="M27.6 11.6h.9v5.7h-.9z"
+          class="quaternary"
+          transform="rotate(90 28.059 14.424)"
+          fill="#333"
+        ></path></svg>

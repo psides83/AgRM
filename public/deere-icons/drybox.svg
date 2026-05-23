@@ -1,98 +1,105 @@
 <svg xmlns="http://www.w3.org/2000/svg"
-      class="css-9txd9r"
-      focusable="false"
-      viewBox="0 0 32 32"
-      data-icon-name="Drybox"
-      size="65"
-    >
-      <path
-        id="Drybox__outline"
-        d="M2.6 28.5c-.6 0-1-.4-1-1v-1.2c0-.2.1-.5.2-.6-.1-.2-.2-.4-.2-.6L.6 7.5v-2c0-1.1.9-2 2-2h26.7c1.1 0 2 .9 2 2v2l-1 17.6c0 .2-.1.4-.2.6.1.2.2.4.2.6v1.2c0 .6-.4 1-1 1z"
-        class="outline"
-        fill="#FFFFFF"
-      ></path>
-      <g id="Drybox__main_shape">
+        class="css-9txd9r"
+        focusable="false"
+        viewBox="0 0 32 32"
+        data-icon-name="Drybox"
+      >
         <path
-          d="M29.4 25H2.6l-1-19.5c0-.6.5-1 1-1h26.7c.6 0 1 .5 1 1z"
-          class="primary"
-          fill="#367C2B"
+          id="Drybox__outline"
+          d="M2.6 28.5c-.6 0-1-.4-1-1v-1.2c0-.2.1-.5.2-.6-.1-.2-.2-.4-.2-.6L.6 7.5v-2c0-1.1.9-2 2-2h26.7c1.1 0 2 .9 2 2v2l-1 17.6c0 .2-.1.4-.2.6.1.2.2.4.2.6v1.2c0 .6-.4 1-1 1z"
+          class="outline"
+          fill="#FFFFFF"
         ></path>
-        <path
-          d="M29.4 4.5H2.6c-.6 0-1 .5-1 1v2h28.8v-2c0-.6-.5-1-1-1"
-          class="highlight"
-          opacity=".3"
-          fill="#fff"
-        ></path>
-        <path
-          d="M4.6 16.9h22.9v1.9H4.6z"
-          class="shadow"
-          opacity=".3"
-          fill="#333"
-        ></path>
-        <path d="M4.6 16.9h22.9v.9H4.6z" class="primary" fill="#367C2B"></path>
-        <path
-          d="M4.6 16.9h22.9v.9H4.6z"
-          class="highlight"
-          opacity=".3"
-          fill="#fff"
-        ></path>
-        <path
-          d="M4.6 10.7h22.9v1.9H4.6z"
-          class="shadow"
-          opacity=".3"
-          fill="#333"
-        ></path>
-        <path d="M4 9.9h23.7v1.8H4z" class="primary" fill="#367C2B"></path>
-        <path
-          d="M4 9.9h23.7v1.8H4z"
-          class="highlight"
-          opacity=".3"
-          fill="#fff"
-        ></path>
-        <path d="M4 10.7h1.4v16.1H4z" class="primary" fill="#367C2B"></path>
-        <path
-          d="M4 10.7h1.4v16.1H4z"
-          class="highlight"
-          opacity=".3"
-          fill="#fff"
-        ></path>
-        <path
-          d="M6.4 22.4h1.9v3.9H6.4zM8.3 23.2h18v1.4h-18z"
-          class="tertiary"
-          fill="gray"
-        ></path>
-        <path
-          d="M8.3 23.2h18v.5h-18z"
-          class="highlight"
-          opacity=".3"
-          fill="#fff"
-        ></path>
-        <path
-          d="M9.6 10.7H11v16.1H9.6zM15.1 10.7h1.4v16.1h-1.4zM20.7 10.7h1.4v16.1h-1.4z"
-          class="primary"
-          fill="#367C2B"
-        ></path>
-        <path
-          d="M9.6 10.7H11v16.1H9.6zM15.1 10.7h1.4v16.1h-1.4zM20.7 10.7h1.4v16.1h-1.4z"
-          class="highlight"
-          opacity=".3"
-          fill="#fff"
-        ></path>
-        <path
-          d="M26.3 10.7h1.4v16.1h-1.4z"
-          class="primary"
-          fill="#367C2B"
-        ></path>
-        <path
-          d="M26.3 10.7h1.4v16.1h-1.4z"
-          class="highlight"
-          opacity=".3"
-          fill="#fff"
-        ></path>
-        <path d="M2.6 26.3h26.8v1.2H2.6z" class="primary" fill="#367C2B"></path>
-        <path
-          d="M4.7 10.2h22.5v.8H4.7z"
-          class="secondary"
-          fill="#FFDE00"
-        ></path>
-      </g></svg>
+        <g id="Drybox__main_shape">
+          <path
+            d="M29.4 25H2.6l-1-19.5c0-.6.5-1 1-1h26.7c.6 0 1 .5 1 1z"
+            class="primary"
+            fill="#367C2B"
+          ></path>
+          <path
+            d="M29.4 4.5H2.6c-.6 0-1 .5-1 1v2h28.8v-2c0-.6-.5-1-1-1"
+            class="highlight"
+            opacity=".3"
+            fill="#fff"
+          ></path>
+          <path
+            d="M4.6 16.9h22.9v1.9H4.6z"
+            class="shadow"
+            opacity=".3"
+            fill="#333"
+          ></path>
+          <path
+            d="M4.6 16.9h22.9v.9H4.6z"
+            class="primary"
+            fill="#367C2B"
+          ></path>
+          <path
+            d="M4.6 16.9h22.9v.9H4.6z"
+            class="highlight"
+            opacity=".3"
+            fill="#fff"
+          ></path>
+          <path
+            d="M4.6 10.7h22.9v1.9H4.6z"
+            class="shadow"
+            opacity=".3"
+            fill="#333"
+          ></path>
+          <path d="M4 9.9h23.7v1.8H4z" class="primary" fill="#367C2B"></path>
+          <path
+            d="M4 9.9h23.7v1.8H4z"
+            class="highlight"
+            opacity=".3"
+            fill="#fff"
+          ></path>
+          <path d="M4 10.7h1.4v16.1H4z" class="primary" fill="#367C2B"></path>
+          <path
+            d="M4 10.7h1.4v16.1H4z"
+            class="highlight"
+            opacity=".3"
+            fill="#fff"
+          ></path>
+          <path
+            d="M6.4 22.4h1.9v3.9H6.4zM8.3 23.2h18v1.4h-18z"
+            class="tertiary"
+            fill="gray"
+          ></path>
+          <path
+            d="M8.3 23.2h18v.5h-18z"
+            class="highlight"
+            opacity=".3"
+            fill="#fff"
+          ></path>
+          <path
+            d="M9.6 10.7H11v16.1H9.6zM15.1 10.7h1.4v16.1h-1.4zM20.7 10.7h1.4v16.1h-1.4z"
+            class="primary"
+            fill="#367C2B"
+          ></path>
+          <path
+            d="M9.6 10.7H11v16.1H9.6zM15.1 10.7h1.4v16.1h-1.4zM20.7 10.7h1.4v16.1h-1.4z"
+            class="highlight"
+            opacity=".3"
+            fill="#fff"
+          ></path>
+          <path
+            d="M26.3 10.7h1.4v16.1h-1.4z"
+            class="primary"
+            fill="#367C2B"
+          ></path>
+          <path
+            d="M26.3 10.7h1.4v16.1h-1.4z"
+            class="highlight"
+            opacity=".3"
+            fill="#fff"
+          ></path>
+          <path
+            d="M2.6 26.3h26.8v1.2H2.6z"
+            class="primary"
+            fill="#367C2B"
+          ></path>
+          <path
+            d="M4.7 10.2h22.5v.8H4.7z"
+            class="secondary"
+            fill="#FFDE00"
+          ></path>
+        </g></svg>

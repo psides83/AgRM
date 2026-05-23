@@ -1,0 +1,264 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+        class="css-9txd9r"
+        focusable="false"
+        viewBox="0 0 32 32"
+        data-icon-name="IconEquipmentAirBlastSprayer"
+      >
+        <path
+          id="IconEquipmentAirBlastSprayer__outline"
+          d="M15.7 26.3c-2.5 0-4.5-2-4.5-4.5 0-.3 0-.6.1-.9H9c-.2 0-.3 0-.5-.1h-.4c-.1.1-.3.1-.5.1h-.4c-.2 0-.3 0-.5-.1h-.3c-.6.3-1.2.5-1.9.5-.3 0-.5 0-.8-.1-.3.3-.8.5-1.3.5-1.1 0-2-.9-2-2 0-.2.1-.5.2-.7v-2.5c-.3-.3-.5-.8-.5-1.4 0-.8.4-1.5 1-1.8l.5-.2v-2.5c0-.4.2-.7.5-.9l.3-.3c.6-.3 1.2-.5 1.9-.5.8 0 1.5.3 1.8.4h2.4c.1-.4.5-.8 1-.8h3.6l.7.1c.1 0 .1 0 .2.1l.7.3 8.1.2c3.2.2 5.1 1.5 5.9 4.1l.4 1.3c.5.1.8.5.8 1v1.1c0 .3-.1.5-.3.7l-.2.2v.4c.3.2.5.5.5.9v.1h.9c.6 0 1 .4 1 1v.8c0 .6-.4 1-1 1h-4.6c-.5 0-.9-.3-1-.8H20c.1.3.1.6.1.9.2 2.4-1.9 4.4-4.4 4.4"
+          class="outline"
+          fill="#FFFFFF"
+        ></path>
+        <g id="IconEquipmentAirBlastSprayer__main_shape">
+          <path d="M1.6 16h.6v3.3h-.6z" class="primary" fill="#367C2B"></path>
+          <path
+            d="M9.3 15.5h3.2v3.8H9.3z"
+            class="shadow"
+            transform="matrix(-1 0 0 -1 21.76 34.856)"
+            opacity=".3"
+            fill="#333"
+          ></path>
+          <path d="M5.9 10.8H9v8.9H5.9z" class="primary" fill="#367C2B"></path>
+          <path
+            d="M5.9 10.8H9v8.9H5.9z"
+            class="shadow"
+            transform="matrix(-1 0 0 -1 14.89 30.453)"
+            opacity=".3"
+            fill="#333"
+          ></path>
+          <path
+            d="M5.9 10.8H9v8.9H5.9z"
+            class="shadow"
+            transform="matrix(-1 0 0 -1 14.89 30.453)"
+            opacity=".3"
+            fill="#333"
+          ></path>
+          <path
+            d="M5.9 10.8H9v8.9H5.9z"
+            class="shadow"
+            transform="matrix(-1 0 0 -1 14.89 30.453)"
+            opacity=".3"
+            fill="#333"
+          ></path>
+          <path
+            d="M9.5 10.5v-.7H13l.7.1.9.3 8.2.2c2.8.2 4.3 1.3 5 3.4l.6 1.9v3.2H13.2v-3.7L9.5 15z"
+            class="secondary"
+            fill="#FFDE00"
+          ></path>
+          <path
+            d="M9.5 10.5H9v9.4h20v-1.1h-1.2v-2.2l1.2.1v-1.1l-19.5-1zm14.3 6 2.8.2v2.2h-2.8zm-10.4 2.4v-3l9.3.5v2.5zm-3.9-3.2 1.2.1 1.2.1h.3V19H9.5z"
+            class="primary"
+            fill="#367C2B"
+          ></path>
+          <path
+            d="M9.5 10.5H9v9.4h20v-1.1h-1.2v-2.2l1.2.1v-1.1l-19.5-1zm0 8.4v-3.2l1.2.1 1.2.1h.3V19H9.5zm3.9 0v-3l9.3.5v2.5zm10.4 0v-2.4l2.8.2v2.2zM7.2 10.5h.5v9.4h-.5z"
+            class="primary"
+            fill="#367C2B"
+          ></path>
+          <path
+            d="M7.7 10.5h-.5v9.4h.5zM1.6 14.4l1.4-.6v-3.3c1.5-.8 2.8 0 2.8 0v9.4h.1c-1.5.9-2.9.1-2.9.1h.1H3v-3.3l-1.5-.5c-.3-.1-.5-.4-.5-.9.1-.4.3-.8.6-.9"
+            class="primary"
+            fill="#367C2B"
+          ></path>
+          <path
+            d="M4.4 11.1c.2 0 .3 0 .5.1V19H4v-3l-.7-.2-1.2-.4 1.3-.5.6-.4v-3.3c.2-.1.3-.1.4-.1m0-1c-.4 0-.9.1-1.4.4v3.3l-1.5.6c-.3.1-.4.5-.4.8 0 .4.2.8.5.9l1.4.5v3.3h.1L3 20s.6.4 1.5.4c.4 0 .9-.1 1.4-.4h-.1.1v-9.4c0-.1-.6-.5-1.5-.5M9.5 10.5H9v9.4h20v-1.1h-1.2v-2.2l1.2.1v-1.1l-19.5-1zm14.3 6 2.8.2v2.2h-2.8zm-10.4 2.4v-3l9.3.5v2.5zm-3.9-3.2 1.2.1 1.2.1h.3V19H9.5zM7.2 10.5h.5v9.4h-.5z"
+            class="primary"
+            fill="#367C2B"
+          ></path>
+          <path
+            d="m1.6 14.4 1.4-.6v-3.3c1.5-.8 2.8 0 2.8 0v9.4h.1c-1.5.9-2.9.1-2.9.1h.1H3v-3.3l-1.5-.5c-.3-.1-.5-.4-.5-.9.1-.4.3-.8.6-.9"
+            class="primary"
+            fill="#367C2B"
+          ></path>
+          <path
+            d="M20.7 13.8c.2 0 .4.1.4.2v.8h-.8V14c0-.1.2-.2.4-.2"
+            class="shadow"
+            opacity=".3"
+            fill="#333"
+          ></path>
+          <path
+            d="M20.3 14.8h.8v.1h-.8z"
+            class="highlight"
+            transform="matrix(-1 0 0 -1 41.435 29.792)"
+            opacity=".3"
+            fill="#fff"
+          ></path>
+          <path
+            d="M11.1 17.4h.6v1.5h-.6z"
+            class="tertiary"
+            transform="matrix(-1 0 0 -1 22.774 36.26)"
+            fill="gray"
+          ></path>
+          <path
+            d="M9.9 17.4h.6v1.5h-.6z"
+            class="tertiary"
+            transform="matrix(-1 0 0 -1 20.498 36.26)"
+            fill="gray"
+          ></path>
+          <path
+            d="M10.4 16.5h1.5v.9h-1.5z"
+            class="tertiary"
+            transform="matrix(-1 0 0 -1 22.387 33.832)"
+            fill="gray"
+          ></path>
+          <path
+            d="M10.1 18.1h.3l.4-1.6H9.7z"
+            class="secondary"
+            fill="#FFDE00"
+          ></path>
+          <path
+            d="M2.7 10.8H3v8.9h-.3z"
+            class="tertiary"
+            transform="matrix(-1 0 0 -1 5.753 30.453)"
+            fill="gray"
+          ></path>
+          <circle
+            cx="15.7"
+            cy="21.8"
+            r="3.5"
+            class="quaternary"
+            fill="#333"
+          ></circle>
+          <circle
+            cx="15.7"
+            cy="21.8"
+            r="1.9"
+            class="secondary"
+            fill="#FFDE00"
+          ></circle>
+          <circle
+            cx="15.7"
+            cy="21.8"
+            r=".8"
+            class="shadow"
+            opacity=".3"
+            fill="#333"
+          ></circle>
+          <path
+            d="M28.8 15.9 9.5 14.8v.2l19.3 1.2zM3.2 10.6s1.3-.7 2.3 0v2.7z"
+            class="highlight"
+            opacity=".3"
+            fill="#fff"
+          ></path>
+          <path
+            d="M5.7 19.8s-1.3.7-2.3 0V17z"
+            class="shadow"
+            opacity=".3"
+            fill="#333"
+          ></path>
+          <path
+            d="M7.7 10.7H9v1.1H7.7z"
+            class="tertiary"
+            transform="matrix(-1 0 0 -1 16.681 22.51)"
+            fill="gray"
+          ></path>
+          <circle
+            cx="8.3"
+            cy="10.9"
+            r=".4"
+            class="secondary"
+            fill="#FFDE00"
+          ></circle>
+          <path
+            d="M5.9 10.7h1.3v1.1H5.9z"
+            class="tertiary"
+            transform="matrix(-1 0 0 -1 13.098 22.51)"
+            fill="gray"
+          ></path>
+          <circle
+            cx="6.5"
+            cy="10.9"
+            r=".4"
+            class="secondary"
+            fill="#FFDE00"
+          ></circle>
+          <path d="M5.9 18.5h1.3v1.1H5.9z" class="tertiary" fill="gray"></path>
+          <circle
+            cx="6.5"
+            cy="19.4"
+            r=".4"
+            class="secondary"
+            fill="#FFDE00"
+          ></circle>
+          <path d="M7.7 18.5H9v1.1H7.7z" class="tertiary" fill="gray"></path>
+          <circle
+            cx="8.3"
+            cy="19.4"
+            r=".4"
+            class="secondary"
+            fill="#FFDE00"
+          ></circle>
+          <path
+            d="M7.7 13.2H9v1.1H7.7z"
+            class="tertiary"
+            transform="matrix(-1 0 0 -1 16.681 27.566)"
+            fill="gray"
+          ></path>
+          <circle
+            cx="8.3"
+            cy="13.8"
+            r=".4"
+            class="secondary"
+            fill="#FFDE00"
+          ></circle>
+          <path
+            d="M5.9 13.2h1.3v1.1H5.9z"
+            class="tertiary"
+            transform="matrix(-1 0 0 -1 13.098 27.566)"
+            fill="gray"
+          ></path>
+          <circle
+            cx="6.5"
+            cy="13.8"
+            r=".4"
+            class="secondary"
+            fill="#FFDE00"
+          ></circle>
+          <path
+            d="M7.7 15.9H9V17H7.7z"
+            class="tertiary"
+            transform="matrix(-1 0 0 -1 16.681 33.03)"
+            fill="gray"
+          ></path>
+          <circle
+            cx="8.3"
+            cy="16.5"
+            r=".4"
+            class="secondary"
+            fill="#FFDE00"
+          ></circle>
+          <path
+            d="M5.9 15.9h1.3V17H5.9z"
+            class="tertiary"
+            transform="matrix(-1 0 0 -1 13.098 33.03)"
+            fill="gray"
+          ></path>
+          <circle
+            cx="6.5"
+            cy="16.5"
+            r=".4"
+            class="secondary"
+            fill="#FFDE00"
+          ></circle>
+          <circle
+            cx="2.4"
+            cy="19.8"
+            r="1"
+            class="quaternary"
+            fill="#333"
+          ></circle>
+          <circle
+            cx="2.4"
+            cy="19.8"
+            r=".6"
+            class="tertiary"
+            fill="gray"
+          ></circle>
+          <path
+            d="M26.3 19.9h4.6v.8h-4.6z"
+            class="tertiary"
+            transform="matrix(-1 0 0 -1 57.131 40.626)"
+            fill="gray"
+          ></path>
+        </g></svg>
