@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Alert, Box, Button, Link, Stack, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
@@ -10,8 +10,6 @@ import PasswordTextField from 'components/common/PasswordTextField';
 
 const schema = yup
   .object({
-    email: yup.string().email('Invalid email format').required('This field is required'),
-    token: yup.string().required('This field is required'),
     password: yup
       .string()
       .required('This field is required')
@@ -25,11 +23,7 @@ const schema = yup
 
 const SetPasswordForm = ({ handleSetPassword }) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { enqueueSnackbar } = useSnackbar();
-
-  const token = searchParams.get('token');
-  const email = searchParams.get('email');
 
   const {
     register,
@@ -38,7 +32,6 @@ const SetPasswordForm = ({ handleSetPassword }) => {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: { email: email || '', token: token || '' },
   });
 
   const onSubmit = async (data) => {

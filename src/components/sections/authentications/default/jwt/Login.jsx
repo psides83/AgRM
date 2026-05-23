@@ -1,17 +1,22 @@
 'use client';
 
-import { signIn as nextAuthSignIn } from 'next-auth/react';
-import { defaultJwtAuthCredentials } from 'config';
 import paths from 'routes/paths';
+import { createClient } from 'lib/supabase/client';
 import LoginForm from 'components/sections/authentications/default/LoginForm';
 
 const Login = () => {
   const handleLogin = async (data) => {
-    return await nextAuthSignIn('credentials', {
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password,
-      redirect: false,
     });
+
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+
+    return { ok: true };
   };
 
   return (
@@ -19,7 +24,7 @@ const Login = () => {
       handleLogin={handleLogin}
       signUpLink={paths.defaultJwtSignup}
       forgotPasswordLink={paths.defaultJwtForgotPassword}
-      defaultCredential={defaultJwtAuthCredentials}
+      socialAuth={false}
     />
   );
 };

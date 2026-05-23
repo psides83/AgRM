@@ -1,12 +1,10 @@
-import { getServerSession } from 'next-auth';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
-import { authOptions } from 'lib/next-auth/nextAuthOptions';
 import 'locales/i18n';
 import BreakpointsProvider from 'providers/BreakpointsProvider';
+import { AuthProvider } from 'providers/AuthProvider';
 import LocalizationProvider from 'providers/LocalizationProvider';
 import NotistackProvider from 'providers/NotistackProvider';
-import { SessionProvider } from 'providers/SessionProvider';
 import SettingsProvider from 'providers/SettingsProvider';
 import ThemeProvider from 'providers/ThemeProvider';
 import VisionModeProvider from 'providers/VisionModeProvider';
@@ -25,8 +23,6 @@ export const metadata = {
 };
 
 export default async function RootLayout({ children }) {
-  const session = await getServerSession(authOptions);
-
   return (
     <html
       suppressHydrationWarning
@@ -36,7 +32,7 @@ export default async function RootLayout({ children }) {
       <body>
         <InitColorSchemeScript attribute="data-agrm-color-scheme" modeStorageKey="agrm-mode" />
         <AppRouterCacheProvider>
-          <SessionProvider session={session}>
+          <AuthProvider>
             <SettingsProvider>
               <LocalizationProvider>
                 <ThemeProvider>
@@ -50,7 +46,7 @@ export default async function RootLayout({ children }) {
                 </ThemeProvider>
               </LocalizationProvider>
             </SettingsProvider>
-          </SessionProvider>
+          </AuthProvider>
         </AppRouterCacheProvider>
       </body>
     </html>

@@ -1,6 +1,5 @@
 'use client';
 
-import { signOut, useSession } from 'next-auth/react';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,7 +13,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { demoUser } from 'lib/next-auth/nextAuthOptions';
+import { demoUser, useAuth } from 'providers/AuthProvider';
 import paths from 'routes/paths';
 // import { useAuth } from 'providers/AuthProvider';
 // import { demoUser } from 'providers/auth-provider/AuthJwtProvider';
@@ -25,9 +24,9 @@ const ProfileMenu = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const router = useRouter();
 
-  const { data } = useSession();
+  const { user: authUser, supabase } = useAuth();
   // Use demoUser as fallback if no session user
-  const user = useMemo(() => data?.user || demoUser, [data?.user]);
+  const user = useMemo(() => authUser || demoUser, [authUser]);
 
   const open = Boolean(anchorEl);
   const handleClick = (event) => {
@@ -133,14 +132,9 @@ const ProfileMenu = () => {
         <Box sx={{ py: 1 }}>
           <MenuItem
             onClick={async () => {
-              const res = await signOut({
-                redirect: false,
-                callbackUrl: paths.defaultLoggedOut,
-              });
-
-              if (res.url) {
-                router.push(res.url);
-              }
+              await supabase.auth.signOut();
+              router.refresh();
+              router.push(paths.defaultLoggedOut);
             }}
           >
             Log out

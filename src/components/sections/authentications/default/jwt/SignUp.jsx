@@ -1,28 +1,35 @@
 'use client';
 
-import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import paths from 'routes/paths';
+import { createClient } from 'lib/supabase/client';
 import SignupForm from 'components/sections/authentications/default/SignupForm';
 
 const SignUp = () => {
   const router = useRouter();
 
   const handleSignup = async (data) => {
-    const res = await signIn('jwt-signup', {
+    const supabase = createClient();
+    const { error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
-      name: data.name,
-      redirect: false,
+      options: {
+        data: {
+          display_name: data.name,
+        },
+        emailRedirectTo: `${window.location.origin}${paths.defaultJwtLogin}`,
+      },
     });
 
-    if (res?.ok) {
-      router.push('/');
+    if (error) {
+      throw new Error(error.message);
     }
 
-    return res;
+    router.push(paths.defaultJwtLogin);
+    return { ok: true };
   };
 
-  return <SignupForm handleSignup={handleSignup} />;
+  return <SignupForm handleSignup={handleSignup} socialAuth={false} />;
 };
 
 export default SignUp;

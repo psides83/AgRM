@@ -799,13 +799,6 @@ const sitemap = [
             active: true,
           },
           {
-            name: '2FA',
-            key: '2FA',
-            path: paths.defaultJwt2FA,
-            pathName: '2FA',
-            active: true,
-          },
-          {
             name: 'Set password',
             key: 'set_password',
             path: paths.defaultJwtSetPassword,

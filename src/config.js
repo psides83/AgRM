@@ -24,8 +24,3 @@ export const initialConfig = {
   fontFamily: fontFamilies[0],
   fontSize: 16,
 };
-
-export const defaultJwtAuthCredentials = {
-  email: 'demo@agrm.app',
-  password: 'password123',
-};

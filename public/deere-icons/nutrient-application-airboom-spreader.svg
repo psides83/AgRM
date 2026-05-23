@@ -1,0 +1,208 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+      class="css-9txd9r"
+      focusable="false"
+      viewBox="0 0 32 32"
+      data-icon-name="NutrientApplicationAirboomSpreader"
+      size="65"
+    >
+      <path
+        id="NutrientApplicationAirboomSpreader__outline"
+        d="M25.375 27.312a4.76 4.76 0 0 1-4.645-3.751l-.98.001a1 1 0 0 1-1-1l.001-.126a2.05 2.05 0 0 1-.876.188h-2.752a1 1 0 0 1-.291.645l-.938.938a1 1 0 0 1-1.312.09 5.69 5.69 0 0 1-5.02 3.016 5.7 5.7 0 0 1-5.4-3.901l-.268.536A.999.999 0 0 1 0 23.5V13.188a1 1 0 0 1 1-1h.382l-.045-.275C.518 11.467 0 10.714 0 9.906 0 8.488 1.515 7.5 2.875 7.5h.877a1 1 0 0 1 .998-.938h8.375v-.874a1 1 0 0 1 1-1h8.438a1 1 0 0 1 .707 1.707l-.184.184 5.733-1.843a1 1 0 0 1 .895.144 1 1 0 0 1 .411.808v1.875a1 1 0 0 1-.623.926l-3.227 1.314c4.096.83 5.404 2.603 5.554 2.826a1 1 0 0 1 .157.723l-.938 5.625a1 1 0 0 1-.67.784l-.962.321c.459.736.708 1.59.708 2.48a4.753 4.753 0 0 1-4.749 4.75"
+        class="outline"
+        fill="#FFFFFF"
+      ></path>
+      <g id="NutrientApplicationAirboomSpreader__main_shape">
+        <path
+          d="M15.062 7.562h5.625v6.562h-5.625z"
+          class="quinary"
+          fill="#fff"
+        ></path>
+        <path
+          d="M1.938 21.625 1 23.5v-9.375h.938z"
+          class="quaternary"
+          fill="#333"
+        ></path>
+        <path
+          d="M2.875 14.125v6.563h23.437l1.876-1.876 1.874-4.687z"
+          class="primary"
+          fill="#367C2B"
+        ></path>
+        <path
+          d="M2.875 14.125v6.563h23.437l1.876-1.876 1.874-4.687z"
+          class="shadow"
+          opacity=".3"
+          fill="#333"
+        ></path>
+        <path
+          d="M20.688 22.562h-.938c0-3.094 2.531-5.625 5.625-5.625v.938c-2.625 0-4.687 2.063-4.687 4.687"
+          class="quaternary"
+          fill="#333"
+        ></path>
+        <path
+          d="m19.281 9.625-.469-.281-1.124 1.875.468.281z"
+          class="tertiary"
+          fill="gray"
+        ></path>
+        <path
+          d="M21.625 10.375v3.75h-.937l-2.25-3.75z"
+          class="tertiary"
+          fill="gray"
+        ></path>
+        <path
+          d="M15.062 7.562h5.625v6.562h-5.625z"
+          class="window"
+          opacity=".3"
+          fill="#5dc9e8"
+        ></path>
+        <path
+          d="M22.562 5.688h-8.437v.937h7.5z"
+          class="primary"
+          fill="#367C2B"
+        ></path>
+        <path
+          d="M14.125 6.625h.938v7.5h-.938z"
+          class="quaternary"
+          fill="#333"
+        ></path>
+        <path
+          d="M14.125 6.625h7.5v.938h-7.5z"
+          class="quaternary"
+          fill="#333"
+        ></path>
+        <path
+          d="M20.688 6.625h.938v8.438h-.938z"
+          class="quaternary"
+          fill="#333"
+        ></path>
+        <path
+          d="m30.062 18.812-2.812.938v-1.875c0-2.812-2.812-2.812-5.625-2.812v-4.688c7.5 0 9.375 2.812 9.375 2.812z"
+          class="primary"
+          fill="#367C2B"
+        ></path>
+        <path
+          d="m31 13.188-.938 5.625s0-3.75-2.812-4.688c-.562-.938-.938-1.875-.938-1.875l3.75.938z"
+          class="quaternary"
+          fill="#333"
+        ></path>
+        <path
+          d="M14.125 14.125h6.562v.938h-6.562z"
+          class="primary"
+          fill="#367C2B"
+        ></path>
+        <path
+          d="M18.812 15.062h-4.687v-3.75H16z"
+          class="primary"
+          fill="#367C2B"
+        ></path>
+        <path
+          d="M21.625 12.25c5.719 0 8.438.938 8.438.938s-2.719-1.875-8.438-1.875z"
+          class="secondary"
+          fill="#FFDE00"
+        ></path>
+        <path
+          d="M25.375 7.562s-1.875 0-1.875 1.875v3.75h.938v-3.75z"
+          class="quaternary"
+          fill="#333"
+        ></path>
+        <path
+          d="M24.438 11.312h-1.875v1.875c0 .562.375.938.938.938s.938-.375.938-.938z"
+          class="quaternary"
+          fill="#333"
+        ></path>
+        <circle
+          cx="25.375"
+          cy="22.562"
+          r="3.75"
+          class="quaternary"
+          fill="#333"
+        ></circle>
+        <circle
+          cx="25.375"
+          cy="22.562"
+          r="1.875"
+          class="secondary"
+          fill="#FFDE00"
+        ></circle>
+        <circle
+          cx="25.375"
+          cy="22.562"
+          r=".938"
+          class="shadow"
+          opacity=".3"
+          fill="#333"
+        ></circle>
+        <path
+          d="M4.75 7.562h8.438v10.312H4.75z"
+          class="primary"
+          fill="#367C2B"
+        ></path>
+        <path
+          d="M3.812 15.062h-.937l-.937-5.624h.937z"
+          class="tertiary"
+          fill="gray"
+        ></path>
+        <path
+          d="M2.875 11.312C1.938 11.312 1 10.656 1 9.906S1.938 8.5 2.875 8.5H4.75v2.812z"
+          class="primary"
+          fill="#367C2B"
+        ></path>
+        <path
+          d="M4.75 10.375h8.438v1.875H4.75z"
+          class="shadow"
+          opacity=".3"
+          fill="#333"
+        ></path>
+        <path
+          d="M4.75 9.438h8.438v.938H4.75z"
+          class="secondary"
+          fill="#FFDE00"
+        ></path>
+        <path
+          d="M4.75 17.875 1 15.062v-1.874h3.75z"
+          class="primary"
+          fill="#367C2B"
+        ></path>
+        <circle
+          cx="7.562"
+          cy="21.625"
+          r="4.688"
+          class="quaternary"
+          fill="#333"
+        ></circle>
+        <circle
+          cx="7.562"
+          cy="21.625"
+          r="2.344"
+          class="secondary"
+          fill="#FFDE00"
+        ></circle>
+        <circle
+          cx="7.562"
+          cy="21.625"
+          r="1.406"
+          class="shadow"
+          opacity=".3"
+          fill="#333"
+        ></circle>
+        <path
+          d="M17.875 21.625h-4.688v-4.688h4.688c.562 0 .938.375.938.938v2.812c-.001.563-.375.938-.938.938"
+          class="quaternary"
+          fill="#333"
+        ></path>
+        <path
+          d="m14.125 22.562-.937.938v-5.625h.937z"
+          class="quaternary"
+          fill="#333"
+        ></path>
+        <path
+          d="M29.125 7.562 3.812 17.875l-.937-3.75 26.25-8.437z"
+          class="tertiary"
+          fill="gray"
+        ></path>
+        <path
+          d="M29.125 7.562 3.812 17.875v-2.813l25.313-8.437z"
+          class="highlight"
+          opacity=".3"
+          fill="#fff"
+        ></path>
+      </g></svg>

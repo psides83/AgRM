@@ -1,6 +1,5 @@
 'use client';
 
-import { signOut, useSession } from 'next-auth/react';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -19,7 +18,7 @@ import {
 } from '@mui/material';
 import Menu from '@mui/material/Menu';
 import { useThemeMode } from 'hooks/useThemeMode';
-import { demoUser } from 'lib/next-auth/nextAuthOptions';
+import { demoUser, useAuth } from 'providers/AuthProvider';
 import { useBreakpoints } from 'providers/BreakpointsProvider';
 import { useSettingsContext } from 'providers/SettingsProvider';
 import paths, { authPaths } from 'routes/paths';
@@ -37,9 +36,9 @@ const ProfileMenu = ({ type = 'default' }) => {
 
   const { themePreset, setThemePreset } = useThemeMode();
 
-  const { data } = useSession();
+  const { user: authUser, isAuthenticated, supabase } = useAuth();
   // Use demoUser as fallback if no session user
-  const user = useMemo(() => data?.user || demoUser, [data?.user]);
+  const user = useMemo(() => authUser || demoUser, [authUser]);
   const open = Boolean(anchorEl);
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -196,17 +195,12 @@ const ProfileMenu = ({ type = 'default' }) => {
         </Box>
         <Divider />
         <Box sx={{ py: 1 }}>
-          {data?.user ? (
+          {isAuthenticated ? (
             <ProfileMenuItem
               onClick={async () => {
-                const res = await signOut({
-                  redirect: false,
-                  callbackUrl: paths.defaultLoggedOut,
-                });
-
-                if (res.url) {
-                  router.push(res.url);
-                }
+                await supabase.auth.signOut();
+                router.refresh();
+                router.push(paths.defaultLoggedOut);
               }}
               icon="material-symbols:logout-rounded"
             >

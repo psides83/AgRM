@@ -1,0 +1,407 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+      class="css-9txd9r"
+      focusable="false"
+      viewBox="0 0 48 48"
+      data-icon-name="TractorFourWheelDrive"
+      size="65"
+    >
+      <path
+        id="TractorFourWheelDrive__outline"
+        d="m46.542 18.825-8-2.25A2 2 0 0 0 38 16.5h-3.25v-1c0-.273-.056-.54-.161-.786.164-.214.284-.462.351-.729l.25-1a2 2 0 0 0-2.375-2.438l-2.25.5a2 2 0 0 0-.187.051 2 2 0 0 0-1.129-.349h-9.75a2 2 0 0 0-1.414.586l-.75.75-.5.5a2 2 0 0 0 0 2.828l.11.11.39.585q.139.206.318.37l-.089 1.428a2 2 0 0 0-1.814-1.157H14.5c-.507 0-.97.189-1.323.5h-.927a2 2 0 0 0-.575.084l-2.5.75q-.165.05-.32.127l-3.5 1.75a2 2 0 0 0-.32.2 2 2 0 0 0-.786-.161h-2.25a2 2 0 0 0-2 2v5.75c0 .742.404 1.389 1.003 1.734.125 4.579 3.888 8.266 8.497 8.266a8.53 8.53 0 0 0 7.85-5.252q.078-.004.154-.013a2 2 0 0 0 .996.266h4.927c.353.311.816.5 1.323.5h1.999a8.47 8.47 0 0 0 7.501 4.5c3.281 0 6.239-1.908 7.641-4.788q.12-.024.234-.061.297.099.625.1h.5a2 2 0 0 0 1.933-1.485l.566-.453c.474-.38.751-.954.751-1.562v-1.445l1.159-3.709q.048-.154.071-.314l.25-1.75a2 2 0 0 0 .02-.283v-1.25a2 2 0 0 0-1.458-1.925Z"
+        class="outline"
+        fill="#fff"
+      ></path>
+      <g id="TractorFourWheelDrive__icon">
+        <path
+          d="M29.75 19.25V15.5l.75-.75V14l.5-1 2.25-.5-.25 1-1 .5v.75l.75.75v5.75h-.25l-1-1.75z"
+          class="neutral1"
+          fill="#2b2b2b"
+        ></path>
+        <path
+          d="M30.75 16h1v3.75h-1z"
+          class="highlight"
+          fill="#fefeff"
+          opacity=".31"
+        ></path>
+        <path
+          d="M17.25 29.75h1.5v.5h-1.5z"
+          class="neutral2"
+          fill="#808082"
+        ></path>
+        <path
+          d="M2 27.75h1V29h12.75v2l.5-.5h1v-.75H18l.5 1h6.25v.5H40V31h1.5v-.25h1.25V31h.5v-.5l1.25-1v-1.75l-1.25-.5-.5-3.75-.75-3 3 .5h1v-.25l-8-2.25h-5.25v2.75h-.25l-1-1.75-1.75-.25v-.75H29v.75L24.75 21l-.5-.5L21.5 19h-2l-.75 1v2.25h.5v2.25h-.75v-1h-2v.5h.25v.5h-1.5l-3-2.5h-6L4 24h-.25v-.75H4L4.25 22H2z"
+          class="primary"
+          fill="#367C2B"
+        ></path>
+        <path
+          d="M6.25 22v-.25L9.75 20l2.5-.75H16l.25.5.25.25v4h.25v.5h.75v1.75h3.25v3.25H20v-1.75h-1.5V29H18v-1.25h-1.25v1.75H16v-1.25l-.75-1.5V24.5l-3-2.5zM23.75 23H27l1-1.25h-2.25l-2 1zM27 13.5l-.5.5H22l-.75.25-.5-.5h-1.5l-.75.5.5.75h.75l-.25 4h2l2.75 1.5.5.5L29 19.25V14.5h.75v-1zm1.25 5.75L25 20.5l-.5-.75-2.25-1.25H20.5l.25-3.5h3.5l.5-.5h3.5z"
+          class="neutral1"
+          fill="#2b2b2b"
+        ></path>
+        <path
+          d="m20.75 15-.25 3.5h1.75l2.25 1.25.5.75 3.25-1.25V14.5h-3.5l-.5.5z"
+          class="window"
+          fill="#bbe3f3"
+        ></path>
+        <path
+          d="M26.5 14.5h1V17h-1zM18.5 14.25l-.25-.25 1.25-1.25h9.75l.5.75H27l-.5.5H22l-.75.25-.5-.5h-1.5z"
+          class="primary"
+          fill="#367C2B"
+        ></path>
+        <path
+          d="m18.25 14 .5-.5H27l-.5.5H22l-.75.25-.5-.5h-1.5l-.75.5z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M22.5 29.25h1.25V30H22.5zM22.5 28.25h1.25V29H22.5zM23.75 27.5l-1.25-.25V28h1.25zM22.75 26.75l1 .25.25-.5-1-.25z"
+          class="neutral1"
+          fill="#2b2b2b"
+        ></path>
+        <path d="M16.5 26.25h1v1.5h-1z" class="neutral2" fill="#808082"></path>
+        <path
+          d="M16.5 26.75h1V27h-1z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M18 29h.5v.75H18zM18.5 24h.5v1.5h-.5z"
+          class="neutral2"
+          fill="#808082"
+        ></path>
+        <path d="M18.5 25.5h.5v.75h-.5z" class="neutral1" fill="#2b2b2b"></path>
+        <path
+          d="M14.5 18.75h1.25v.5H14.5z"
+          class="primary"
+          fill="#367C2B"
+        ></path>
+        <path
+          d="M14.5 18.75h1.25v.5H14.5z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M6.25 21.75 9.75 20l2.5-.75H16l.25.5h-4l-2.75.75z"
+          class="highlight"
+          fill="#fefeff"
+          opacity=".31"
+        ></path>
+        <path
+          d="M16.5 20.25H12L9.75 21l-1.5 1 1.75-.75 2-.75h4.5z"
+          class="highlight"
+          fill="#fefeff"
+          opacity=".31"
+        ></path>
+        <path
+          d="M3.75 22h.5L4 23.25h-.25z"
+          class="neutral1"
+          fill="#2b2b2b"
+        ></path>
+        <path
+          d="M2.25 22.5H3.5v2H2.25z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M2.25 23.75H3.5v.75H2.25z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="m2.5 22.5-.25 1H3l.25-1z"
+          class="neutral1"
+          fill="#2b2b2b"
+        ></path>
+        <path d="M2 24.75h.5v.75H2z" class="neutral3" fill="#f2f2f2"></path>
+        <path
+          d="M2 25.5h.5v.75l.25.25 2-2.25L7 22.75l.75-.25H12l3.25 2.75v1.5L11.75 24h-4l-2 1.5-1.75 2-.25.25H2z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="m2.75 26.5 1.25 1 1.75-2 2-1.5h4l3.5 2.75v-1.5L12 22.5H7.75l-.75.25-2.25 1.5z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M16.5 23.5h2v.5h-2z"
+          class="highlight"
+          fill="#fefeff"
+          opacity=".31"
+        ></path>
+        <path
+          d="M16.75 24v.5h.75v1.75h1V24z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M16.75 24v.5h.75v1.75h1v-.5L17.25 24z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M16.75 24.5v-.25h-1.5v2.5l.75 1.5v1.25h.25V28l-.75-1.5v-2z"
+          class="highlight"
+          fill="#fefeff"
+          opacity=".31"
+        ></path>
+        <path
+          d="M17 27.75h.5v2H17zM19 27.75h.5v2H19zM17.25 29.75v.75h-1l-.5.5v-1.25z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M18 29.75h2v-.25h.75v1.25H18.5zM17.25 29.75v.75h-1l-.5.5v-1.25z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M18 29.75h2v-.25h.75v1.25H18.5z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="m23 23 .25-.75 1.75-1 4-1.5v-.5L24.75 21 23 22h-3.5v-2.5l-.75.5v2.25h.5v2.25H19v1.75h1.75v4.5H22V27.5l.75-2 2 .75L24 28v2.75h.75v.5H25v-3.5l1.75-4H23.5l-.25-.75v.75h-3.5V23zm3.25 1.25-.75 2-1.75-2z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="m21 25.5-.25.75H19V24.5h.25v-2.25h-.5V22H23l1.25-.75.5-.25L29 19.25v.5l-4 1.5-1.75 1h-3.5v1.5h3.5l2.25 2.5-.75 1.75v2.75h-.5V28l.5-1.75-2-.75z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="m20.75 26.25.25-.75-.75-1.25h3l1.75 2-.75 1.75v2.75h.5V28l.75-1.75-2.25-2.5h-3.5l-.5.5v.25H19l.5.75.5-.75.5 1-.25.75z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M19 26.25h1.75v.25H19zM18.5 27.5h2.25v.25H18.5zM18.5 27h2.25v.25H18.5zM17.5 27h.5v.25h-.5zM17.5 27.5h.5v.25h-.5zM17.5 26.25h.5v.25h-.5z"
+          class="highlight"
+          fill="#fefeff"
+          opacity=".31"
+        ></path>
+        <path
+          d="M20.25 27.75h.5v1.75h-.5z"
+          class="neutral2"
+          fill="#808082"
+        ></path>
+        <path
+          d="m18.75 20 .75-1h2l2.75 1.5.5.5-.5.25-.5-.5-2.5-1.25H19.5zM23 23h.5l.25-.75 5.25-2.5-4 1.5-1.75 1zM29.75 19.25H29v.5l2 .25 1 1.5.5-.25-1-1.75z"
+          class="highlight"
+          fill="#fefeff"
+          opacity=".31"
+        ></path>
+        <path
+          d="M23.75 23H27l1-1.25.25-.25L30 21l-1.75.75-1.25 1.5h-3.25zM32.75 18.5H34v4h-1.25z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M34 18.5h4l8 2.25V21l-8-2.25h-4z"
+          class="highlight"
+          fill="#fefeff"
+          opacity=".31"
+        ></path>
+        <path
+          d="m34.75 20 7.25.5.25.5-7.5-.75z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="m42 20.5.75 3 .5 3.75 1.25.5 1.25-4L46 22v-1h-1z"
+          class="neutral1"
+          fill="#2b2b2b"
+        ></path>
+        <path
+          d="M32.75 19.25h3.5l6.75 1 .25.25-7.25-.75h-.75l-.75.75h-1.75z"
+          class="stripe"
+          fill="#FFDE00"
+        ></path>
+        <path
+          d="M38 20.5h.5l.25 1h-.5zM38.75 20.5l.25 1h.5l-.25-1zM38.5 22h.5l.5 2-.75-.75zM39.25 22l.5 2 .75.75-.75-2.75z"
+          class="neutral1"
+          fill="#2b2b2b"
+        ></path>
+        <path
+          d="M34.75 21v.5h1.5l2 .5-2-1z"
+          class="highlight"
+          fill="#fefeff"
+          opacity=".31"
+        ></path>
+        <path
+          d="M41.5 28.25h3v.5h-3z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M41.5 28.25h3v.5h-3zM41.5 29h3v.5h-3z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M42.75 28.75h.5V31h-.5z"
+          class="neutral1"
+          fill="#2b2b2b"
+        ></path>
+        <path
+          d="M44.5 21.25h1.25l-.25 1-1-.5z"
+          class="neutral3"
+          fill="#f2f2f2"
+        ></path>
+        <path
+          d="M25.25 31.25V28L27 24.25 30 22h2.5l.25.25v.25h-2.5l-2.75 2.25-1.5 3.5v3z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M25.25 31.25h.25V28l1.75-3.5L30 22.25h2.75L32.5 22H30l-3 2.25L25.25 28z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M27.25 31.25v-4l2-3.25L32 22.5h4.75l2.5 1.75 2.25 3.5V31H40v.25z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M27.25 31.25v-4l2-3.25L32 22.5h4.75l2.5 1.75 2.25 3.5V31H40v.25z"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></path>
+        <path
+          d="M44.5 27.75V28l-1.5-.5-.25-4 .5 3.75z"
+          class="highlight"
+          fill="#fefeff"
+          opacity=".31"
+        ></path>
+        <circle
+          cx="26.5"
+          cy="30.25"
+          r=".25"
+          class="neutral1"
+          fill="#2b2b2b"
+        ></circle>
+        <circle
+          cx="16"
+          cy="25"
+          r=".25"
+          class="neutral2"
+          fill="#808082"
+        ></circle>
+        <circle
+          cx="16"
+          cy="25.75"
+          r=".25"
+          class="neutral2"
+          fill="#808082"
+        ></circle>
+        <circle
+          cx="9.5"
+          cy="29.25"
+          r="6.5"
+          class="neutral1"
+          fill="#2b2b2b"
+        ></circle>
+        <circle
+          cx="9.5"
+          cy="29.25"
+          r="3.421"
+          class="secondary"
+          fill="#FFDE00"
+        ></circle>
+        <circle
+          cx="9.5"
+          cy="29.25"
+          r="2.737"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></circle>
+        <circle
+          cx="9.5"
+          cy="29.25"
+          r="1.711"
+          class="secondary"
+          fill="#FFDE00"
+        ></circle>
+        <circle
+          cx="9.5"
+          cy="29.25"
+          r=".684"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></circle>
+        <circle
+          cx="34.25"
+          cy="29.25"
+          r="6.5"
+          class="neutral1"
+          fill="#2b2b2b"
+        ></circle>
+        <circle
+          cx="34.25"
+          cy="29.25"
+          r="3.421"
+          class="secondary"
+          fill="#FFDE00"
+        ></circle>
+        <circle
+          cx="34.25"
+          cy="29.25"
+          r="2.737"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></circle>
+        <circle
+          cx="34.25"
+          cy="29.25"
+          r="1.711"
+          class="secondary"
+          fill="#FFDE00"
+        ></circle>
+        <circle
+          cx="34.25"
+          cy="29.25"
+          r=".684"
+          class="shadow"
+          fill="#353535"
+          opacity=".3"
+        ></circle>
+        <path
+          d="m30.5 14.75-.75.75h3l-.75-.75z"
+          class="highlight"
+          fill="#fefeff"
+          opacity=".31"
+        ></path>
+        <path
+          d="m20.5 14 .25.5H19.5l-.25-.5zM28 13.75l-.5.5h-.75l.5-.5zM28.25 13.75V14H29v.25h.5v-.5z"
+          class="neutral3"
+          fill="#f2f2f2"
+        ></path>
+      </g></svg>

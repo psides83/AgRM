@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+      class="css-9txd9r"
+      focusable="false"
+      viewBox="0 0 32 32"
+      data-icon-name="RotaryHead"
+      size="65"
+    >
+      <path
+        d="M28.5 28c-.6 0-1-.4-1-1v-3.2c-2.5 2.5-5.9 4-9.5 4.2H6.1c-.6 0-1-.4-1-1v-3.9H1.2c-.6 0-1-.4-1-1v-7.5c0-.6.4-1 1-1h6.5V3.8c0-.6.4-1 1-1h3.2c.6 0 1 .4 1 1v4l4.8 4.8H20c.1-.4.5-.8 1-.8h9.8c.6 0 1 .4 1 1V27c0 .6-.4 1-1 1z"
+        class="outline"
+        fill="#FFFFFF"
+      ></path>
+      <path d="M1.2 14.7h9.6v7.5H1.2z" class="primary" fill="#367C2B"></path>
+      <path
+        d="M1.2 14.7h9.6v7.5H1.2z"
+        class="shadow"
+        opacity=".3"
+        fill="#333"
+      ></path>
+      <path d="M28.5 13.6h2.2V27h-2.2z" class="quaternary" fill="#333"></path>
+      <path
+        d="M30.7 13.6H17.3l-5.4-5.4V3.8H8.7v18.3H6.1V27h11.7c7.2-.2 12.9-6.1 12.9-13.4m-16.5 0h-2.3v-2.3z"
+        class="primary"
+        fill="#367C2B"
+      ></path>
+      <path
+        d="M25.3 8.5h1.1v9.8h-1.1z"
+        class="quaternary"
+        transform="rotate(90 25.842 13.429)"
+        fill="#333"
+      ></path>
+      <path
+        d="M12.8 14.7h17.1v1.4H12.8z"
+        class="highlight"
+        opacity=".3"
+        fill="#fff"
+      ></path>
+      <path
+        d="M11.9 8.3v3l2.3 2.3h3.1zM6.9 25.2h11.5v1.2H6.9z"
+        class="shadow"
+        opacity=".3"
+        fill="#333"
+      ></path></svg>

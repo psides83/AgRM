@@ -1,9 +1,11 @@
-import { signIn } from 'next-auth/react';
+'use client';
+
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useSettingsContext } from 'providers/SettingsProvider';
 import { rootPaths } from 'routes/paths';
+import { createClient } from 'lib/supabase/client';
 import Image from 'components/base/Image';
 
 const SocialAuth = () => {
@@ -12,27 +14,24 @@ const SocialAuth = () => {
   } = useSettingsContext();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
+  const supabase = createClient();
 
   const handleGoogleLogin = async () => {
-    try {
-      const res = await signIn('google', {
-        callbackUrl: callbackUrl || rootPaths.root,
-      });
-      console.log({ res });
-    } catch (error) {
-      console.error(error);
-    }
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}${callbackUrl || rootPaths.root}`,
+      },
+    });
   };
 
   const handleAzureLogin = async () => {
-    try {
-      const res = await signIn('azure-ad', {
-        callbackUrl: callbackUrl || rootPaths.root,
-      });
-      console.log({ res });
-    } catch (error) {
-      console.error(error);
-    }
+    await supabase.auth.signInWithOAuth({
+      provider: 'azure',
+      options: {
+        redirectTo: `${window.location.origin}${callbackUrl || rootPaths.root}`,
+      },
+    });
   };
 
   return (

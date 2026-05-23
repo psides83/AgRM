@@ -1,15 +1,20 @@
 'use client';
 
-import { useResetPassword } from 'services/swr/api-hooks/useAuthApi';
+import { createClient } from 'lib/supabase/client';
 import SetPasswordForm from 'components/sections/authentications/default/SetPassworForm';
 
 const SetPassword = () => {
-  const { trigger: resetPassword } = useResetPassword();
-
   const handleSetPassword = async (data) => {
-    return await resetPassword(data).catch((error) => {
-      throw new Error(error.data.message);
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({
+      password: data.password,
     });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return { message: 'Password updated.' };
   };
 
   return <SetPasswordForm handleSetPassword={handleSetPassword} />;

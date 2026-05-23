@@ -8,7 +8,6 @@ export const rootPaths = {
   authRoot: 'authentication',
   pricingRoot: 'pricing',
   authDefaultJwtRoot: 'default/jwt',
-  authDefaultAuth0Root: 'default/auth0',
   errorRoot: 'error',
   ecommerceRoot: 'ecommerce',
   ecommerceAdminRoot: 'admin',
@@ -49,10 +48,7 @@ const paths = {
   defaultJwtLogin: `/${rootPaths.authRoot}/${rootPaths.authDefaultJwtRoot}/login`,
   defaultJwtSignup: `/${rootPaths.authRoot}/${rootPaths.authDefaultJwtRoot}/sign-up`,
   defaultJwtForgotPassword: `/${rootPaths.authRoot}/${rootPaths.authDefaultJwtRoot}/forgot-password`,
-  defaultJwt2FA: `/${rootPaths.authRoot}/${rootPaths.authDefaultJwtRoot}/2fa`,
   defaultJwtSetPassword: `/${rootPaths.authRoot}/${rootPaths.authDefaultJwtRoot}/set-password`,
-
-  defaultAuth0Login: `/${rootPaths.authRoot}/${rootPaths.authDefaultAuth0Root}/login`,
 
   defaultLoggedOut: `/${rootPaths.authRoot}/default/logged-out`,
   pricingColumn: `/${rootPaths.pagesRoot}/${rootPaths.pricingRoot}/column`,
@@ -183,9 +179,6 @@ export const authPaths = {
   signup: paths.defaultJwtSignup,
   forgotPassword: paths.defaultJwtForgotPassword,
   setNewPassword: paths.defaultJwtSetPassword,
-  twoFactorAuth: paths.defaultJwt2FA,
-  /* ---------------------------------Auth0----------------------------------------- */
-  // login: paths.defaultAuth0Login,
 };
 
 export const apiEndpoints = {

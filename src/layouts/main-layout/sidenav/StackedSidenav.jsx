@@ -1,6 +1,5 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import {
@@ -22,6 +21,7 @@ import { useThemeMode } from 'hooks/useThemeMode';
 import DocSearch from 'layouts/main-layout/sidenav/doc-search/DocSearch';
 import { mainDrawerWidth } from 'lib/constants';
 import { cssVarRgba } from 'lib/utils';
+import { useAuth } from 'providers/AuthProvider';
 import { useBreakpoints } from 'providers/BreakpointsProvider';
 import { useSettingsContext } from 'providers/SettingsProvider';
 import sitemap from 'routes/sitemap';
@@ -45,8 +45,7 @@ const StackedSidenav = () => {
   const { currentBreakpoint } = useBreakpoints();
   const { isDark } = useThemeMode();
 
-  const { data } = useSession();
-  const user = data?.user;
+  const { user } = useAuth();
 
   const isMenuActive = (item) => {
     if (pathname === '/' && item.id === 'homepage') {

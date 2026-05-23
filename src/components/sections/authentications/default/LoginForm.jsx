@@ -19,7 +19,6 @@ import Grid from '@mui/material/Grid';
 import { rootPaths } from 'routes/paths';
 import * as yup from 'yup';
 import PasswordTextField from 'components/common/PasswordTextField';
-import DefaultCredentialAlert from '../common/DefaultCredentialAlert';
 import SocialAuth from './SocialAuth';
 
 const schema = yup
@@ -38,7 +37,6 @@ const LoginForm = ({
   forgotPasswordLink,
   socialAuth = true,
   rememberDevice = true,
-  defaultCredential,
 }) => {
   const router = useRouter();
 
@@ -128,7 +126,6 @@ const LoginForm = ({
                 {errors.root?.credential?.message}
               </Alert>
             )}
-            {defaultCredential && <DefaultCredentialAlert />}
             <Grid container>
               <Grid
                 sx={{
@@ -142,7 +139,6 @@ const LoginForm = ({
                   id="email"
                   type="email"
                   label="Email"
-                  defaultValue={defaultCredential?.email}
                   error={!!errors.email}
                   helperText={<>{errors.email?.message}</>}
                   {...register('email')}
@@ -159,7 +155,6 @@ const LoginForm = ({
                   size="large"
                   id="password"
                   label="Password"
-                  defaultValue={defaultCredential?.password}
                   error={!!errors.password}
                   helperText={<>{errors.password?.message}</>}
                   {...register('password')}

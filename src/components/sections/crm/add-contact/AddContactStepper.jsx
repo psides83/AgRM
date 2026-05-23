@@ -5,6 +5,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Box, Button, Container, Stack, Step, StepLabel, Stepper, Typography } from '@mui/material';
 import { useSnackbar } from 'notistack';
+import { createClient } from 'lib/supabase/client';
 import CompanyInfoForm, {
   companyInfoSchema,
 } from 'components/sections/crm/add-contact/steps/CompanyInfoForm';
@@ -66,25 +67,34 @@ const steps = [
   },
 ];
 
-const validationSchemas = [personalInfoSchema, companyInfoSchema, leadInfoSchema];
+const validationSchema = personalInfoSchema.concat(companyInfoSchema).concat(leadInfoSchema);
 
 const AddContactStepper = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState({});
   const { enqueueSnackbar } = useSnackbar();
   const methods = useForm({
-    resolver: yupResolver(validationSchemas[activeStep]),
+    resolver: yupResolver(validationSchema),
     defaultValues: {
-      personalInfo: {},
-      companyInfo: {},
-      leadInfo: {},
+      personalInfo: {
+        country: 'US',
+        tags: [],
+      },
+      companyInfo: {
+        country: 'US',
+      },
+      leadInfo: {
+        status: '',
+        priority: '',
+      },
     },
   });
 
   const { handleSubmit, reset } = methods;
 
   const handleNext = async () => {
-    const isValid = await methods.trigger();
+    const stepKey = ['personalInfo', 'companyInfo', 'leadInfo'][activeStep];
+    const isValid = await methods.trigger(stepKey);
     if (isValid) {
       setCompletedSteps((prev) => ({ ...prev, [activeStep]: true }));
       setActiveStep((prevStep) => prevStep + 1);
@@ -95,12 +105,30 @@ const AddContactStepper = () => {
     setActiveStep((prevStep) => prevStep - 1);
   };
 
-  const onSubmit = (data) => {
-    console.log('Form data', data);
-    enqueueSnackbar('Contact added successfully', { variant: 'success' });
-    reset();
-    setCompletedSteps({});
-    setActiveStep(0);
+  const onSubmit = async (data) => {
+    const supabase = createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      enqueueSnackbar('You need to be logged in to add a contact.', { variant: 'error' });
+      return;
+    }
+
+    try {
+      const companyId = await saveCompany(supabase, user.id, data.companyInfo);
+      const contact = await saveContact(supabase, user.id, companyId, data.personalInfo);
+      await saveLead(supabase, user.id, companyId, contact.id, data.leadInfo);
+
+      enqueueSnackbar('Contact added successfully', { variant: 'success' });
+      reset();
+      setCompletedSteps({});
+      setActiveStep(0);
+    } catch (error) {
+      enqueueSnackbar(error.message || 'Could not add contact.', { variant: 'error' });
+    }
   };
   const handleStepClick = (step) => {
     setActiveStep(step);
@@ -154,5 +182,111 @@ const AddContactStepper = () => {
     </FormProvider>
   );
 };
+
+function cleanText(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+async function saveCompany(supabase, ownerId, companyInfo) {
+  if (!cleanText(companyInfo?.name)) {
+    return null;
+  }
+
+  const payload = {
+    owner_id: ownerId,
+    name: cleanText(companyInfo.name),
+    company_type: cleanText(companyInfo.companyType),
+    website: cleanText(companyInfo.website),
+    phone: cleanText(companyInfo.phone),
+    email: cleanText(companyInfo.email),
+    address_line1: cleanText(companyInfo.addressLine1),
+    address_line2: cleanText(companyInfo.addressLine2),
+    city: cleanText(companyInfo.city),
+    region: cleanText(companyInfo.region),
+    postal_code: cleanText(companyInfo.postalCode),
+    country: cleanText(companyInfo.country) || 'US',
+    notes: cleanText(companyInfo.notes),
+  };
+
+  const { data, error } = await supabase
+    .from('companies')
+    .upsert(payload, { onConflict: 'owner_id,name' })
+    .select('id')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data.id;
+}
+
+async function saveContact(supabase, ownerId, companyId, personalInfo) {
+  const { data, error } = await supabase
+    .from('contacts')
+    .insert({
+      owner_id: ownerId,
+      company_id: companyId,
+      first_name: cleanText(personalInfo.firstName),
+      last_name: cleanText(personalInfo.lastName),
+      title: cleanText(personalInfo.title),
+      email: cleanText(personalInfo.email),
+      phone: cleanText(personalInfo.phone),
+      mobile_phone: cleanText(personalInfo.mobilePhone),
+      address_line1: cleanText(personalInfo.addressLine1),
+      address_line2: cleanText(personalInfo.addressLine2),
+      city: cleanText(personalInfo.city),
+      region: cleanText(personalInfo.region),
+      postal_code: cleanText(personalInfo.postalCode),
+      country: cleanText(personalInfo.country) || 'US',
+      tags: personalInfo.tags || [],
+      notes: cleanText(personalInfo.notes),
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+async function saveLead(supabase, ownerId, companyId, contactId, leadInfo) {
+  const shouldCreateLead = Boolean(
+    cleanText(leadInfo?.source) ||
+      cleanText(leadInfo?.status) ||
+      leadInfo?.priority ||
+      leadInfo?.estimatedBudget ||
+      leadInfo?.targetPurchaseDate ||
+      leadInfo?.lastContactedAt ||
+      leadInfo?.nextFollowUpAt ||
+      cleanText(leadInfo?.notes)
+  );
+
+  if (!shouldCreateLead) {
+    return null;
+  }
+
+  const { error } = await supabase.from('leads').insert({
+    owner_id: ownerId,
+    contact_id: contactId,
+    company_id: companyId,
+    source: cleanText(leadInfo.source),
+    status: cleanText(leadInfo.status) || 'new',
+    priority: Number(leadInfo.priority) || 3,
+    estimated_budget: leadInfo.estimatedBudget || null,
+    target_purchase_date: leadInfo.targetPurchaseDate || null,
+    last_contacted_at: leadInfo.lastContactedAt || null,
+    next_follow_up_at: leadInfo.nextFollowUpAt || null,
+    notes: cleanText(leadInfo.notes),
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return true;
+}
 
 export default AddContactStepper;

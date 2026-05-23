@@ -1,15 +1,21 @@
 'use client';
 
-import { useSendPasswordResetLink } from 'services/swr/api-hooks/useAuthApi';
+import paths from 'routes/paths';
+import { createClient } from 'lib/supabase/client';
 import ForgotPasswordForm from 'components/sections/authentications/common/ForgotPasswordForm';
 
 const ForgotPassword = () => {
-  const { trigger } = useSendPasswordResetLink();
-
   const handleSendResetLink = async (data) => {
-    return await trigger(data).catch((error) => {
-      throw new Error(error.data.message);
+    const supabase = createClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+      redirectTo: `${window.location.origin}${paths.defaultJwtSetPassword}`,
     });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return { message: 'Password reset link sent.' };
   };
 
   return <ForgotPasswordForm handleSendResetLink={handleSendResetLink} />;
