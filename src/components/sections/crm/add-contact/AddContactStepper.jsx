@@ -72,6 +72,7 @@ const validationSchema = personalInfoSchema.concat(companyInfoSchema).concat(lea
 const AddContactStepper = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
   const methods = useForm({
     resolver: yupResolver(validationSchema),
@@ -90,7 +91,7 @@ const AddContactStepper = () => {
     },
   });
 
-  const { handleSubmit, reset } = methods;
+  const { getValues, reset } = methods;
 
   const handleNext = async () => {
     const stepKey = ['personalInfo', 'companyInfo', 'leadInfo'][activeStep];
@@ -106,6 +107,7 @@ const AddContactStepper = () => {
   };
 
   const onSubmit = async (data) => {
+    setIsSaving(true);
     const supabase = createClient();
     const {
       data: { user },
@@ -114,6 +116,7 @@ const AddContactStepper = () => {
 
     if (userError || !user) {
       enqueueSnackbar('You need to be logged in to add a contact.', { variant: 'error' });
+      setIsSaving(false);
       return;
     }
 
@@ -128,20 +131,28 @@ const AddContactStepper = () => {
       setActiveStep(0);
     } catch (error) {
       enqueueSnackbar(error.message || 'Could not add contact.', { variant: 'error' });
+    } finally {
+      setIsSaving(false);
     }
   };
   const handleStepClick = (step) => {
     setActiveStep(step);
   };
 
+  const handleSaveContact = async () => {
+    const isValid = await methods.trigger('personalInfo');
+
+    if (!isValid) {
+      setActiveStep(0);
+      return;
+    }
+
+    await onSubmit(getValues());
+  };
+
   const handleFormSubmit = (e) => {
     e.preventDefault();
-
-    if (activeStep === steps.length - 1) {
-      handleSubmit(onSubmit)();
-    } else {
-      handleNext();
-    }
+    handleNext();
   };
 
   return (
@@ -162,18 +173,30 @@ const AddContactStepper = () => {
 
           <Stack gap={2} justifyContent="flex-end">
             {activeStep > 0 && (
-              <Button variant="soft" color="neutral" onClick={handleBack} sx={{ px: 4 }}>
+              <Button
+                variant="soft"
+                color="neutral"
+                onClick={handleBack}
+                sx={{ px: 4 }}
+                disabled={isSaving}
+              >
                 Back
               </Button>
             )}
 
-            {activeStep === steps.length - 1 ? (
-              <Button type="submit" variant="soft" sx={{ px: 4 }}>
-                Save
-              </Button>
-            ) : (
-              <Button type="submit" variant="soft">
-                Save & Continue
+            <Button
+              type="button"
+              variant="contained"
+              sx={{ px: 4 }}
+              loading={isSaving}
+              onClick={handleSaveContact}
+            >
+              Save Contact
+            </Button>
+
+            {activeStep < steps.length - 1 && (
+              <Button type="submit" variant="soft" disabled={isSaving}>
+                Continue to {activeStep === 0 ? 'Company' : 'Lead'}
               </Button>
             )}
           </Stack>

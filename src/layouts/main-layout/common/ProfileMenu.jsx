@@ -181,9 +181,16 @@ const ProfileMenu = ({ type = 'default' }) => {
           <ProfileMenuItem
             icon="material-symbols:manage-accounts-outline-rounded"
             onClick={handleClose}
-            href="#!"
+            href={paths.account}
           >
             Account Settings
+          </ProfileMenuItem>
+          <ProfileMenuItem
+            icon="material-symbols:badge-outline-rounded"
+            onClick={handleClose}
+            href={paths.businessCard}
+          >
+            Business Card
           </ProfileMenuItem>
           <ProfileMenuItem
             icon="material-symbols:question-mark-rounded"

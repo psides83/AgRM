@@ -9,13 +9,18 @@ const SignUp = () => {
   const router = useRouter();
 
   const handleSignup = async (data) => {
+    const [firstName, ...lastNameParts] = data.name.trim().split(/\s+/);
+    const lastName = lastNameParts.join(' ');
     const supabase = createClient();
     const { error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
         data: {
-          display_name: data.name,
+          first_name: firstName,
+          last_name: lastName,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          locale: navigator.language,
         },
         emailRedirectTo: `${window.location.origin}${paths.defaultJwtLogin}`,
       },

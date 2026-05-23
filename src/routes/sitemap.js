@@ -245,6 +245,13 @@ const sitemap = [
         active: true,
         items: [
           {
+            name: 'Contacts',
+            key: 'contacts',
+            path: paths.contacts,
+            pathName: 'contacts',
+            active: true,
+          },
+          {
             name: 'Deals',
             key: 'deals',
             path: paths.deals,

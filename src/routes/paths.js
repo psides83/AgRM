@@ -55,6 +55,7 @@ const paths = {
   pricingTable: `/${rootPaths.pagesRoot}/${rootPaths.pricingRoot}/table`,
 
   account: `/${rootPaths.pagesRoot}/account`,
+  businessCard: `/${rootPaths.pagesRoot}/account?tab=business_card`,
   faq: `/${rootPaths.pagesRoot}/faq`,
   comingSoon: `/${rootPaths.pagesRoot}/coming-soon`,
   404: `/${rootPaths.errorRoot}/404`,
@@ -98,6 +99,10 @@ const paths = {
   events: `/${rootPaths.appsRoot}/${rootPaths.eventsRoot}/event-detail`,
 
   crmRoot: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}`,
+  contacts: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}`,
+  publicBusinessCard: (slug) => `/card/${slug || ''}`,
+  contactDetails: (contactId) =>
+    `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/contacts/${contactId || ''}`,
   leadDetails: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/lead-details`,
   dealDetails: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/deal-details`,
   addContact: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/add-contact`,

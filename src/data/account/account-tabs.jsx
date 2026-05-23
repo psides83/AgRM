@@ -3,6 +3,7 @@ import AudioVideoTabPanel from 'components/sections/account/audio-video/AudioVid
 import ChatPreferencesTabPanel from 'components/sections/account/chat-preferences/ChatPreferencesTabPanel';
 import CreditCardInfoTabPanel from 'components/sections/account/credit-card/CreditCardInfoTabPanel';
 import DateTimeTabPanel from 'components/sections/account/date-time/DateTimeTabPanel';
+import BusinessCardManager from 'components/sections/crm/business-card';
 import LanguageRegionTabPanel from 'components/sections/account/language-region/LanguageRegionTabPanel';
 import NotificationAlertsTabPanel from 'components/sections/account/notification-alerts/NotificationAlertsTabPanel';
 import PersonalInfoTabPanel from 'components/sections/account/personal-info/PersonalInfoTabPanel';
@@ -22,6 +23,15 @@ export const accountTabs = [
     icon: 'material-symbols:person-outline',
     panelIcon: 'material-symbols:person-outline',
     tabPanel: <PersonalInfoTabPanel />,
+  },
+  {
+    id: 'business_card',
+    label: 'Business Card',
+    title: 'Digital Business Card',
+    value: 'business_card',
+    icon: 'material-symbols:badge-outline-rounded',
+    panelIcon: 'material-symbols:badge-outline-rounded',
+    tabPanel: <BusinessCardManager embedded />,
   },
   {
     id: 2,

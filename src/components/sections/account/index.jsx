@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TabContext } from '@mui/lab';
 import { Container, Drawer, Paper, Stack } from '@mui/material';
+import { useSearchParams } from 'next/navigation';
 import { accountTabs } from 'data/account/account-tabs';
 import { useNavContext } from 'layouts/main-layout/NavProvider';
 import AccountsProvider from 'providers/AccountsProvider';
@@ -13,7 +14,12 @@ import SideTabList from 'components/sections/account/SideTabList';
 import AccountTabPanel from 'components/sections/account/common/AccountTabPanel';
 
 const Account = () => {
-  const [activeTab, setActiveTab] = useState(accountTabs[0].value);
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const initialTab = accountTabs.some((tab) => tab.value === requestedTab)
+    ? requestedTab
+    : accountTabs[0].value;
+  const [activeTab, setActiveTab] = useState(initialTab);
   const { down } = useBreakpoints();
   const [showTabList, setShowTabList] = useState(true);
   const {
@@ -23,6 +29,12 @@ const Account = () => {
 
   const downMd = down('md');
   const handleChange = (_event, newValue) => setActiveTab(newValue);
+
+  useEffect(() => {
+    if (accountTabs.some((tab) => tab.value === requestedTab)) {
+      setActiveTab(requestedTab);
+    }
+  }, [requestedTab]);
 
   return (
     <AccountsProvider>

@@ -17,7 +17,8 @@ export const metadata = {
   icons: [
     {
       rel: 'icon',
-      url: `/favicon.ico`,
+      type: 'image/svg+xml',
+      url: `/deere-icons/tractor-row-crop.svg`,
     },
   ],
 };

@@ -162,6 +162,16 @@ const CRM = async () => {
             </Box>
             <Stack direction="row" spacing={1}>
               <Button
+                href={paths.contacts}
+                component={Link}
+                underline="none"
+                variant="soft"
+                color="neutral"
+                startIcon={<IconifyIcon icon="material-symbols:contacts-outline-rounded" />}
+              >
+                Contacts
+              </Button>
+              <Button
                 href={paths.addContact}
                 component={Link}
                 underline="none"
