@@ -66,7 +66,7 @@ const DealCard = memo(({ deal }) => {
           <Typography
             variant="subtitle2"
             component={Link}
-            href={paths.dealDetails}
+            href={paths.dealDetails(deal.id)}
             underline="none"
             sx={{
               display: 'block',

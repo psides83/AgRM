@@ -15,12 +15,6 @@ import {
   MenuItem,
   Paper,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
@@ -29,8 +23,11 @@ import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
+import CrmFilesPanel from 'components/sections/crm/shared/CrmFilesPanel';
 
 const leadStatuses = ['new', 'working', 'qualified', 'unqualified', 'converted'];
+const activityTypes = ['call', 'email', 'meeting', 'text', 'task', 'site_visit', 'demo', 'other'];
+const activityDirections = ['outbound', 'inbound', 'internal'];
 const equipmentCategories = [
   'tractor',
   'combine',
@@ -178,10 +175,13 @@ const ContactDetailsClient = ({ contactId }) => {
 
     const activityItems = activities.map((activity) => ({
       id: `activity-${activity.id}`,
+      activityId: activity.id,
       type: activity.type,
       title: activity.subject,
       body: activity.body,
       date: activity.occurred_at,
+      dueAt: activity.due_at,
+      completedAt: activity.completed_at,
     }));
 
     return [...noteItems, ...activityItems].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -200,19 +200,76 @@ const ContactDetailsClient = ({ contactId }) => {
   }
 
   const company = contact.companies;
+  const contactName = [contact.first_name, contact.last_name].filter(Boolean).join(' ');
+  const primaryPhone = contact.mobile_phone || contact.phone;
 
   return (
     <>
       <Grid container spacing={3}>
         <Grid size={12}>
           <PageHeader
-            title={`${contact.first_name} ${contact.last_name}`}
+            title={contactName}
             breadcrumb={[
               { label: 'Home', url: paths.crm },
               { label: 'Contacts', url: paths.contacts },
               { label: 'Contact detail', active: true },
             ]}
-            actionComponent={
+          />
+        </Grid>
+
+        <Grid size={12}>
+          <Paper sx={{ p: { xs: 3, md: 4 } }}>
+            <Stack
+              direction={{ xs: 'column', lg: 'row' }}
+              spacing={3}
+              sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', lg: 'center' } }}
+            >
+              <Stack direction="column" spacing={2} sx={{ minWidth: 0 }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' } }}>
+                  <Box
+                    sx={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: '50%',
+                      bgcolor: 'primary.lighter',
+                      color: 'primary.main',
+                      display: 'grid',
+                      placeItems: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Typography variant="h5">{getInitials(contact)}</Typography>
+                  </Box>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="h4" sx={{ overflowWrap: 'anywhere' }}>
+                      {contactName}
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                      {[contact.title, company?.name].filter(Boolean).join(' at ') || 'Contact'}
+                    </Typography>
+                    <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', mt: 1 }}>
+                      {contact.email && <Chip label={contact.email} size="small" variant="soft" color="neutral" />}
+                      {primaryPhone && <Chip label={primaryPhone} size="small" variant="soft" color="neutral" />}
+                      {[contact.city, contact.region].filter(Boolean).length > 0 && (
+                        <Chip
+                          label={[contact.city, contact.region].filter(Boolean).join(', ')}
+                          size="small"
+                          variant="soft"
+                          color="neutral"
+                        />
+                      )}
+                    </Stack>
+                  </Box>
+                </Stack>
+                {(contact.tags || []).length > 0 && (
+                  <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                    {contact.tags.map((tag) => (
+                      <Chip key={tag} label={tag} size="small" variant="soft" color="primary" />
+                    ))}
+                  </Stack>
+                )}
+              </Stack>
+
               <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
                 <Button
                   variant="soft"
@@ -220,7 +277,15 @@ const ContactDetailsClient = ({ contactId }) => {
                   onClick={() => setDialog('edit-contact')}
                   startIcon={<IconifyIcon icon="material-symbols:edit-outline-rounded" />}
                 >
-                  Edit Contact
+                  Edit
+                </Button>
+                <Button
+                  variant="soft"
+                  color="neutral"
+                  onClick={() => setDialog('activity')}
+                  startIcon={<IconifyIcon icon="material-symbols:add-call-outline-rounded" />}
+                >
+                  Add Activity
                 </Button>
                 <Button
                   variant="soft"
@@ -243,17 +308,16 @@ const ContactDetailsClient = ({ contactId }) => {
                   onClick={() => setDialog('equipment')}
                   startIcon={<IconifyIcon icon="material-symbols:agriculture-outline-rounded" />}
                 >
-                  Add Equipment Interest
+                  Add Interest
                 </Button>
               </Stack>
-            }
-          />
+            </Stack>
+          </Paper>
         </Grid>
 
         <Grid size={{ xs: 12, lg: 4 }}>
-          <Stack spacing={3}>
+          <Stack direction="column" spacing={3}>
             <InfoCard title="Contact Info" icon="material-symbols:contacts-outline-rounded">
-              <InfoRow label="Name" value={`${contact.first_name} ${contact.last_name}`} />
               <InfoRow label="Role" value={contact.title} />
               <InfoRow label="Email" value={contact.email} />
               <InfoRow label="Phone" value={contact.phone} />
@@ -262,13 +326,6 @@ const ContactDetailsClient = ({ contactId }) => {
                 label="Location"
                 value={[contact.city, contact.region, contact.postal_code].filter(Boolean).join(', ')}
               />
-              {(contact.tags || []).length > 0 && (
-                <Stack direction="row" spacing={0.5} useFlexGap sx={{ flexWrap: 'wrap', mt: 1 }}>
-                  {contact.tags.map((tag) => (
-                    <Chip key={tag} label={tag} size="small" variant="soft" />
-                  ))}
-                </Stack>
-              )}
               {contact.notes && (
                 <Typography variant="body2" sx={{ color: 'text.secondary', mt: 2 }}>
                   {contact.notes}
@@ -287,6 +344,9 @@ const ContactDetailsClient = ({ contactId }) => {
                     label="Location"
                     value={[company.city, company.region, company.postal_code].filter(Boolean).join(', ')}
                   />
+                  <Button component={Link} href={paths.companyDetails(company.id)} underline="none" variant="soft" color="neutral" sx={{ mt: 1 }}>
+                    Open Company
+                  </Button>
                   {company.website && (
                     <Link href={company.website} target="_blank" rel="noreferrer">
                       {company.website}
@@ -303,10 +363,11 @@ const ContactDetailsClient = ({ contactId }) => {
         </Grid>
 
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Stack spacing={3}>
+          <Stack direction="column" spacing={3}>
             <LeadsCard leads={leads} />
             <EquipmentCard equipmentInterests={equipmentInterests} />
-            <TimelineCard items={timelineItems} />
+            <CrmFilesPanel recordType="contact" recordId={contact.id} />
+            <TimelineCard items={timelineItems} supabase={supabase} onSaved={fetchDetails} />
           </Stack>
         </Grid>
       </Grid>
@@ -320,6 +381,13 @@ const ContactDetailsClient = ({ contactId }) => {
       />
       <AddNoteDialog
         open={dialog === 'note'}
+        contact={contact}
+        onClose={() => setDialog(null)}
+        onSaved={fetchDetails}
+        supabase={supabase}
+      />
+      <AddActivityDialog
+        open={dialog === 'activity'}
         contact={contact}
         onClose={() => setDialog(null)}
         onSaved={fetchDetails}
@@ -348,7 +416,7 @@ function InfoCard({ title, icon, children }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
       <SectionTitle title={title} icon={icon} />
-      <Stack spacing={1.25}>{children}</Stack>
+      <Stack direction="column" spacing={1.25}>{children}</Stack>
     </Paper>
   );
 }
@@ -364,11 +432,11 @@ function SectionTitle({ title, icon }) {
 
 function InfoRow({ label, value }) {
   return (
-    <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
+    <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
         {label}
       </Typography>
-      <Typography variant="body2" sx={{ textAlign: 'right', fontWeight: 600 }}>
+      <Typography variant="body2" sx={{ textAlign: 'right', fontWeight: 600, overflowWrap: 'anywhere' }}>
         {value || '-'}
       </Typography>
     </Stack>
@@ -379,34 +447,21 @@ function LeadsCard({ leads }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
       <SectionTitle title="Related Leads" icon="material-symbols:filter-alt-outline-rounded" />
-      <TableContainer>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Status</TableCell>
-              <TableCell>Source</TableCell>
-              <TableCell>Budget</TableCell>
-              <TableCell>Next Follow-up</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {leads.length ? (
-              leads.map((lead) => (
-                <TableRow key={lead.id}>
-                  <TableCell>
-                    <Chip label={lead.status} size="small" variant="soft" color="primary" />
-                  </TableCell>
-                  <TableCell>{lead.source || '-'}</TableCell>
-                  <TableCell>{formatCurrency(lead.estimated_budget)}</TableCell>
-                  <TableCell>{formatDateTime(lead.next_follow_up_at)}</TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <EmptyRow colSpan={4} label="No leads yet" />
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <Stack direction="column" spacing={1.5}>
+        {leads.length ? (
+          leads.map((lead) => (
+            <RecordRow
+              key={lead.id}
+              href={paths.leadDetails(lead.id)}
+              title={lead.source || 'Lead'}
+              subtitle={`Budget ${formatCurrency(lead.estimated_budget)} · Follow-up ${formatDateTime(lead.next_follow_up_at)}`}
+              chip={formatEnum(lead.status)}
+            />
+          ))
+        ) : (
+          <EmptyState label="No leads yet" />
+        )}
+      </Stack>
     </Paper>
   );
 }
@@ -415,88 +470,128 @@ function EquipmentCard({ equipmentInterests }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
       <SectionTitle title="Equipment Interests" icon="material-symbols:agriculture-outline-rounded" />
-      <TableContainer>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Equipment</TableCell>
-              <TableCell>Condition</TableCell>
-              <TableCell>Budget</TableCell>
-              <TableCell>Trade-in</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {equipmentInterests.length ? (
-              equipmentInterests.map((interest) => (
-                <TableRow key={interest.id}>
-                  <TableCell>
-                    <Typography variant="subtitle2">
-                      {[interest.make, interest.model].filter(Boolean).join(' ') || interest.category}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      {interest.category}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{interest.condition}</TableCell>
-                  <TableCell>
-                    {[formatCurrency(interest.price_min), formatCurrency(interest.price_max)]
-                      .filter((value) => value !== '-')
-                      .join(' - ') || '-'}
-                  </TableCell>
-                  <TableCell>{interest.trade_in ? 'Yes' : 'No'}</TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <EmptyRow colSpan={4} label="No equipment interests yet" />
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Paper>
-  );
-}
+      <Stack direction="column" spacing={1.5}>
+        {equipmentInterests.length ? (
+          equipmentInterests.map((interest) => {
+            const equipmentName = [interest.model_year, interest.make, interest.model].filter(Boolean).join(' ');
+            const budget =
+              [formatCurrency(interest.price_min), formatCurrency(interest.price_max)]
+                .filter((value) => value !== '-')
+                .join(' - ') || '-';
 
-function TimelineCard({ items }) {
-  return (
-    <Paper sx={{ p: { xs: 3, md: 4 } }}>
-      <SectionTitle title="Activities & Notes" icon="material-symbols:history-rounded" />
-      <Stack divider={<Divider flexItem />} spacing={2}>
-        {items.length ? (
-          items.map((item) => (
-            <Box key={item.id}>
-              <Stack direction="row" spacing={1} sx={{ justifyContent: 'space-between', mb: 0.5 }}>
-                <Typography variant="subtitle2">{item.title}</Typography>
-                <Chip label={item.type} size="small" variant="soft" />
-              </Stack>
-              {item.body && (
-                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
-                  {item.body}
-                </Typography>
-              )}
-              <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-                {formatDateTime(item.date)}
-              </Typography>
-            </Box>
-          ))
+            return (
+              <RecordRow
+                key={interest.id}
+                title={equipmentName || formatEnum(interest.category)}
+                subtitle={`${formatEnum(interest.category)} · ${formatEnum(interest.condition)} · Budget ${budget}`}
+                chip={interest.trade_in ? 'Trade-in' : null}
+              />
+            );
+          })
         ) : (
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            No activities or notes yet.
-          </Typography>
+          <EmptyState label="No equipment interests yet" />
         )}
       </Stack>
     </Paper>
   );
 }
 
-function EmptyRow({ colSpan, label }) {
+function TimelineCard({ items, supabase, onSaved }) {
+  const handleComplete = async (activityId) => {
+    const { error } = await supabase.from('activities').update({ completed_at: new Date().toISOString() }).eq('id', activityId);
+    if (!error) onSaved();
+  };
+
   return (
-    <TableRow>
-      <TableCell colSpan={colSpan}>
-        <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>
-          {label}
-        </Typography>
-      </TableCell>
-    </TableRow>
+    <Paper sx={{ p: { xs: 3, md: 4 } }}>
+      <SectionTitle title="Activities & Notes" icon="material-symbols:history-rounded" />
+      <Stack direction="column" divider={<Divider flexItem />} spacing={2}>
+        {items.length ? (
+          items.map((item) => (
+            <Box key={item.id}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1}
+                sx={{ justifyContent: 'space-between', mb: 0.5 }}
+              >
+                <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Typography variant="subtitle2">{item.title}</Typography>
+                  {item.completedAt && <Chip label="Complete" size="small" variant="soft" color="success" />}
+                </Stack>
+                <Stack direction="row" spacing={1} sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}>
+                  <Chip label={formatEnum(item.type)} size="small" variant="soft" />
+                  {item.activityId && !item.completedAt && (
+                    <Button size="small" variant="soft" color="success" onClick={() => handleComplete(item.activityId)}>
+                      Complete
+                    </Button>
+                  )}
+                </Stack>
+              </Stack>
+              {item.body && (
+                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5, overflowWrap: 'anywhere' }}>
+                  {item.body}
+                </Typography>
+              )}
+              <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                {formatDateTime(item.date)}
+                {item.dueAt ? ` · Due ${formatDateTime(item.dueAt)}` : ''}
+              </Typography>
+            </Box>
+          ))
+        ) : (
+          <EmptyState label="No activities or notes yet" />
+        )}
+      </Stack>
+    </Paper>
+  );
+}
+
+function RecordRow({ title, subtitle, chip, href }) {
+  const titleNode = href ? (
+    <Link href={href} underline="hover" sx={{ color: 'text.primary', fontWeight: 700 }}>
+      {title}
+    </Link>
+  ) : (
+    title
+  );
+
+  return (
+    <Box
+      sx={{
+        p: 2,
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: 2,
+      }}
+    >
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ justifyContent: 'space-between' }}>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
+            {titleNode}
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', overflowWrap: 'anywhere' }}>
+            {subtitle}
+          </Typography>
+        </Box>
+        {chip && (
+          <Chip
+            label={chip}
+            size="small"
+            variant="soft"
+            color="primary"
+            sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+          />
+        )}
+      </Stack>
+    </Box>
+  );
+}
+
+function EmptyState({ label }) {
+  return (
+    <Typography variant="body2" sx={{ color: 'text.secondary', py: 2, textAlign: 'center' }}>
+      {label}
+    </Typography>
   );
 }
 
@@ -748,6 +843,73 @@ function AddNoteDialog({ open, contact, onClose, onSaved, supabase }) {
   );
 }
 
+function AddActivityDialog({ open, contact, onClose, onSaved, supabase }) {
+  const [form, setForm] = useState({
+    type: 'call',
+    direction: 'outbound',
+    subject: '',
+    body: '',
+    occurredAt: toDateTimeLocal(new Date().toISOString()),
+    dueAt: '',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setForm({ type: 'call', direction: 'outbound', subject: '', body: '', occurredAt: toDateTimeLocal(new Date().toISOString()), dueAt: '' });
+    }
+  }, [open]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const { data: userResult } = await supabase.auth.getUser();
+    const { error } = await supabase.from('activities').insert({
+      owner_id: userResult.user.id,
+      contact_id: contact.id,
+      company_id: contact.company_id,
+      type: form.type,
+      direction: form.direction,
+      subject: cleanText(form.subject) || formatEnum(form.type),
+      body: cleanText(form.body),
+      occurred_at: form.occurredAt ? new Date(form.occurredAt).toISOString() : new Date().toISOString(),
+      due_at: form.dueAt ? new Date(form.dueAt).toISOString() : null,
+    });
+    setIsSaving(false);
+    if (!error) {
+      onSaved();
+      onClose();
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Add Activity</DialogTitle>
+      <DialogContent>
+        <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField select label="Type" value={form.type} onChange={handleField(setForm, 'type')} fullWidth>
+              {activityTypes.map((type) => <MenuItem key={type} value={type}>{formatEnum(type)}</MenuItem>)}
+            </TextField>
+            <TextField select label="Direction" value={form.direction} onChange={handleField(setForm, 'direction')} fullWidth>
+              {activityDirections.map((direction) => <MenuItem key={direction} value={direction}>{formatEnum(direction)}</MenuItem>)}
+            </TextField>
+          </Stack>
+          <TextField label="Subject" value={form.subject} onChange={handleField(setForm, 'subject')} fullWidth />
+          <TextField label="Details" value={form.body} onChange={handleField(setForm, 'body')} fullWidth multiline rows={3} />
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField label="Occurred At" type="datetime-local" value={form.occurredAt} onChange={handleField(setForm, 'occurredAt')} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
+            <TextField label="Due At" type="datetime-local" value={form.dueAt} onChange={handleField(setForm, 'dueAt')} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
+          </Stack>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button color="neutral" onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleSave} loading={isSaving}>Save Activity</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 function AddEquipmentDialog({ open, contact, leads, onClose, onSaved, supabase }) {
   const [form, setForm] = useState({
     leadId: '',
@@ -886,6 +1048,10 @@ function cleanText(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
+function getInitials(contact) {
+  return [contact?.first_name?.[0], contact?.last_name?.[0]].filter(Boolean).join('').toUpperCase() || 'A';
+}
+
 function formatCurrency(value) {
   if (!value) return '-';
 
@@ -904,6 +1070,19 @@ function formatDateTime(value) {
     day: 'numeric',
     year: 'numeric',
   }).format(new Date(value));
+}
+
+function formatEnum(value) {
+  if (!value) return '-';
+  return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function toDateTimeLocal(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - offset * 60000);
+  return localDate.toISOString().slice(0, 16);
 }
 
 export default ContactDetailsClient;

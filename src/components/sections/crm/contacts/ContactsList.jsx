@@ -206,9 +206,17 @@ const ContactsList = () => {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2">
-                          {contact.companies?.name || '-'}
-                        </Typography>
+                        {contact.companies?.id ? (
+                          <Link
+                            href={paths.companyDetails(contact.companies.id)}
+                            underline="hover"
+                            sx={{ color: 'text.primary', fontWeight: 600 }}
+                          >
+                            {contact.companies.name}
+                          </Link>
+                        ) : (
+                          <Typography variant="body2">-</Typography>
+                        )}
                         {contact.companies?.company_type && (
                           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                             {contact.companies.company_type}

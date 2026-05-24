@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import SimpleBar from 'simplebar-react';
 import {
-  Avatar,
   Box,
-  Breadcrumbs,
+  Button,
   Chip,
   Divider,
   IconButton,
@@ -16,307 +16,142 @@ import {
   ListItem,
   ListItemButton,
   ListItemIcon,
-  listItemSecondaryActionClasses,
   ListItemText,
   Stack,
-  Tooltip,
   Typography,
 } from '@mui/material';
-import searchResult from 'data/search-result';
+import paths from 'routes/paths';
 import IconifyIcon from 'components/base/IconifyIcon';
-import Image from 'components/base/Image';
 import SearchTextField from './SearchTextField';
 
+const quickLinks = [
+  {
+    label: 'Contacts',
+    description: 'People, phone numbers, emails, and linked companies',
+    href: paths.contacts,
+    icon: 'material-symbols:contacts-outline-rounded',
+  },
+  {
+    label: 'Deals',
+    description: 'Pipeline, amounts, stages, and close dates',
+    href: paths.deals,
+    icon: 'material-symbols:handshake-outline-rounded',
+  },
+  {
+    label: 'Add Contact',
+    description: 'Create a contact, company, lead, or equipment interest',
+    href: paths.addContact,
+    icon: 'material-symbols:person-add-outline-rounded',
+  },
+];
+
+const searchChips = ['tractor', 'combine', 'quote', 'follow up', 'trade-in'];
+
 const SearchResult = ({ handleClose }) => {
-  const { breadcrumbs, contacts, files, tags } = searchResult;
+  const [query, setQuery] = useState('');
+  const router = useRouter();
+
+  const runSearch = (value = query) => {
+    const cleanQuery = value.trim();
+
+    if (!cleanQuery) {
+      router.push(paths.crmSearch);
+    } else {
+      router.push(`${paths.crmSearch}?q=${encodeURIComponent(cleanQuery)}`);
+    }
+
+    handleClose();
+  };
 
   return (
     <>
-      <SearchField handleClose={handleClose} />
-      <SimpleBar style={{ maxHeight: 600, minHeight: 0, width: '100%' }}>
-        <Box sx={{ px: 3, py: 1.25 }}>
-          <Link
-            component="button"
-            variant="caption"
-            underline="none"
-            sx={{
-              fontWeight: 'medium',
-            }}
-          >
-            Advanced search
-          </Link>
-        </Box>
-        <Divider />
-        <Box>
-          <Stack
-            sx={{
-              justifyContent: 'space-between',
-              py: 2,
-              px: 3,
-            }}
-          >
-            <Typography
-              variant="caption"
-              sx={{
-                fontWeight: 'medium',
-                color: 'text.disabled',
-              }}
-            >
-              Recent
-            </Typography>
-
-            <Link
-              component="button"
-              variant="caption"
-              underline="none"
-              sx={{
-                fontWeight: 'medium',
-              }}
-            >
-              Clear history
-            </Link>
-          </Stack>
-
-          <List
-            dense
-            sx={{
-              pt: 0,
-              pb: 2,
-              listStyleType: 'disc',
-              listStylePosition: 'inside',
-              color: 'grey.300',
-            }}
-          >
-            {breadcrumbs.map((breadcrumb) => (
-              <ListItem
-                key={breadcrumb[0].label}
-                sx={{
-                  px: 3,
-                  display: 'list-item',
-                  '&:hover': {
-                    backgroundColor: 'background.menuElevation1',
-                  },
-                }}
-              >
-                <Breadcrumbs
-                  aria-label="breadcrumb"
-                  maxItems={2}
-                  sx={{
-                    py: 0.5,
-                    typography: 'caption',
-                    color: 'text.secondary',
-                    marginLeft: -0.5,
-                    display: 'inline-block',
-                    fontWeight: 'medium',
-                    '@supports (-moz-appearance:none)': {
-                      marginLeft: 0.5,
-                    },
-                  }}
-                >
-                  {breadcrumb.map((breadcrumbItem) => (
-                    <div key={breadcrumbItem.label}>
-                      <Link
-                        underline="none"
-                        href={breadcrumbItem.active ? '#!' : breadcrumbItem.href}
-                        sx={[
-                          {
-                            color: 'inherit',
-                          },
-                          !!breadcrumbItem.active && {
-                            color: 'text.primary',
-                          },
-                        ]}
-                      >
-                        {breadcrumbItem.label}
-                      </Link>
-
-                      {breadcrumbItem.active && (
-                        <Link
-                          underline="none"
-                          href={breadcrumbItem.href}
-                          sx={{
-                            marginLeft: 0.5,
-                          }}
-                        >
-                          <IconifyIcon
-                            icon="material-symbols:open-in-new-rounded"
-                            fontSize={16}
-                            sx={{ verticalAlign: 'bottom' }}
-                          />
-                        </Link>
-                      )}
-                    </div>
-                  ))}
-                </Breadcrumbs>
-              </ListItem>
+      <SearchField
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        onSubmit={(event) => {
+          event.preventDefault();
+          runSearch();
+        }}
+        handleClose={handleClose}
+      />
+      <SimpleBar style={{ maxHeight: 520, minHeight: 0, width: '100%' }}>
+        <Box sx={{ px: 3, py: 2 }}>
+          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+            {searchChips.map((chip) => (
+              <Chip
+                key={chip}
+                label={chip}
+                variant="soft"
+                color="neutral"
+                component="button"
+                onClick={() => runSearch(chip)}
+                sx={{ cursor: 'pointer' }}
+              />
             ))}
-          </List>
+          </Stack>
         </Box>
         <Divider />
-        <ResultItemSection title="Files">
+        <ResultItemSection title="AgRM">
           <List sx={{ pt: 0, pb: 2 }}>
-            {files.map((file) => (
-              <ListItem
-                disablePadding
-                key={file.name}
-                sx={{
-                  [`& .${listItemSecondaryActionClasses.root}`]: {
-                    display: 'none',
-                  },
-                  '&:hover': {
-                    [`& .${listItemSecondaryActionClasses.root}`]: {
-                      display: 'block',
-                    },
-                  },
-                }}
-                secondaryAction={
-                  <IconButton edge="end" aria-label="download" sx={{ mr: 1 }}>
-                    <IconifyIcon
-                      icon="material-symbols-light:download-rounded"
-                      color="primary.main"
-                    />
-                  </IconButton>
-                }
-              >
+            {quickLinks.map((item) => (
+              <ListItem key={item.href} disablePadding>
                 <ListItemButton
+                  component={Link}
+                  href={item.href}
+                  underline="none"
+                  onClick={handleClose}
                   sx={(theme) => ({
                     gap: 1,
                     py: 1,
-                    pl: 3,
-                    pr: `${theme.spacing(8)} !important`,
+                    px: 3,
                     borderRadius: 0,
                     '&:hover': { bgcolor: 'background.menuElevation1' },
+                    color: theme.vars.palette.text.primary,
                   })}
                 >
                   <ListItemIcon>
-                    {file.icon && (
-                      <IconifyIcon icon={file.icon} fontSize={32} color="primary.main" />
-                    )}
-                    {file.image && (
-                      <Image src={file.image} alt={file.name} height={30} width={30} />
-                    )}
+                    <IconifyIcon icon={item.icon} fontSize={28} color="primary.main" />
                   </ListItemIcon>
-                  <Tooltip title={file.name} placement="top-start">
-                    <ListItemText
-                      sx={{
-                        my: 0,
-                      }}
-                      secondary={file.path}
-                      slotProps={{
-                        primary: {
-                          variant: 'subtitle2',
-                          color: 'text.secondary',
-                          mb: 0.25,
-                          sx: {
-                            display: 'flex',
-                            lineClamp: 1,
-                            wordBreak: 'break-all',
-                          },
-                        },
-                        secondary: {
-                          variant: 'caption',
-                          color: 'text.disabled',
-                          fontWeight: 'medium',
-                          component: 'p',
-                        },
-                      }}
-                    >
-                      {file.name}
-                    </ListItemText>
-                  </Tooltip>
+                  <ListItemText
+                    sx={{ my: 0 }}
+                    primary={item.label}
+                    secondary={item.description}
+                    slotProps={{
+                      primary: {
+                        variant: 'subtitle2',
+                        color: 'text.primary',
+                        mb: 0.25,
+                      },
+                      secondary: {
+                        variant: 'caption',
+                        color: 'text.disabled',
+                        fontWeight: 'medium',
+                        component: 'p',
+                      },
+                    }}
+                  />
                 </ListItemButton>
               </ListItem>
             ))}
           </List>
         </ResultItemSection>
-
-        <ResultItemSection title="Contacts">
-          <Box sx={{ px: 3, mb: 2 }}>
-            <Stack
-              sx={{
-                gap: 1,
-                flexWrap: 'wrap',
-              }}
-            >
-              {contacts.map((contact) => (
-                <Chip
-                  key={contact.name}
-                  avatar={<Avatar alt={contact.name} src={contact.avatar} />}
-                  label={contact.name}
-                  variant="soft"
-                  color="neutral"
-                  component={Link}
-                  underline="none"
-                  href="#!"
-                  sx={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    console.log(`Clicked on contact: ${contact.name}`);
-                  }}
-                />
-              ))}
-              <Link
-                href="#!"
-                variant="caption"
-                underline="none"
-                sx={{
-                  fontWeight: 600,
-                  lineHeight: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                See All Contacts{' '}
-                <IconifyIcon icon="material-symbols:chevron-right-rounded" sx={{ fontSize: 16 }} />
-              </Link>
-            </Stack>
-          </Box>
-        </ResultItemSection>
-
-        <ResultItemSection title="Popular tags">
-          <Box sx={{ px: 3, mb: 2 }}>
-            <Stack
-              sx={{
-                gap: 1,
-                flexWrap: 'wrap',
-              }}
-            >
-              {tags.map((tag) => (
-                <Chip
-                  key={tag}
-                  label={tag}
-                  variant="soft"
-                  color="neutral"
-                  component={Link}
-                  underline="none"
-                  href="#!"
-                  sx={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    console.log(`Clicked on contact: ${tag}`);
-                  }}
-                />
-              ))}
-            </Stack>
-          </Box>
-        </ResultItemSection>
         <Box sx={{ px: 3, py: 2 }}>
-          <Typography
-            component="p"
-            variant="caption"
-            sx={{
-              fontWeight: 'medium',
-              color: 'text.disabled',
-            }}
+          <Button
+            fullWidth
+            variant="soft"
+            color="neutral"
+            onClick={() => runSearch()}
+            endIcon={<IconifyIcon icon="material-symbols:arrow-forward-rounded" />}
           >
-            Not the results you expected? <Link href="#!">Give feedback</Link> or{' '}
-            <Link href="#!">learn more</Link>
-          </Typography>
+            Open CRM Search
+          </Button>
         </Box>
       </SimpleBar>
     </>
   );
 };
 
-export const SearchField = ({ handleClose }) => {
+export const SearchField = ({ value, onChange, onSubmit, handleClose }) => {
   const initialFocusRef = useRef(null);
 
   useEffect(() => {
@@ -324,42 +159,50 @@ export const SearchField = ({ handleClose }) => {
   }, []);
 
   return (
-    <SearchTextField
-      fullWidth
-      sx={{
-        [`& .${inputBaseClasses.root}`]: {
-          borderRadius: '4px 4px 0 0',
-          border: 1,
-          borderColor: 'transparent',
-          [`&.${inputBaseClasses.focused}`]: {
-            outline: 'none',
+    <Box component="form" onSubmit={onSubmit}>
+      <SearchTextField
+        fullWidth
+        value={value}
+        onChange={onChange}
+        placeholder="Search AgRM"
+        sx={{
+          [`& .${inputBaseClasses.root}`]: {
+            borderRadius: '4px 4px 0 0',
             border: 1,
-            borderTopLeftRadius: 8,
-            borderTopRightRadius: 8,
-            borderColor: 'primary.main',
-            boxShadow: 'none',
+            borderColor: 'transparent',
+            [`&.${inputBaseClasses.focused}`]: {
+              outline: 'none',
+              border: 1,
+              borderTopLeftRadius: 8,
+              borderTopRightRadius: 8,
+              borderColor: 'primary.main',
+              boxShadow: 'none',
+            },
           },
-        },
-      }}
-      slotProps={{
-        input: {
-          inputProps: {
-            ref: initialFocusRef,
+        }}
+        slotProps={{
+          input: {
+            inputProps: {
+              ref: initialFocusRef,
+            },
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton type="submit" size="small" edge="end" aria-label="Search">
+                  <IconifyIcon icon="material-symbols:arrow-forward-rounded" color="primary.main" />
+                </IconButton>
+                <IconButton size="small" edge="end" onClick={handleClose} aria-label="Close search">
+                  <IconifyIcon icon="material-symbols:close-rounded" color="grey.500" />
+                </IconButton>
+              </InputAdornment>
+            ),
           },
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton size="small" edge="end" onClick={handleClose}>
-                <IconifyIcon icon="material-symbols:close-rounded" color="grey.500" />
-              </IconButton>
-            </InputAdornment>
-          ),
-        },
-      }}
-    />
+        }}
+      />
+    </Box>
   );
 };
 
-const ResultItemSection = ({ title, children, bottomDivider = true }) => {
+const ResultItemSection = ({ title, children }) => {
   return (
     <Box>
       <Box sx={{ my: 2, px: 3 }}>
@@ -375,7 +218,7 @@ const ResultItemSection = ({ title, children, bottomDivider = true }) => {
         </Typography>
       </Box>
       {children}
-      {bottomDivider && <Divider />}
+      <Divider />
     </Box>
   );
 };

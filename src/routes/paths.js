@@ -103,10 +103,13 @@ const paths = {
   publicBusinessCard: (slug) => `/card/${slug || ''}`,
   contactDetails: (contactId) =>
     `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/contacts/${contactId || ''}`,
-  leadDetails: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/lead-details`,
-  dealDetails: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/deal-details`,
+  companyDetails: (companyId) =>
+    `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/companies/${companyId || ''}`,
+  leadDetails: (leadId) => `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/leads/${leadId || ''}`,
+  dealDetails: (dealId) => `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/deals/${dealId || ''}`,
   addContact: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/add-contact`,
   deals: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/deals`,
+  crmSearch: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/search`,
 
   chat: `/${rootPaths.appsRoot}/chat`,
   newChat: `/${rootPaths.appsRoot}/chat/new`,

@@ -29,7 +29,7 @@ const Deal = ({ deal }) => {
           <Typography
             variant="body2"
             component={Link}
-            href={paths.dealDetails}
+            href={paths.dealDetails(deal.id)}
             sx={{ fontWeight: 700 }}
           >
             {deal.name}

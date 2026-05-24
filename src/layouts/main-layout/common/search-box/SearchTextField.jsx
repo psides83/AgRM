@@ -8,7 +8,7 @@ const SearchTextField = ({ slotProps, ...rest }) => {
   return (
     <StyledTextField
       id="search-box"
-      placeholder="Search"
+      placeholder="Search AgRM"
       sx={{
         minWidth: 348,
       }}

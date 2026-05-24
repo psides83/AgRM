@@ -1,7 +1,8 @@
-import DealDetails from 'components/sections/crm/deal-details';
+import { redirect } from 'next/navigation';
+import paths from 'routes/paths';
 
 const Page = () => {
-  return <DealDetails />;
+  redirect(paths.deals);
 };
 
 export default Page;
