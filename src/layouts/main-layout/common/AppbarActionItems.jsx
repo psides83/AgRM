@@ -2,6 +2,7 @@ import { Stack } from '@mui/material';
 import LanguageMenu from './LanguageMenu';
 import NotificationMenu from './NotificationMenu';
 import ProfileMenu from './ProfileMenu';
+import QuickCreateMenu from './QuickCreateMenu';
 import ThemeToggler from './ThemeToggler';
 
 const AppbarActionItems = ({ type = 'default', sx, searchComponent }) => {
@@ -16,6 +17,7 @@ const AppbarActionItems = ({ type = 'default', sx, searchComponent }) => {
       }}
     >
       {searchComponent}
+      <QuickCreateMenu type={type} />
       <LanguageMenu type={type} />
       <ThemeToggler type={type} />
       <NotificationMenu type={type} />

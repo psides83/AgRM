@@ -31,6 +31,8 @@ const activityTypes = ['call', 'email', 'meeting', 'text', 'task', 'site_visit',
 const activityDirections = ['outbound', 'inbound', 'internal'];
 const equipmentCategories = ['tractor', 'combine', 'planter', 'sprayer', 'hay', 'tillage', 'utility_vehicle', 'attachment', 'other'];
 const equipmentConditions = ['new', 'used', 'either'];
+const equipmentAvailability = ['availability_unknown', 'in_stock_auburn', 'in_stock_transfer', 'pending', 'unavailable'];
+const equipmentStatuses = ['equipment_added', 'setup_required', 'transfer_required', 'order_required', 'setup_requested', 'transfer_requested', 'order_placed', 'transfer_in_progress', 'order_in_progress', 'setup_in_progress', 'ready', 'delivered'];
 
 const LeadDetails = ({ leadId }) => {
   const supabase = useMemo(() => createClient(), []);
@@ -581,16 +583,16 @@ function ConvertLeadDialog({ open, lead, onClose, onSaved, supabase }) {
 }
 
 function AddEquipmentDialog({ open, lead, onClose, onSaved, supabase }) {
-  const [form, setForm] = useState({ category: 'tractor', make: '', model: '', condition: 'either', priceMin: '', priceMax: '', tradeIn: 'false', notes: '' });
+  const [form, setForm] = useState({ category: 'tractor', make: '', model: '', condition: 'either', availability: 'availability_unknown', status: 'equipment_added', priceMin: '', priceMax: '', tradeIn: 'false', notes: '' });
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
     setIsSaving(true);
     const { data: userResult } = await supabase.auth.getUser();
-    const { error } = await supabase.from('equipment_interests').insert({ owner_id: userResult.user.id, lead_id: lead.id, contact_id: lead.contact_id, category: form.category, make: cleanText(form.make), model: cleanText(form.model), condition: form.condition, price_min: form.priceMin || null, price_max: form.priceMax || null, trade_in: form.tradeIn === 'true', notes: cleanText(form.notes) });
+    const { error } = await supabase.from('equipment_interests').insert({ owner_id: userResult.user.id, lead_id: lead.id, contact_id: lead.contact_id, category: form.category, make: cleanText(form.make), model: cleanText(form.model), condition: form.condition, availability: form.availability, status: form.status, price_min: form.priceMin || null, price_max: form.priceMax || null, trade_in: form.tradeIn === 'true', notes: cleanText(form.notes) });
     setIsSaving(false);
     if (!error) {
-      setForm({ category: 'tractor', make: '', model: '', condition: 'either', priceMin: '', priceMax: '', tradeIn: 'false', notes: '' });
+      setForm({ category: 'tractor', make: '', model: '', condition: 'either', availability: 'availability_unknown', status: 'equipment_added', priceMin: '', priceMax: '', tradeIn: 'false', notes: '' });
       onSaved();
       onClose();
     }
@@ -609,6 +611,14 @@ function AddEquipmentDialog({ open, lead, onClose, onSaved, supabase }) {
           <TextField select label="Condition" value={form.condition} onChange={handleField(setForm, 'condition')} fullWidth>
             {equipmentConditions.map((condition) => <MenuItem key={condition} value={condition}>{formatEnum(condition)}</MenuItem>)}
           </TextField>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField select label="Availability" value={form.availability} onChange={handleField(setForm, 'availability')} fullWidth>
+              {equipmentAvailability.map((availability) => <MenuItem key={availability} value={availability}>{formatEnum(availability)}</MenuItem>)}
+            </TextField>
+            <TextField select label="Status" value={form.status} onChange={handleField(setForm, 'status')} fullWidth>
+              {equipmentStatuses.map((status) => <MenuItem key={status} value={status}>{formatEnum(status)}</MenuItem>)}
+            </TextField>
+          </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField label="Price Min" type="number" value={form.priceMin} onChange={handleField(setForm, 'priceMin')} fullWidth />
             <TextField label="Price Max" type="number" value={form.priceMax} onChange={handleField(setForm, 'priceMax')} fullWidth />

@@ -30,6 +30,8 @@ const activityTypes = ['call', 'email', 'meeting', 'text', 'task', 'site_visit',
 const activityDirections = ['outbound', 'inbound', 'internal'];
 const equipmentCategories = ['tractor', 'combine', 'planter', 'sprayer', 'hay', 'tillage', 'utility_vehicle', 'attachment', 'other'];
 const equipmentConditions = ['new', 'used', 'either'];
+const equipmentAvailability = ['availability_unknown', 'in_stock_auburn', 'in_stock_transfer', 'pending', 'unavailable'];
+const equipmentStatuses = ['equipment_added', 'setup_required', 'transfer_required', 'order_required', 'setup_requested', 'transfer_requested', 'order_placed', 'transfer_in_progress', 'order_in_progress', 'setup_in_progress', 'ready', 'delivered'];
 
 const CompanyDetails = ({ companyId }) => {
   const supabase = useMemo(() => createClient(), []);
@@ -712,7 +714,7 @@ function AddActivityDialog({ open, company, onClose, onSaved, supabase }) {
 }
 
 function AddEquipmentDialog({ open, contacts, leads, deals, onClose, onSaved, supabase }) {
-  const [form, setForm] = useState({ relatedType: 'contact', relatedId: '', category: 'tractor', make: '', model: '', condition: 'either', priceMin: '', priceMax: '', tradeIn: 'false', notes: '' });
+  const [form, setForm] = useState({ relatedType: 'contact', relatedId: '', category: 'tractor', make: '', model: '', condition: 'either', availability: 'availability_unknown', status: 'equipment_added', priceMin: '', priceMax: '', tradeIn: 'false', notes: '' });
   const [isSaving, setIsSaving] = useState(false);
 
   const relatedOptions = form.relatedType === 'lead' ? leads : form.relatedType === 'deal' ? deals : contacts;
@@ -733,6 +735,8 @@ function AddEquipmentDialog({ open, contacts, leads, deals, onClose, onSaved, su
       make: cleanText(form.make),
       model: cleanText(form.model),
       condition: form.condition,
+      availability: form.availability,
+      status: form.status,
       price_min: form.priceMin || null,
       price_max: form.priceMax || null,
       trade_in: form.tradeIn === 'true',
@@ -768,6 +772,14 @@ function AddEquipmentDialog({ open, contacts, leads, deals, onClose, onSaved, su
           <TextField select label="Condition" value={form.condition} onChange={handleField(setForm, 'condition')} fullWidth>
             {equipmentConditions.map((condition) => <MenuItem key={condition} value={condition}>{formatEnum(condition)}</MenuItem>)}
           </TextField>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField select label="Availability" value={form.availability} onChange={handleField(setForm, 'availability')} fullWidth>
+              {equipmentAvailability.map((availability) => <MenuItem key={availability} value={availability}>{formatEnum(availability)}</MenuItem>)}
+            </TextField>
+            <TextField select label="Status" value={form.status} onChange={handleField(setForm, 'status')} fullWidth>
+              {equipmentStatuses.map((status) => <MenuItem key={status} value={status}>{formatEnum(status)}</MenuItem>)}
+            </TextField>
+          </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField label="Price Min" type="number" value={form.priceMin} onChange={handleField(setForm, 'priceMin')} fullWidth />
             <TextField label="Price Max" type="number" value={form.priceMax} onChange={handleField(setForm, 'priceMax')} fullWidth />
