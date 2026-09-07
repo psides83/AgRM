@@ -14,13 +14,19 @@ import {
   MenuItem,
   Paper,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
-import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
+import PageBreadcrumb from 'components/sections/common/PageBreadcrumb';
 import { findPotentialDuplicates } from 'components/sections/crm/shared/duplicateRecords';
 
 const importTypes = [
@@ -218,14 +224,38 @@ const CRMImport = () => {
   };
 
   return (
-    <Stack spacing={3} sx={{ width: 1, maxWidth: 1, minWidth: 0 }}>
-      <PageHeader
-        title="Import CSV"
-        breadcrumb={[
-          { label: 'Home', url: paths.crm },
-          { label: 'Import', active: true },
-        ]}
-        actionComponent={
+    <Box sx={{ width: 1, maxWidth: 1, minWidth: 0, overflow: 'hidden' }}>
+      <Box
+        component="header"
+        sx={{
+          px: { xs: 2, md: 5 },
+          py: 3,
+          borderBottom: 1,
+          borderColor: 'dividerLight',
+          bgcolor: 'background.default',
+        }}
+      >
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+          sx={{
+            justifyContent: 'space-between',
+            alignItems: { xs: 'stretch', sm: 'flex-end' },
+            minWidth: 0,
+          }}
+        >
+          <Box sx={{ minWidth: 0 }}>
+            <PageBreadcrumb
+              items={[
+                { label: 'Home', url: paths.crm },
+                { label: 'Import', active: true },
+              ]}
+              sx={{ mb: 1 }}
+            />
+            <Typography variant="h4" sx={{ fontSize: { xs: 28, md: 36 } }}>
+              Import CSV
+            </Typography>
+          </Box>
           <Button
             href={paths.addContact}
             component={Link}
@@ -233,13 +263,22 @@ const CRMImport = () => {
             variant="soft"
             color="neutral"
             startIcon={<IconifyIcon icon="material-symbols:person-add-outline-rounded" />}
+            sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
           >
             Add Manually
           </Button>
-        }
-      />
+        </Stack>
+      </Box>
 
-      <Paper sx={{ width: 1, maxWidth: 1, overflow: 'hidden', p: { xs: 2, md: 4 } }}>
+      <Box sx={{ px: { xs: 2, md: 5 }, py: { xs: 2, md: 3 } }}>
+        <Paper
+          sx={{
+            width: 1,
+            maxWidth: 1,
+            overflow: 'hidden',
+            p: { xs: 2, md: 3 },
+          }}
+        >
           <Stack spacing={3} sx={{ minWidth: 0 }}>
             <Stack
               direction={{ xs: 'column', md: 'row' }}
@@ -251,35 +290,13 @@ const CRMImport = () => {
               }}
             >
               <Box sx={{ minWidth: 0 }}>
-                {fileName ? (
-                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center', minWidth: 0 }}>
-                    <IconifyIcon icon="material-symbols:check-circle-rounded" fontSize={22} sx={{ color: 'success.main' }} />
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="subtitle1">CSV loaded</Typography>
-                      <Typography
-                        variant="body2"
-                        noWrap
-                        title={fileName}
-                        sx={{ maxWidth: { xs: 1, sm: 480 }, color: 'text.secondary' }}
-                      >
-                        {fileName}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                ) : (
-                  <>
-                    <Typography variant="h6">CSV Upload</Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                      Column headers are matched automatically before import.
-                    </Typography>
-                  </>
-                )}
+                <Typography variant="h6">{fileName ? 'CSV loaded' : 'CSV Upload'}</Typography>
+                <Typography variant="body2" noWrap={Boolean(fileName)} title={fileName || undefined} sx={{ maxWidth: { xs: 1, md: 560 }, color: 'text.secondary' }}>
+                  {fileName || 'Column headers are matched automatically before import.'}
+                </Typography>
               </Box>
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={2}
-                sx={{ flexShrink: 0, width: { xs: 1, sm: 'auto' } }}
-              >
+
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ flexShrink: 0 }}>
                 <TextField select label="Import Type" value={importType} onChange={(event) => setImportType(event.target.value)} sx={{ minWidth: 220 }}>
                   {importTypes.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
@@ -298,116 +315,155 @@ const CRMImport = () => {
             {error && <Alert severity="error">{error}</Alert>}
             {result && (
               <Alert severity="success">
-                Imported {result.contacts} contact{result.contacts === 1 ? '' : 's'} and {result.leads} lead{result.leads === 1 ? '' : 's'}. Skipped {result.skipped} row{result.skipped === 1 ? '' : 's'}.
+                Imported {result.contacts} contact
+                {result.contacts === 1 ? '' : 's'} and {result.leads} lead
+                {result.leads === 1 ? '' : 's'}. Skipped {result.skipped} row
+                {result.skipped === 1 ? '' : 's'}.
               </Alert>
             )}
 
             {headers.length > 0 && (
-              <Stack spacing={3} sx={{ minWidth: 0 }}>
+              <>
                 <Divider />
-                <Stack spacing={3} sx={{ minWidth: 0 }}>
-                  <Stack
-                    direction={{ xs: 'column', lg: 'row' }}
-                    spacing={3}
+                <Stack
+                  direction={{ xs: 'column', lg: 'row' }}
+                  spacing={2}
+                  sx={{
+                    justifyContent: 'space-between',
+                    alignItems: { xs: 'stretch', lg: 'center' },
+                    minWidth: 0,
+                  }}
+                >
+                  <Box
                     sx={{
-                      justifyContent: 'space-between',
-                      alignItems: { xs: 'stretch', lg: 'flex-start' },
+                      display: 'grid',
+                      gridTemplateColumns: {
+                        xs: 'repeat(2, minmax(0, 1fr))',
+                        md: 'repeat(4, minmax(0, 1fr))',
+                      },
+                      gap: 1.5,
+                      flex: '1 1 auto',
                       minWidth: 0,
                     }}
                   >
-                    <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
-                      <Typography variant="subtitle1">Import Summary</Typography>
-                      <Box
-                        sx={{
-                          display: 'grid',
-                          gridTemplateColumns: {
-                            xs: 'repeat(2, minmax(0, 1fr))',
-                            md: 'repeat(4, minmax(0, 1fr))',
-                          },
-                          gap: 1.5,
-                          mt: 1.5,
-                        }}
-                      >
-                        <SummaryStat label="Rows" value={previewRows.length} />
-                        <SummaryStat label="Ready" value={importableCount} color="success" />
-                        <SummaryStat label="Review" value={previewRows.filter((row) => !row.isValid).length} color="warning" />
-                        <SummaryStat label="Duplicates" value={duplicateCount} color="warning" />
-                      </Box>
-                    </Box>
-                    <Stack
-                      spacing={1.5}
-                      sx={{
-                        alignItems: 'stretch',
-                        flexShrink: 0,
-                        width: { xs: 1, lg: 280 },
-                      }}
-                    >
-                      <FormControlLabel
-                        control={<Checkbox checked={includeDuplicates} onChange={(event) => setIncludeDuplicates(event.target.checked)} />}
-                        label="Include possible duplicates"
-                        sx={{ m: 0 }}
-                      />
-                      <Button
-                        variant="contained"
-                        onClick={handleImport}
-                        loading={isImporting}
-                        disabled={!importableCount || isAnalyzing}
-                      >
-                        Import {importableCount} Row{importableCount === 1 ? '' : 's'}
-                      </Button>
-                    </Stack>
-                  </Stack>
-
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography variant="subtitle1" sx={{ mb: 1.5 }}>
-                      Detected Fields
-                    </Typography>
-                    <Box
-                      sx={{
-                        display: 'grid',
-                        gridTemplateColumns: {
-                          xs: '1fr',
-                          sm: 'repeat(2, minmax(0, 1fr))',
-                          lg: 'repeat(3, minmax(0, 1fr))',
-                          xl: 'repeat(4, minmax(0, 1fr))',
-                        },
-                        gap: 1,
-                        minWidth: 0,
-                      }}
-                    >
-                      {headers.map((header) => (
-                        <FieldMapping key={header} header={header} field={fieldMap[header]} />
-                      ))}
-                    </Box>
+                    <SummaryStat label="Rows" value={previewRows.length} />
+                    <SummaryStat label="Ready" value={importableCount} color="success" />
+                    <SummaryStat label="Review" value={previewRows.filter((row) => !row.isValid).length} color="warning" />
+                    <SummaryStat label="Duplicates" value={duplicateCount} color="warning" />
                   </Box>
+
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={2}
+                    sx={{
+                      alignItems: { xs: 'stretch', sm: 'center' },
+                      flexShrink: 0,
+                    }}
+                  >
+                    <FormControlLabel
+                      control={<Checkbox checked={includeDuplicates} onChange={(event) => setIncludeDuplicates(event.target.checked)} />}
+                      label="Include possible duplicates"
+                      sx={{ m: 0 }}
+                    />
+                    <Button variant="contained" onClick={handleImport} loading={isImporting} disabled={!importableCount || isAnalyzing}>
+                      Import {importableCount} Row
+                      {importableCount === 1 ? '' : 's'}
+                    </Button>
+                  </Stack>
                 </Stack>
+
+                <Box sx={{ minWidth: 0 }}>
+                  <SectionHeader title="Detected Fields" />
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: {
+                        xs: '1fr',
+                        sm: 'repeat(2, minmax(0, 1fr))',
+                        lg: 'repeat(3, minmax(0, 1fr))',
+                        xl: 'repeat(4, minmax(0, 1fr))',
+                      },
+                      gap: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    {headers.map((header) => (
+                      <FieldMapping key={header} header={header} field={fieldMap[header]} />
+                    ))}
+                  </Box>
+                </Box>
 
                 <Box sx={{ minWidth: 0 }}>
                   <Stack
                     direction={{ xs: 'column', sm: 'row' }}
                     spacing={1}
-                    sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, mb: 1.5 }}
+                    sx={{
+                      justifyContent: 'space-between',
+                      alignItems: { xs: 'flex-start', sm: 'center' },
+                      mb: 1.5,
+                    }}
                   >
-                    <Typography variant="subtitle1">Preview Rows</Typography>
+                    <SectionHeader title="Preview Rows" />
                     {previewRows.length > 25 && (
                       <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                         Showing 25 of {previewRows.length} rows.
                       </Typography>
                     )}
                   </Stack>
-                  <Stack spacing={1}>
-                    {previewRows.slice(0, 25).map((row) => (
-                      <PreviewRow key={row.index} row={row} />
-                    ))}
-                  </Stack>
+                  <TableContainer
+                    sx={{
+                      width: 1,
+                      maxWidth: 1,
+                      overflowX: 'auto',
+                      border: 1,
+                      borderColor: 'dividerLight',
+                      borderRadius: 1,
+                    }}
+                  >
+                    <Table sx={{ minWidth: 1060, tableLayout: 'fixed' }}>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ width: 72 }}>Row</TableCell>
+                          <TableCell sx={{ width: 160 }}>Account #</TableCell>
+                          <TableCell sx={{ width: 260 }}>Contact</TableCell>
+                          <TableCell sx={{ width: 260 }}>Company</TableCell>
+                          <TableCell sx={{ width: 180 }}>Lead</TableCell>
+                          <TableCell sx={{ width: 128 }}>Status</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {previewRows.slice(0, 25).map((row) => (
+                          <TableRow key={row.index}>
+                            <TableCell>{row.index + 1}</TableCell>
+                            <PreviewTableCell value={row.accountNumber || '-'} />
+                            <PreviewTableCell value={[row.firstName, row.lastName].filter(Boolean).join(' ') || '-'} secondary={row.email || row.phone || row.mobilePhone} />
+                            <PreviewTableCell value={row.companyName || '-'} />
+                            <PreviewTableCell value={row.shouldCreateLead ? [row.leadAccountNumber, row.leadSource || 'Lead'].filter(Boolean).join(' · ') : '-'} />
+                            <TableCell>
+                              <RowStatus row={row} />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
                 </Box>
-              </Stack>
+              </>
             )}
           </Stack>
-      </Paper>
-    </Stack>
+        </Paper>
+      </Box>
+    </Box>
   );
 };
+
+function SectionHeader({ title }) {
+  return (
+    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+      {title}
+    </Typography>
+  );
+}
 
 function SummaryStat({ label, value, color = 'primary' }) {
   const palette =
@@ -499,71 +555,11 @@ function FieldMapping({ header, field }) {
   );
 }
 
-function PreviewRow({ row }) {
-  const contactName = [row.firstName, row.lastName].filter(Boolean).join(' ') || '-';
-  const contactMeta = [row.accountNumber, row.email || row.phone || row.mobilePhone].filter(Boolean).join(' · ') || '-';
-  const leadLabel = row.shouldCreateLead ? [row.leadAccountNumber, row.leadSource || 'Lead'].filter(Boolean).join(' · ') : '-';
-
+function PreviewTableCell({ value, secondary }) {
   return (
-    <Box
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: {
-          xs: '44px minmax(0, 1fr)',
-          md: '56px minmax(180px, 1.2fr) minmax(160px, 1fr) minmax(160px, 1fr) 180px',
-        },
-        gridTemplateAreas: {
-          xs: `
-            "row contact"
-            "row company"
-            "row lead"
-            "row status"
-          `,
-          md: '"row contact company lead status"',
-        },
-        columnGap: 2,
-        rowGap: 1,
-        alignItems: 'center',
-        minWidth: 0,
-        border: 1,
-        borderColor: 'dividerLight',
-        borderRadius: 1,
-        px: { xs: 1.5, md: 2 },
-        py: 1.5,
-        bgcolor: 'background.elevation1',
-      }}
-    >
-      <Typography variant="body2" sx={{ gridArea: 'row', color: 'text.secondary' }}>
-        {row.index + 1}
-      </Typography>
-      <PreviewCell area="contact" label="Contact" primary={contactName} secondary={contactMeta} />
-      <PreviewCell area="company" label="Company" primary={row.companyName || '-'} />
-      <PreviewCell area="lead" label="Lead" primary={leadLabel} />
-      <Box sx={{ gridArea: 'status', minWidth: 0 }}>
-        <RowStatus row={row} />
-      </Box>
-    </Box>
-  );
-}
-
-function PreviewCell({ area, label, primary, secondary }) {
-  return (
-    <Box sx={{ gridArea: area, minWidth: 0 }}>
-      <Typography variant="caption" noWrap sx={{ display: { xs: 'block', md: 'none' }, color: 'text.disabled' }}>
-        {label}
-      </Typography>
-      <Typography
-        variant="subtitle2"
-        noWrap
-        title={primary}
-        sx={{
-          minWidth: 0,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {primary}
+    <TableCell sx={{ minWidth: 0 }}>
+      <Typography variant="subtitle2" noWrap title={value} sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        {value}
       </Typography>
       {secondary && (
         <Typography
@@ -572,7 +568,6 @@ function PreviewCell({ area, label, primary, secondary }) {
           title={secondary}
           sx={{
             display: 'block',
-            minWidth: 0,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             color: 'text.secondary',
@@ -581,7 +576,7 @@ function PreviewCell({ area, label, primary, secondary }) {
           {secondary}
         </Typography>
       )}
-    </Box>
+    </TableCell>
   );
 }
 
@@ -598,13 +593,36 @@ async function markDuplicates(supabase, rows) {
 
       const checks = [];
       if (row.companyName) {
-        checks.push({ type: 'company', record: { name: row.companyName, email: row.companyEmail, phone: row.companyPhone } });
+        checks.push({
+          type: 'company',
+          record: {
+            name: row.companyName,
+            email: row.companyEmail,
+            phone: row.companyPhone,
+          },
+        });
       }
       if (row.shouldCreateContact) {
-        checks.push({ type: 'contact', record: { firstName: row.firstName, lastName: row.lastName, accountNumber: row.accountNumber, email: row.email, phone: row.phone, mobilePhone: row.mobilePhone } });
+        checks.push({
+          type: 'contact',
+          record: {
+            firstName: row.firstName,
+            lastName: row.lastName,
+            accountNumber: row.accountNumber,
+            email: row.email,
+            phone: row.phone,
+            mobilePhone: row.mobilePhone,
+          },
+        });
       }
       if (row.shouldCreateLead) {
-        checks.push({ type: 'lead', record: { source: row.leadSource, accountNumber: row.leadAccountNumber } });
+        checks.push({
+          type: 'lead',
+          record: {
+            source: row.leadSource,
+            accountNumber: row.leadAccountNumber,
+          },
+        });
       }
 
       const duplicates = checks.length ? await findPotentialDuplicates(supabase, checks) : [];
@@ -655,16 +673,16 @@ function normalizeImportRow(rawRow, headers, fieldMap, importType, index) {
 function hasLeadData(row) {
   return Boolean(
     row.leadSource ||
-      row.leadAccountNumber ||
-      row.leadStatus !== 'new' ||
-      row.priority !== 3 ||
-      row.estimatedBudget ||
-      row.targetPurchaseDate ||
-      row.lastContactedAt ||
-      row.nextFollowUpAt ||
-      row.leadNotes ||
-      row.leadLatitude !== null ||
-      row.leadLongitude !== null,
+    row.leadAccountNumber ||
+    row.leadStatus !== 'new' ||
+    row.priority !== 3 ||
+    row.estimatedBudget ||
+    row.targetPurchaseDate ||
+    row.lastContactedAt ||
+    row.nextFollowUpAt ||
+    row.leadNotes ||
+    row.leadLatitude !== null ||
+    row.leadLongitude !== null,
   );
 }
 
@@ -830,7 +848,9 @@ function parseCsvRows(text) {
 }
 
 function normalizeHeader(value) {
-  return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
 }
 
 function cleanText(value) {
