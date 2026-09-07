@@ -80,17 +80,38 @@ const fieldAliases = {
   title: ['title', 'jobtitle', 'job_title', 'role', 'position'],
   accountNumber: [
     'account',
+    'accountnu',
     'accountnum',
     'account_num',
+    'accountno',
+    'account_no',
+    'accountnbr',
+    'account_nbr',
     'accountnumber',
     'account_number',
     'acct',
     'acctnum',
     'acct_num',
+    'acctno',
+    'acct_no',
+    'acctnbr',
+    'acct_nbr',
     'acctnumber',
     'acct_number',
+    'custnum',
+    'cust_num',
+    'custno',
+    'cust_no',
+    'custnbr',
+    'cust_nbr',
+    'custnumber',
+    'cust_number',
     'customernum',
     'customer_num',
+    'customerno',
+    'customer_no',
+    'customernbr',
+    'customer_nbr',
     'customernumber',
     'customer_number',
   ],
@@ -257,21 +278,80 @@ const CRMImport = () => {
             {headers.length > 0 && (
               <Stack spacing={3} sx={{ minWidth: 0 }}>
                 <Divider />
-                <Grid container spacing={3} sx={{ minWidth: 0 }}>
-                  <Grid size={{ xs: 12, md: 5 }} sx={{ minWidth: 0 }}>
+                <Stack spacing={2} sx={{ minWidth: 0 }}>
+                  <Stack
+                    direction={{ xs: 'column', lg: 'row' }}
+                    spacing={3}
+                    sx={{
+                      justifyContent: 'space-between',
+                      alignItems: { xs: 'stretch', lg: 'flex-start' },
+                      minWidth: 0,
+                    }}
+                  >
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography variant="subtitle1">Import Summary</Typography>
+                      <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', mt: 1.5 }}>
+                        <SummaryChip label="Rows" value={previewRows.length} />
+                        <SummaryChip label="Ready" value={importableCount} color="success" />
+                        <SummaryChip label="Needs Review" value={previewRows.filter((row) => !row.isValid).length} color="warning" />
+                        <SummaryChip label="Possible Duplicates" value={duplicateCount} color="warning" />
+                      </Stack>
+                    </Box>
+                    <Stack
+                      direction={{ xs: 'column', sm: 'row' }}
+                      spacing={2}
+                      sx={{
+                        alignItems: { xs: 'stretch', sm: 'center' },
+                        flexShrink: 0,
+                      }}
+                    >
+                      <FormControlLabel
+                        control={<Checkbox checked={includeDuplicates} onChange={(event) => setIncludeDuplicates(event.target.checked)} />}
+                        label="Import rows marked as possible duplicates"
+                        sx={{ m: 0 }}
+                      />
+                      <Button
+                        variant="contained"
+                        onClick={handleImport}
+                        loading={isImporting}
+                        disabled={!importableCount || isAnalyzing}
+                      >
+                        Import {importableCount} Row{importableCount === 1 ? '' : 's'}
+                      </Button>
+                    </Stack>
+                  </Stack>
+
+                  <Box sx={{ minWidth: 0 }}>
                     <Typography variant="subtitle1" sx={{ mb: 1.5 }}>
                       Detected Fields
                     </Typography>
-                    <Stack spacing={1} sx={{ maxWidth: 520, minWidth: 0 }}>
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: {
+                          xs: '1fr',
+                          sm: 'repeat(2, minmax(0, 1fr))',
+                          lg: 'repeat(3, minmax(0, 1fr))',
+                          xl: 'repeat(4, minmax(0, 1fr))',
+                        },
+                        gap: 1,
+                        minWidth: 0,
+                      }}
+                    >
                       {headers.map((header) => (
                         <Stack
                           key={header}
                           direction="row"
-                          spacing={1.5}
+                          spacing={1}
                           sx={{
-                            justifyContent: 'space-between',
                             alignItems: 'center',
+                            justifyContent: 'space-between',
                             minWidth: 0,
+                            border: 1,
+                            borderColor: 'dividerLight',
+                            borderRadius: 1,
+                            px: 1.5,
+                            py: 1,
                           }}
                         >
                           <Typography
@@ -279,7 +359,6 @@ const CRMImport = () => {
                             noWrap
                             title={header}
                             sx={{
-                              flex: '1 1 auto',
                               minWidth: 0,
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -293,36 +372,13 @@ const CRMImport = () => {
                             size="small"
                             variant="soft"
                             color={fieldMap[header] ? 'primary' : 'neutral'}
-                            sx={{ flexShrink: 0 }}
+                            sx={{ flexShrink: 0, maxWidth: 160 }}
                           />
                         </Stack>
                       ))}
-                    </Stack>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 7 }} sx={{ minWidth: 0 }}>
-                    <Stack spacing={1.5} sx={{ alignItems: 'flex-start', minWidth: 0 }}>
-                      <Typography variant="subtitle1">Import Summary</Typography>
-                      <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
-                        <SummaryChip label="Rows" value={previewRows.length} />
-                        <SummaryChip label="Ready" value={importableCount} color="success" />
-                        <SummaryChip label="Needs Review" value={previewRows.filter((row) => !row.isValid).length} color="warning" />
-                        <SummaryChip label="Possible Duplicates" value={duplicateCount} color="warning" />
-                      </Stack>
-                      <FormControlLabel
-                        control={<Checkbox checked={includeDuplicates} onChange={(event) => setIncludeDuplicates(event.target.checked)} />}
-                        label="Import rows marked as possible duplicates"
-                      />
-                      <Button
-                        variant="contained"
-                        onClick={handleImport}
-                        loading={isImporting}
-                        disabled={!importableCount || isAnalyzing}
-                      >
-                        Import {importableCount} Row{importableCount === 1 ? '' : 's'}
-                      </Button>
-                    </Stack>
-                  </Grid>
-                </Grid>
+                    </Box>
+                  </Box>
+                </Stack>
 
                 <TableContainer sx={{ width: 1, maxWidth: 1, overflowX: 'auto' }}>
                   <Table
@@ -583,6 +639,11 @@ function buildFieldMap(headers) {
 
 function detectField(header) {
   const normalized = normalizeHeader(header);
+
+  if (/^(account|acct|cust|customer)(nu|num|no|nbr|number|id)$/.test(normalized)) {
+    return 'accountNumber';
+  }
+
   return Object.entries(fieldAliases).find(([, aliases]) => aliases.map(normalizeHeader).includes(normalized))?.[0] || null;
 }
 
