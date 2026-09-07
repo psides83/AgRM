@@ -14,16 +14,9 @@ import {
   MenuItem,
   Paper,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Grid';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
@@ -225,24 +218,28 @@ const CRMImport = () => {
   };
 
   return (
-    <Grid container spacing={3} sx={{ width: 1, maxWidth: 1, minWidth: 0, m: 0 }}>
-      <Grid size={12}>
-        <PageHeader
-          title="Import CSV"
-          breadcrumb={[
-            { label: 'Home', url: paths.crm },
-            { label: 'Import', active: true },
-          ]}
-          actionComponent={
-            <Button href={paths.addContact} component={Link} underline="none" variant="soft" color="neutral" startIcon={<IconifyIcon icon="material-symbols:person-add-outline-rounded" />}>
-              Add Manually
-            </Button>
-          }
-        />
-      </Grid>
+    <Stack spacing={3} sx={{ width: 1, maxWidth: 1, minWidth: 0 }}>
+      <PageHeader
+        title="Import CSV"
+        breadcrumb={[
+          { label: 'Home', url: paths.crm },
+          { label: 'Import', active: true },
+        ]}
+        actionComponent={
+          <Button
+            href={paths.addContact}
+            component={Link}
+            underline="none"
+            variant="soft"
+            color="neutral"
+            startIcon={<IconifyIcon icon="material-symbols:person-add-outline-rounded" />}
+          >
+            Add Manually
+          </Button>
+        }
+      />
 
-      <Grid size={12} sx={{ minWidth: 0 }}>
-        <Paper sx={{ width: 1, maxWidth: 1, overflow: 'hidden', p: { xs: 2, md: 4 } }}>
+      <Paper sx={{ width: 1, maxWidth: 1, overflow: 'hidden', p: { xs: 2, md: 4 } }}>
           <Stack spacing={3} sx={{ minWidth: 0 }}>
             <Stack
               direction={{ xs: 'column', md: 'row' }}
@@ -254,12 +251,35 @@ const CRMImport = () => {
               }}
             >
               <Box sx={{ minWidth: 0 }}>
-                <Typography variant="h6">CSV Upload</Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Column headers are matched automatically before import.
-                </Typography>
+                {fileName ? (
+                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center', minWidth: 0 }}>
+                    <IconifyIcon icon="material-symbols:check-circle-rounded" fontSize={22} sx={{ color: 'success.main' }} />
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography variant="subtitle1">CSV loaded</Typography>
+                      <Typography
+                        variant="body2"
+                        noWrap
+                        title={fileName}
+                        sx={{ maxWidth: { xs: 1, sm: 480 }, color: 'text.secondary' }}
+                      >
+                        {fileName}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                ) : (
+                  <>
+                    <Typography variant="h6">CSV Upload</Typography>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Column headers are matched automatically before import.
+                    </Typography>
+                  </>
+                )}
               </Box>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ flexShrink: 0 }}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={2}
+                sx={{ flexShrink: 0, width: { xs: 1, sm: 'auto' } }}
+              >
                 <TextField select label="Import Type" value={importType} onChange={(event) => setImportType(event.target.value)} sx={{ minWidth: 220 }}>
                   {importTypes.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
@@ -275,7 +295,6 @@ const CRMImport = () => {
             </Stack>
 
             {isAnalyzing && <LinearProgress />}
-            {fileName && <Alert severity="info">Loaded {fileName}</Alert>}
             {error && <Alert severity="error">{error}</Alert>}
             {result && (
               <Alert severity="success">
@@ -376,76 +395,17 @@ const CRMImport = () => {
                       </Typography>
                     )}
                   </Stack>
-                  <TableContainer sx={{ width: 1, maxWidth: 1, overflowX: 'auto' }}>
-                    <Table
-                      sx={{
-                        minWidth: 1040,
-                        tableLayout: 'fixed',
-                        '& .MuiTableCell-root': {
-                          verticalAlign: 'top',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        },
-                      }}
-                    >
-                      <TableHead>
-                        <TableRow>
-                          <TableCell sx={{ width: 72 }}>Row</TableCell>
-                          <TableCell sx={{ width: 280 }}>Contact</TableCell>
-                          <TableCell sx={{ width: 260 }}>Company</TableCell>
-                          <TableCell sx={{ width: 240 }}>Lead</TableCell>
-                          <TableCell sx={{ width: 220 }}>Status</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {previewRows.slice(0, 25).map((row) => (
-                          <TableRow key={row.index}>
-                            <TableCell>{row.index + 1}</TableCell>
-                            <TableCell>
-                              <Typography variant="subtitle2" noWrap>
-                                {[row.firstName, row.lastName].filter(Boolean).join(' ') || '-'}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                noWrap
-                                sx={{
-                                  display: 'block',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  color: 'text.secondary',
-                                }}
-                              >
-                                {[row.accountNumber, row.email || row.phone || row.mobilePhone].filter(Boolean).join(' · ') || '-'}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" noWrap title={row.companyName || '-'}>
-                                {row.companyName || '-'}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" noWrap>
-                                {row.shouldCreateLead
-                                  ? [row.leadAccountNumber, row.leadSource || 'Lead'].filter(Boolean).join(' · ')
-                                  : '-'}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <RowStatus row={row} />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
+                  <Stack spacing={1}>
+                    {previewRows.slice(0, 25).map((row) => (
+                      <PreviewRow key={row.index} row={row} />
+                    ))}
+                  </Stack>
                 </Box>
               </Stack>
             )}
           </Stack>
-        </Paper>
-      </Grid>
-    </Grid>
+      </Paper>
+    </Stack>
   );
 };
 
@@ -536,6 +496,92 @@ function FieldMapping({ header, field }) {
         }}
       />
     </Stack>
+  );
+}
+
+function PreviewRow({ row }) {
+  const contactName = [row.firstName, row.lastName].filter(Boolean).join(' ') || '-';
+  const contactMeta = [row.accountNumber, row.email || row.phone || row.mobilePhone].filter(Boolean).join(' · ') || '-';
+  const leadLabel = row.shouldCreateLead ? [row.leadAccountNumber, row.leadSource || 'Lead'].filter(Boolean).join(' · ') : '-';
+
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: {
+          xs: '44px minmax(0, 1fr)',
+          md: '56px minmax(180px, 1.2fr) minmax(160px, 1fr) minmax(160px, 1fr) 180px',
+        },
+        gridTemplateAreas: {
+          xs: `
+            "row contact"
+            "row company"
+            "row lead"
+            "row status"
+          `,
+          md: '"row contact company lead status"',
+        },
+        columnGap: 2,
+        rowGap: 1,
+        alignItems: 'center',
+        minWidth: 0,
+        border: 1,
+        borderColor: 'dividerLight',
+        borderRadius: 1,
+        px: { xs: 1.5, md: 2 },
+        py: 1.5,
+        bgcolor: 'background.elevation1',
+      }}
+    >
+      <Typography variant="body2" sx={{ gridArea: 'row', color: 'text.secondary' }}>
+        {row.index + 1}
+      </Typography>
+      <PreviewCell area="contact" label="Contact" primary={contactName} secondary={contactMeta} />
+      <PreviewCell area="company" label="Company" primary={row.companyName || '-'} />
+      <PreviewCell area="lead" label="Lead" primary={leadLabel} />
+      <Box sx={{ gridArea: 'status', minWidth: 0 }}>
+        <RowStatus row={row} />
+      </Box>
+    </Box>
+  );
+}
+
+function PreviewCell({ area, label, primary, secondary }) {
+  return (
+    <Box sx={{ gridArea: area, minWidth: 0 }}>
+      <Typography variant="caption" noWrap sx={{ display: { xs: 'block', md: 'none' }, color: 'text.disabled' }}>
+        {label}
+      </Typography>
+      <Typography
+        variant="subtitle2"
+        noWrap
+        title={primary}
+        sx={{
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {primary}
+      </Typography>
+      {secondary && (
+        <Typography
+          variant="caption"
+          noWrap
+          title={secondary}
+          sx={{
+            display: 'block',
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            color: 'text.secondary',
+          }}
+        >
+          {secondary}
+        </Typography>
+      )}
+    </Box>
   );
 }
 
