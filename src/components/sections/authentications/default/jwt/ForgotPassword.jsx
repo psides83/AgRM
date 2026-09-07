@@ -2,13 +2,14 @@
 
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
+import { getAuthCallbackUrl } from 'lib/supabase/redirect';
 import ForgotPasswordForm from 'components/sections/authentications/common/ForgotPasswordForm';
 
 const ForgotPassword = () => {
   const handleSendResetLink = async (data) => {
     const supabase = createClient();
     const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-      redirectTo: `${window.location.origin}${paths.defaultJwtSetPassword}`,
+      redirectTo: getAuthCallbackUrl(paths.defaultJwtSetPassword),
     });
 
     if (error) {

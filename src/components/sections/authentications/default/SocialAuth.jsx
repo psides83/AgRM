@@ -6,6 +6,7 @@ import Grid from '@mui/material/Grid';
 import { useSettingsContext } from 'providers/SettingsProvider';
 import { rootPaths } from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
+import { getAuthCallbackUrl } from 'lib/supabase/redirect';
 import Image from 'components/base/Image';
 
 const SocialAuth = () => {
@@ -20,7 +21,7 @@ const SocialAuth = () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}${callbackUrl || rootPaths.root}`,
+        redirectTo: getAuthCallbackUrl(callbackUrl || rootPaths.root),
       },
     });
   };
@@ -29,7 +30,7 @@ const SocialAuth = () => {
     await supabase.auth.signInWithOAuth({
       provider: 'azure',
       options: {
-        redirectTo: `${window.location.origin}${callbackUrl || rootPaths.root}`,
+        redirectTo: getAuthCallbackUrl(callbackUrl || rootPaths.root),
       },
     });
   };
@@ -55,7 +56,12 @@ const SocialAuth = () => {
           size="large"
           sx={{ flex: 1, whiteSpace: 'nowrap' }}
           startIcon={
-            <Image src={`${assetsDir}/images/logo/1.svg`} height={21} width={21} alt="icon" />
+            <Image
+              src={`${assetsDir}/images/logo/1.svg`}
+              height={21}
+              width={21}
+              alt="icon"
+            />
           }
           onClick={handleGoogleLogin}
         >
@@ -75,7 +81,12 @@ const SocialAuth = () => {
           size="large"
           sx={{ flex: 1, whiteSpace: 'nowrap' }}
           startIcon={
-            <Image src={`${assetsDir}/images/logo/2.svg`} height={21} width={21} alt="icon" />
+            <Image
+              src={`${assetsDir}/images/logo/2.svg`}
+              height={21}
+              width={21}
+              alt="icon"
+            />
           }
           onClick={handleAzureLogin}
         >

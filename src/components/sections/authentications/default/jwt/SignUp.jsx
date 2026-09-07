@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
+import { getAuthCallbackUrl } from 'lib/supabase/redirect';
 import SignupForm from 'components/sections/authentications/default/SignupForm';
 
 const SignUp = () => {
@@ -22,7 +23,7 @@ const SignUp = () => {
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           locale: navigator.language,
         },
-        emailRedirectTo: `${window.location.origin}${paths.defaultJwtLogin}`,
+        emailRedirectTo: getAuthCallbackUrl(paths.crmRoot),
       },
     });
 
