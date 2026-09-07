@@ -7,7 +7,6 @@ import {
   Button,
   Checkbox,
   Chip,
-  Divider,
   FormControlLabel,
   Link,
   LinearProgress,
@@ -271,15 +270,8 @@ const CRMImport = () => {
       </Box>
 
       <Box sx={{ px: { xs: 2, md: 5 }, py: { xs: 2, md: 3 } }}>
-        <Paper
-          sx={{
-            width: 1,
-            maxWidth: 1,
-            overflow: 'hidden',
-            p: { xs: 2, md: 3 },
-          }}
-        >
-          <Stack spacing={3} sx={{ minWidth: 0 }}>
+        <Stack spacing={3} sx={{ minWidth: 0 }}>
+          <Paper sx={{ width: 1, maxWidth: 1, overflow: 'hidden', p: { xs: 2, md: 3 } }}>
             <Stack
               direction={{ xs: 'column', md: 'row' }}
               spacing={2}
@@ -297,34 +289,35 @@ const CRMImport = () => {
               </Box>
 
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ flexShrink: 0 }}>
-                <TextField select label="Import Type" value={importType} onChange={(event) => setImportType(event.target.value)} sx={{ minWidth: 220 }}>
+                <TextField select label="Import Type" value={importType} onChange={(event) => setImportType(event.target.value)} sx={{ minWidth: { xs: 1, sm: 220 } }}>
                   {importTypes.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
                       {option.label}
                     </MenuItem>
                   ))}
                 </TextField>
-                <Button component="label" variant="contained" startIcon={<IconifyIcon icon="material-symbols:upload-file-rounded" />}>
+                <Button component="label" variant="contained" startIcon={<IconifyIcon icon="material-symbols:upload-file-rounded" />} sx={{ minHeight: 48 }}>
                   Choose CSV
                   <Box component="input" type="file" accept=".csv,text/csv" hidden onChange={handleFile} />
                 </Button>
               </Stack>
             </Stack>
+          </Paper>
 
-            {isAnalyzing && <LinearProgress />}
-            {error && <Alert severity="error">{error}</Alert>}
-            {result && (
-              <Alert severity="success">
-                Imported {result.contacts} contact
-                {result.contacts === 1 ? '' : 's'} and {result.leads} lead
-                {result.leads === 1 ? '' : 's'}. Skipped {result.skipped} row
-                {result.skipped === 1 ? '' : 's'}.
-              </Alert>
-            )}
+          {isAnalyzing && <LinearProgress />}
+          {error && <Alert severity="error">{error}</Alert>}
+          {result && (
+            <Alert severity="success">
+              Imported {result.contacts} contact
+              {result.contacts === 1 ? '' : 's'} and {result.leads} lead
+              {result.leads === 1 ? '' : 's'}. Skipped {result.skipped} row
+              {result.skipped === 1 ? '' : 's'}.
+            </Alert>
+          )}
 
-            {headers.length > 0 && (
-              <>
-                <Divider />
+          {headers.length > 0 && (
+            <Stack spacing={3} sx={{ minWidth: 0 }}>
+              <Paper sx={{ width: 1, maxWidth: 1, overflow: 'hidden', p: { xs: 2, md: 3 } }}>
                 <Stack
                   direction={{ xs: 'column', lg: 'row' }}
                   spacing={2}
@@ -365,14 +358,16 @@ const CRMImport = () => {
                       label="Include possible duplicates"
                       sx={{ m: 0 }}
                     />
-                    <Button variant="contained" onClick={handleImport} loading={isImporting} disabled={!importableCount || isAnalyzing}>
+                    <Button variant="contained" onClick={handleImport} loading={isImporting} disabled={!importableCount || isAnalyzing} sx={{ minHeight: 44 }}>
                       Import {importableCount} Row
                       {importableCount === 1 ? '' : 's'}
                     </Button>
                   </Stack>
                 </Stack>
+              </Paper>
 
-                <Box sx={{ minWidth: 0 }}>
+              <Paper sx={{ width: 1, maxWidth: 1, overflow: 'hidden', p: { xs: 2, md: 3 } }}>
+                <Stack spacing={1.5} sx={{ minWidth: 0 }}>
                   <SectionHeader title="Detected Fields" />
                   <Box
                     sx={{
@@ -384,6 +379,9 @@ const CRMImport = () => {
                         xl: 'repeat(4, minmax(0, 1fr))',
                       },
                       gap: 1,
+                      maxHeight: { xs: 260, lg: 188 },
+                      overflowY: 'auto',
+                      pr: 0.5,
                       minWidth: 0,
                     }}
                   >
@@ -391,67 +389,61 @@ const CRMImport = () => {
                       <FieldMapping key={header} header={header} field={fieldMap[header]} />
                     ))}
                   </Box>
-                </Box>
+                </Stack>
+              </Paper>
 
-                <Box sx={{ minWidth: 0 }}>
-                  <Stack
-                    direction={{ xs: 'column', sm: 'row' }}
-                    spacing={1}
-                    sx={{
-                      justifyContent: 'space-between',
-                      alignItems: { xs: 'flex-start', sm: 'center' },
-                      mb: 1.5,
-                    }}
-                  >
-                    <SectionHeader title="Preview Rows" />
-                    {previewRows.length > 25 && (
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                        Showing 25 of {previewRows.length} rows.
-                      </Typography>
-                    )}
-                  </Stack>
-                  <TableContainer
-                    sx={{
-                      width: 1,
-                      maxWidth: 1,
-                      overflowX: 'auto',
-                      border: 1,
-                      borderColor: 'dividerLight',
-                      borderRadius: 1,
-                    }}
-                  >
-                    <Table sx={{ minWidth: 1060, tableLayout: 'fixed' }}>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell sx={{ width: 72 }}>Row</TableCell>
-                          <TableCell sx={{ width: 160 }}>Account #</TableCell>
-                          <TableCell sx={{ width: 260 }}>Contact</TableCell>
-                          <TableCell sx={{ width: 260 }}>Company</TableCell>
-                          <TableCell sx={{ width: 180 }}>Lead</TableCell>
-                          <TableCell sx={{ width: 128 }}>Status</TableCell>
+              <Paper sx={{ width: 1, maxWidth: 1, overflow: 'hidden', p: 0 }}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1}
+                  sx={{
+                    justifyContent: 'space-between',
+                    alignItems: { xs: 'flex-start', sm: 'center' },
+                    px: { xs: 2, md: 3 },
+                    py: 2,
+                    borderBottom: 1,
+                    borderColor: 'dividerLight',
+                  }}
+                >
+                  <SectionHeader title="Preview Rows" />
+                  {previewRows.length > 25 && (
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Showing 25 of {previewRows.length} rows.
+                    </Typography>
+                  )}
+                </Stack>
+                <TableContainer sx={{ width: 1, maxWidth: 1, overflowX: 'auto' }}>
+                  <Table sx={{ minWidth: 1060, tableLayout: 'fixed' }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ width: 72 }}>Row</TableCell>
+                        <TableCell sx={{ width: 160 }}>Account #</TableCell>
+                        <TableCell sx={{ width: 260 }}>Contact</TableCell>
+                        <TableCell sx={{ width: 260 }}>Company</TableCell>
+                        <TableCell sx={{ width: 180 }}>Lead</TableCell>
+                        <TableCell sx={{ width: 128 }}>Status</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {previewRows.slice(0, 25).map((row) => (
+                        <TableRow key={row.index}>
+                          <TableCell>{row.index + 1}</TableCell>
+                          <PreviewTableCell value={row.accountNumber || '-'} />
+                          <PreviewTableCell value={[row.firstName, row.lastName].filter(Boolean).join(' ') || '-'} secondary={row.email || row.phone || row.mobilePhone} />
+                          <PreviewTableCell value={row.companyName || '-'} />
+                          <PreviewTableCell value={row.shouldCreateLead ? [row.leadAccountNumber, row.leadSource || 'Lead'].filter(Boolean).join(' · ') : '-'} />
+                          <TableCell>
+                            <RowStatus row={row} />
+                          </TableCell>
                         </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {previewRows.slice(0, 25).map((row) => (
-                          <TableRow key={row.index}>
-                            <TableCell>{row.index + 1}</TableCell>
-                            <PreviewTableCell value={row.accountNumber || '-'} />
-                            <PreviewTableCell value={[row.firstName, row.lastName].filter(Boolean).join(' ') || '-'} secondary={row.email || row.phone || row.mobilePhone} />
-                            <PreviewTableCell value={row.companyName || '-'} />
-                            <PreviewTableCell value={row.shouldCreateLead ? [row.leadAccountNumber, row.leadSource || 'Lead'].filter(Boolean).join(' · ') : '-'} />
-                            <TableCell>
-                              <RowStatus row={row} />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </Box>
-              </>
-            )}
-          </Stack>
-        </Paper>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Paper>
+            </Stack>
+          )}
+        </Stack>
       </Box>
     </Box>
   );
