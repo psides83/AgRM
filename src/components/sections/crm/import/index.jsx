@@ -78,7 +78,22 @@ const fieldAliases = {
   lastName: ['last', 'lastname', 'last_name', 'surname', 'familyname', 'family_name'],
   fullName: ['name', 'fullname', 'full_name', 'contact', 'contactname', 'contact_name', 'customer', 'customername'],
   title: ['title', 'jobtitle', 'job_title', 'role', 'position'],
-  accountNumber: ['account', 'accountnumber', 'account_number', 'acct', 'acctnumber', 'acct_number', 'customernumber', 'customer_number'],
+  accountNumber: [
+    'account',
+    'accountnum',
+    'account_num',
+    'accountnumber',
+    'account_number',
+    'acct',
+    'acctnum',
+    'acct_num',
+    'acctnumber',
+    'acct_number',
+    'customernum',
+    'customer_num',
+    'customernumber',
+    'customer_number',
+  ],
   email: ['email', 'emailaddress', 'email_address', 'contactemail', 'contact_email'],
   phone: ['phone', 'phonenumber', 'phone_number', 'officephone', 'office_phone', 'workphone', 'work_phone'],
   mobilePhone: ['mobile', 'mobilephone', 'mobile_phone', 'cell', 'cellphone', 'cell_phone'],
@@ -240,26 +255,52 @@ const CRMImport = () => {
             )}
 
             {headers.length > 0 && (
-              <>
+              <Stack spacing={3} sx={{ minWidth: 0 }}>
                 <Divider />
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 5 }}>
+                <Grid container spacing={3} sx={{ minWidth: 0 }}>
+                  <Grid size={{ xs: 12, md: 5 }} sx={{ minWidth: 0 }}>
                     <Typography variant="subtitle1" sx={{ mb: 1.5 }}>
                       Detected Fields
                     </Typography>
-                    <Stack spacing={1}>
+                    <Stack spacing={1} sx={{ maxWidth: 520, minWidth: 0 }}>
                       {headers.map((header) => (
-                        <Stack key={header} direction="row" spacing={1} sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
+                        <Stack
+                          key={header}
+                          direction="row"
+                          spacing={1.5}
+                          sx={{
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            minWidth: 0,
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            noWrap
+                            title={header}
+                            sx={{
+                              flex: '1 1 auto',
+                              minWidth: 0,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
                             {header}
                           </Typography>
-                          <Chip label={fieldMap[header] ? fieldLabels[fieldMap[header]] : 'Ignored'} size="small" variant="soft" color={fieldMap[header] ? 'primary' : 'neutral'} />
+                          <Chip
+                            label={fieldMap[header] ? fieldLabels[fieldMap[header]] : 'Ignored'}
+                            size="small"
+                            variant="soft"
+                            color={fieldMap[header] ? 'primary' : 'neutral'}
+                            sx={{ flexShrink: 0 }}
+                          />
                         </Stack>
                       ))}
                     </Stack>
                   </Grid>
-                  <Grid size={{ xs: 12, md: 7 }}>
-                    <Stack spacing={1.5}>
+                  <Grid size={{ xs: 12, md: 7 }} sx={{ minWidth: 0 }}>
+                    <Stack spacing={1.5} sx={{ alignItems: 'flex-start', minWidth: 0 }}>
                       <Typography variant="subtitle1">Import Summary</Typography>
                       <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
                         <SummaryChip label="Rows" value={previewRows.length} />
@@ -271,35 +312,71 @@ const CRMImport = () => {
                         control={<Checkbox checked={includeDuplicates} onChange={(event) => setIncludeDuplicates(event.target.checked)} />}
                         label="Import rows marked as possible duplicates"
                       />
-                      <Button variant="contained" onClick={handleImport} loading={isImporting} disabled={!importableCount || isAnalyzing}>
+                      <Button
+                        variant="contained"
+                        onClick={handleImport}
+                        loading={isImporting}
+                        disabled={!importableCount || isAnalyzing}
+                      >
                         Import {importableCount} Row{importableCount === 1 ? '' : 's'}
                       </Button>
                     </Stack>
                   </Grid>
                 </Grid>
 
-                <TableContainer>
-                  <Table>
+                <TableContainer sx={{ width: 1, maxWidth: 1, overflowX: 'auto' }}>
+                  <Table
+                    sx={{
+                      minWidth: 980,
+                      tableLayout: 'fixed',
+                      '& .MuiTableCell-root': {
+                        verticalAlign: 'top',
+                      },
+                    }}
+                  >
                     <TableHead>
                       <TableRow>
-                        <TableCell>Row</TableCell>
-                        <TableCell>Contact</TableCell>
-                        <TableCell>Company</TableCell>
-                        <TableCell>Lead</TableCell>
-                        <TableCell>Status</TableCell>
+                        <TableCell sx={{ width: 72 }}>Row</TableCell>
+                        <TableCell sx={{ width: 280 }}>Contact</TableCell>
+                        <TableCell sx={{ width: 260 }}>Company</TableCell>
+                        <TableCell sx={{ width: 240 }}>Lead</TableCell>
+                        <TableCell sx={{ width: 180 }}>Status</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {previewRows.slice(0, 25).map((row) => (
                         <TableRow key={row.index}>
                           <TableCell>{row.index + 1}</TableCell>
-                          <TableCell sx={{ minWidth: 220 }}>
-                            <Typography variant="subtitle2">{[row.firstName, row.lastName].filter(Boolean).join(' ') || '-'}</Typography>
-                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>{[row.accountNumber, row.email || row.phone || row.mobilePhone].filter(Boolean).join(' · ') || '-'}</Typography>
+                          <TableCell>
+                            <Typography variant="subtitle2" noWrap>
+                              {[row.firstName, row.lastName].filter(Boolean).join(' ') || '-'}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              noWrap
+                              sx={{
+                                display: 'block',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                color: 'text.secondary',
+                              }}
+                            >
+                              {[row.accountNumber, row.email || row.phone || row.mobilePhone].filter(Boolean).join(' · ') || '-'}
+                            </Typography>
                           </TableCell>
-                          <TableCell>{row.companyName || '-'}</TableCell>
-                          <TableCell>{row.shouldCreateLead ? [row.leadAccountNumber, row.leadSource || 'Lead'].filter(Boolean).join(' · ') : '-'}</TableCell>
-                          <TableCell sx={{ minWidth: 220 }}>
+                          <TableCell>
+                            <Typography variant="body2" noWrap title={row.companyName || '-'}>
+                              {row.companyName || '-'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" noWrap>
+                              {row.shouldCreateLead
+                                ? [row.leadAccountNumber, row.leadSource || 'Lead'].filter(Boolean).join(' · ')
+                                : '-'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
                             <RowStatus row={row} />
                           </TableCell>
                         </TableRow>
@@ -312,7 +389,7 @@ const CRMImport = () => {
                     Showing the first 25 preview rows. All {previewRows.length} loaded rows will be considered during import.
                   </Typography>
                 )}
-              </>
+              </Stack>
             )}
           </Stack>
         </Paper>
