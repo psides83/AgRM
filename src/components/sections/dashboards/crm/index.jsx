@@ -20,8 +20,7 @@ import Grid from '@mui/material/Grid';
 import { createClient } from 'lib/supabase/server';
 import paths from 'routes/paths';
 import IconifyIcon from 'components/base/IconifyIcon';
-
-const dealStages = ['lead', 'quoted', 'negotiation', 'won', 'lost'];
+import { dealStages } from 'components/sections/crm/constants';
 
 const metricCards = [
   {
@@ -29,24 +28,28 @@ const metricCards = [
     label: 'Contacts',
     icon: 'material-symbols:contacts-outline-rounded',
     color: 'primary.main',
+    href: paths.contacts,
   },
   {
     key: 'openLeads',
     label: 'Open leads',
     icon: 'material-symbols:filter-alt-outline-rounded',
     color: 'warning.main',
+    href: paths.leads,
   },
   {
     key: 'openDeals',
     label: 'Open deals',
     icon: 'material-symbols:handshake-outline-rounded',
     color: 'info.main',
+    href: paths.deals,
   },
   {
     key: 'equipmentInterests',
     label: 'Equipment interests',
     icon: 'material-symbols:agriculture-outline-rounded',
     color: 'success.main',
+    href: paths.equipment,
   },
 ];
 
@@ -88,7 +91,7 @@ async function getDashboardData() {
   ] = await Promise.all([
     getCount(supabase, 'contacts'),
     getCount(supabase, 'leads', [['neq', 'status', 'converted']]),
-    getCount(supabase, 'deals', [['not', 'stage', 'in', '("won","lost")']]),
+    getCount(supabase, 'deals', [['neq', 'stage', 'closed']]),
     getCount(supabase, 'equipment_interests'),
     supabase
       .from('leads')
@@ -305,7 +308,12 @@ const CRM = async () => {
 
       {metricCards.map((metric) => (
         <Grid key={metric.key} size={{ xs: 12, sm: 6, xl: 3 }}>
-          <Paper sx={{ p: 3, height: 1 }}>
+          <Paper
+            component={metric.href ? Link : 'div'}
+            href={metric.href}
+            underline="none"
+            sx={{ p: 3, height: 1, display: 'block', color: 'text.primary' }}
+          >
             <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
               <IconifyIcon icon={metric.icon} sx={{ fontSize: 34, color: metric.color }} />
               <Box>
@@ -513,7 +521,7 @@ function DealsByStage({ deals }) {
                 sx={{
                   width: `${stage.count ? Math.min(100, stage.count * 18) : 2}%`,
                   height: 1,
-                  bgcolor: stage.stage === 'lost' ? 'error.main' : stage.stage === 'won' ? 'success.main' : 'primary.main',
+                  bgcolor: stage.stage === 'closed' ? 'success.main' : 'primary.main',
                 }}
               />
             </Box>

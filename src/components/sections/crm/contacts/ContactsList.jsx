@@ -43,6 +43,7 @@ const ContactsList = () => {
         first_name,
         last_name,
         title,
+        account_number,
         email,
         phone,
         mobile_phone,
@@ -102,6 +103,7 @@ const ContactsList = () => {
         contact.first_name,
         contact.last_name,
         contact.title,
+        contact.account_number,
         contact.email,
         contact.phone,
         contact.mobile_phone,
@@ -126,16 +128,29 @@ const ContactsList = () => {
             { label: 'Contacts', active: true },
           ]}
           actionComponent={
-            <Button
-              href={paths.addContact}
-              component={Link}
-              underline="none"
-              variant="contained"
-              size="large"
-              startIcon={<IconifyIcon icon="material-symbols:add-rounded" />}
-            >
-              Add Contact
-            </Button>
+            <Stack direction="row" spacing={1}>
+              <Button
+                href={paths.crmImport}
+                component={Link}
+                underline="none"
+                variant="soft"
+                color="neutral"
+                size="large"
+                startIcon={<IconifyIcon icon="material-symbols:upload-file-outline-rounded" />}
+              >
+                Import CSV
+              </Button>
+              <Button
+                href={paths.addContact}
+                component={Link}
+                underline="none"
+                variant="contained"
+                size="large"
+                startIcon={<IconifyIcon icon="material-symbols:add-rounded" />}
+              >
+                Add Contact
+              </Button>
+            </Stack>
           }
         />
       </Grid>
@@ -181,6 +196,7 @@ const ContactsList = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>Name</TableCell>
+                  <TableCell>Account</TableCell>
                   <TableCell>Company</TableCell>
                   <TableCell>Contact</TableCell>
                   <TableCell>Location</TableCell>
@@ -204,6 +220,9 @@ const ContactsList = () => {
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                           {contact.title || 'No role set'}
                         </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">{contact.account_number || '-'}</Typography>
                       </TableCell>
                       <TableCell>
                         {contact.companies?.id ? (

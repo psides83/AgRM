@@ -38,6 +38,18 @@ const quickLinks = [
     icon: 'material-symbols:handshake-outline-rounded',
   },
   {
+    label: 'Leads',
+    description: 'Open prospects and the equipment they are interested in',
+    href: paths.leads,
+    icon: 'material-symbols:filter-alt-outline-rounded',
+  },
+  {
+    label: 'Equipment',
+    description: 'Availability, status, interests, and trade-ins',
+    href: paths.equipment,
+    icon: 'material-symbols:agriculture-outline-rounded',
+  },
+  {
     label: 'Add Contact',
     description: 'Create a contact, company, lead, or equipment interest',
     href: paths.addContact,

@@ -25,6 +25,20 @@ export const companyInfoSchema = yup.object({
     region: yup.string().optional(),
     postalCode: yup.string().optional(),
     country: yup.string().default('US'),
+    latitude: yup
+      .number()
+      .typeError('Latitude must be a number')
+      .min(-90)
+      .max(90)
+      .nullable()
+      .transform((value, originalValue) => (originalValue === '' ? null : value)),
+    longitude: yup
+      .number()
+      .typeError('Longitude must be a number')
+      .min(-180)
+      .max(180)
+      .nullable()
+      .transform((value, originalValue) => (originalValue === '' ? null : value)),
     notes: yup.string().optional(),
   }),
 });
@@ -110,6 +124,26 @@ const CompanyInfoForm = ({ label }) => {
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField fullWidth label="Country" {...register('companyInfo.country')} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Latitude"
+                type="number"
+                error={!!errors.companyInfo?.latitude}
+                helperText={errors.companyInfo?.latitude?.message}
+                {...register('companyInfo.latitude')}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Longitude"
+                type="number"
+                error={!!errors.companyInfo?.longitude}
+                helperText={errors.companyInfo?.longitude?.message}
+                {...register('companyInfo.longitude')}
+              />
             </Grid>
           </Grid>
         </ContactFormSection>

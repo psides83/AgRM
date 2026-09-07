@@ -48,7 +48,7 @@ const StackedSidenav = () => {
   const { user } = useAuth();
 
   const isMenuActive = (item) => {
-    if (pathname === '/' && item.id === 'homepage') {
+    if (pathname === '/' && item.id === 'agrm') {
       return true;
     }
     const checkLink = (subMenuItem) => {

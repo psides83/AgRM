@@ -17,6 +17,7 @@ const App = ({ children }) => {
   useConfigFromQuery();
 
   const isShowcase = pathname.startsWith('/showcase');
+  const showTemplateSettings = process.env.NEXT_PUBLIC_ENABLE_TEMPLATE_SETTINGS === 'true';
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -49,7 +50,7 @@ const App = ({ children }) => {
         `}</style>
       )}
       {children}
-      {!isShowcase && (
+      {!isShowcase && showTemplateSettings && (
         <>
           <SettingsPanel />
           <SettingPanelToggler />

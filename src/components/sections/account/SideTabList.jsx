@@ -6,7 +6,6 @@ import { Stack, tabsClasses, Typography } from '@mui/material';
 import { accountTabs } from 'data/account/account-tabs';
 import { useBreakpoints } from 'providers/BreakpointsProvider';
 import IconifyIcon from 'components/base/IconifyIcon';
-import SearchTextField from 'components/common/SearchTextField';
 import AccountTab from './common/AccountTab';
 
 const SideTabList = ({ setShowTabList, handleChange, sx }) => {
@@ -42,13 +41,6 @@ const SideTabList = ({ setShowTabList, handleChange, sx }) => {
         Account Settings
       </Typography>
       <Stack direction="column" spacing={2} sx={{ width: 1 }}>
-        <SearchTextField
-          placeholder="Find a setting"
-          fullWidth
-          size="large"
-          sx={{ maxWidth: { xs: 1, sm: 0.5, md: 1 } }}
-        />
-
         <TabList
           orientation="vertical"
           variant="scrollable"

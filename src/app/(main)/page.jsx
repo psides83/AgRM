@@ -1,7 +1,7 @@
-import ECommerce from 'components/sections/dashboards/e-commerce';
+import CRM from 'components/sections/dashboards/crm';
 
 const page = () => {
-  return <ECommerce />;
+  return <CRM />;
 };
 
 export default page;

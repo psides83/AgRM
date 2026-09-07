@@ -1,0 +1,23 @@
+alter type public.deal_stage add value if not exists 'needs_discovery';
+alter type public.deal_stage add value if not exists 'fit_confirmed';
+alter type public.deal_stage add value if not exists 'options_presented';
+alter type public.deal_stage add value if not exists 'agreement_reached';
+alter type public.deal_stage add value if not exists 'equipment_secured';
+alter type public.deal_stage add value if not exists 'setup_in_progress';
+alter type public.deal_stage add value if not exists 'pending_field_readiness';
+alter type public.deal_stage add value if not exists 'field_ready_confirmed';
+alter type public.deal_stage add value if not exists 'pending_delivery';
+alter type public.deal_stage add value if not exists 'delivered';
+alter type public.deal_stage add value if not exists 'closed';
+
+alter type public.equipment_status add value if not exists 'not_started';
+alter type public.equipment_status add value if not exists 'needs_info';
+alter type public.equipment_status add value if not exists 'fit_confirmed';
+alter type public.equipment_status add value if not exists 'quoted';
+alter type public.equipment_status add value if not exists 'on_order';
+alter type public.equipment_status add value if not exists 'in_stock';
+alter type public.equipment_status add value if not exists 'pending_field_readiness';
+alter type public.equipment_status add value if not exists 'field_ready_confirmed';
+alter type public.equipment_status add value if not exists 'pending_delivery';
+alter type public.equipment_status add value if not exists 'unavailable';
+alter type public.equipment_status add value if not exists 'canceled';

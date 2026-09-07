@@ -24,15 +24,14 @@ import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import CrmFilesPanel from 'components/sections/crm/shared/CrmFilesPanel';
+import { activityDirections, activityTypes, dealStages, equipmentStatuses } from 'components/sections/crm/constants';
+import DuplicateRecordDialog from 'components/sections/crm/shared/DuplicateRecordDialog';
+import { findPotentialDuplicates } from 'components/sections/crm/shared/duplicateRecords';
 
 const leadStatuses = ['new', 'working', 'qualified', 'unqualified', 'converted'];
-const dealStages = ['lead', 'quoted', 'negotiation', 'won', 'lost'];
-const activityTypes = ['call', 'email', 'meeting', 'text', 'task', 'site_visit', 'demo', 'other'];
-const activityDirections = ['outbound', 'inbound', 'internal'];
 const equipmentCategories = ['tractor', 'combine', 'planter', 'sprayer', 'hay', 'tillage', 'utility_vehicle', 'attachment', 'other'];
 const equipmentConditions = ['new', 'used', 'either'];
 const equipmentAvailability = ['availability_unknown', 'in_stock_auburn', 'in_stock_transfer', 'pending', 'unavailable'];
-const equipmentStatuses = ['equipment_added', 'setup_required', 'transfer_required', 'order_required', 'setup_requested', 'transfer_requested', 'order_placed', 'transfer_in_progress', 'order_in_progress', 'setup_in_progress', 'ready', 'delivered'];
 
 const LeadDetails = ({ leadId }) => {
   const supabase = useMemo(() => createClient(), []);
@@ -54,7 +53,7 @@ const LeadDetails = ({ leadId }) => {
         .select(
           `
           *,
-          contacts(id, first_name, last_name, title, email, phone, mobile_phone),
+          contacts(id, first_name, last_name, title, account_number, email, phone, mobile_phone),
           companies(id, name, company_type, website, phone, email, city, region)
         `
         )
@@ -165,6 +164,15 @@ const LeadDetails = ({ leadId }) => {
               </Box>
 
               <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                {contact ? (
+                  <Button component={Link} href={paths.contactDetails(contact.id)} underline="none" variant="soft" color="neutral" startIcon={<IconifyIcon icon="material-symbols:person-outline-rounded" />}>
+                    Open Contact
+                  </Button>
+                ) : (
+                  <Button variant="soft" color="neutral" onClick={() => setDialog('contact')} startIcon={<IconifyIcon icon="material-symbols:person-add-outline-rounded" />}>
+                    Convert to Contact
+                  </Button>
+                )}
                 <Button variant="soft" color="neutral" onClick={() => setDialog('status')} startIcon={<IconifyIcon icon="material-symbols:tune-rounded" />}>
                   Update Lead
                 </Button>
@@ -174,8 +182,8 @@ const LeadDetails = ({ leadId }) => {
                 <Button variant="soft" color="neutral" onClick={() => setDialog('activity')} startIcon={<IconifyIcon icon="material-symbols:add-call-outline-rounded" />}>
                   Add Activity
                 </Button>
-                <Button variant="soft" color="neutral" onClick={() => setDialog('convert')} disabled={lead.status === 'converted'} startIcon={<IconifyIcon icon="material-symbols:currency-exchange-rounded" />}>
-                  Convert
+                <Button variant="soft" color="neutral" onClick={() => setDialog('deal')} disabled={lead.status === 'converted'} startIcon={<IconifyIcon icon="material-symbols:currency-exchange-rounded" />}>
+                  Create Deal
                 </Button>
                 <Button variant="contained" onClick={() => setDialog('equipment')} startIcon={<IconifyIcon icon="material-symbols:agriculture-outline-rounded" />}>
                   Add Interest
@@ -190,6 +198,7 @@ const LeadDetails = ({ leadId }) => {
             <InfoCard title="Lead Info" icon="material-symbols:filter-alt-outline-rounded">
               <InfoRow label="Status" value={formatEnum(lead.status)} />
               <InfoRow label="Source" value={lead.source} />
+              <InfoRow label="Account Number" value={lead.account_number} />
               <InfoRow label="Priority" value={lead.priority} />
               <InfoRow label="Budget" value={formatCurrency(lead.estimated_budget)} />
               <InfoRow label="Target purchase" value={formatDate(lead.target_purchase_date)} />
@@ -202,6 +211,7 @@ const LeadDetails = ({ leadId }) => {
                 <>
                   <InfoRow label="Contact" value={contactName(contact)} />
                   <InfoRow label="Role" value={contact.title} />
+                  <InfoRow label="Account Number" value={contact.account_number} />
                   <InfoRow label="Email" value={contact.email} />
                   <InfoRow label="Phone" value={contact.mobile_phone || contact.phone} />
                   <Button component={Link} href={paths.contactDetails(contact.id)} underline="none" variant="soft" color="neutral" sx={{ mt: 1 }}>
@@ -242,7 +252,8 @@ const LeadDetails = ({ leadId }) => {
       <UpdateLeadDialog open={dialog === 'status'} lead={lead} onClose={() => setDialog(null)} onSaved={fetchDetails} supabase={supabase} />
       <AddNoteDialog open={dialog === 'note'} lead={lead} onClose={() => setDialog(null)} onSaved={fetchDetails} supabase={supabase} />
       <AddActivityDialog open={dialog === 'activity'} lead={lead} onClose={() => setDialog(null)} onSaved={fetchDetails} supabase={supabase} />
-      <ConvertLeadDialog open={dialog === 'convert'} lead={lead} onClose={() => setDialog(null)} onSaved={fetchDetails} supabase={supabase} />
+      <ConvertLeadToContactDialog open={dialog === 'contact'} lead={lead} onClose={() => setDialog(null)} onSaved={fetchDetails} supabase={supabase} />
+      <ConvertLeadDialog open={dialog === 'deal'} lead={lead} onClose={() => setDialog(null)} onSaved={fetchDetails} supabase={supabase} />
       <AddEquipmentDialog open={dialog === 'equipment'} lead={lead} onClose={() => setDialog(null)} onSaved={fetchDetails} supabase={supabase} />
     </>
   );
@@ -358,16 +369,16 @@ function RecordRow({ title, subtitle, chip, href }) {
 }
 
 function UpdateLeadDialog({ open, lead, onClose, onSaved, supabase }) {
-  const [form, setForm] = useState({ status: lead?.status || 'new', priority: lead?.priority || 3, nextFollowUpAt: '', notes: lead?.notes || '' });
+  const [form, setForm] = useState({ accountNumber: lead?.account_number || '', status: lead?.status || 'new', priority: lead?.priority || 3, nextFollowUpAt: '', latitude: '', longitude: '', notes: lead?.notes || '' });
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (open) setForm({ status: lead?.status || 'new', priority: lead?.priority || 3, nextFollowUpAt: toDateTimeLocal(lead?.next_follow_up_at), notes: lead?.notes || '' });
+    if (open) setForm({ accountNumber: lead?.account_number || '', status: lead?.status || 'new', priority: lead?.priority || 3, nextFollowUpAt: toDateTimeLocal(lead?.next_follow_up_at), latitude: lead?.latitude ?? '', longitude: lead?.longitude ?? '', notes: lead?.notes || '' });
   }, [lead, open]);
 
   const handleSave = async () => {
     setIsSaving(true);
-    const { error } = await supabase.from('leads').update({ status: form.status, priority: Number(form.priority) || 3, next_follow_up_at: form.nextFollowUpAt || null, notes: cleanText(form.notes) }).eq('id', lead.id);
+    const { error } = await supabase.from('leads').update({ account_number: cleanText(form.accountNumber), status: form.status, priority: Number(form.priority) || 3, next_follow_up_at: form.nextFollowUpAt || null, latitude: cleanNumber(form.latitude), longitude: cleanNumber(form.longitude), notes: cleanText(form.notes) }).eq('id', lead.id);
     setIsSaving(false);
     if (!error) {
       onSaved();
@@ -380,11 +391,16 @@ function UpdateLeadDialog({ open, lead, onClose, onSaved, supabase }) {
       <DialogTitle>Update Lead</DialogTitle>
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
+          <TextField label="Account Number" value={form.accountNumber} onChange={handleField(setForm, 'accountNumber')} fullWidth />
           <TextField select label="Status" value={form.status} onChange={handleField(setForm, 'status')} fullWidth>
             {leadStatuses.map((status) => <MenuItem key={status} value={status}>{formatEnum(status)}</MenuItem>)}
           </TextField>
           <TextField label="Priority" type="number" value={form.priority} onChange={handleField(setForm, 'priority')} fullWidth />
           <TextField label="Next Follow-up" type="datetime-local" value={form.nextFollowUpAt} onChange={handleField(setForm, 'nextFollowUpAt')} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField label="Latitude" type="number" value={form.latitude} onChange={handleField(setForm, 'latitude')} fullWidth />
+            <TextField label="Longitude" type="number" value={form.longitude} onChange={handleField(setForm, 'longitude')} fullWidth />
+          </Stack>
           <TextField label="Notes" value={form.notes} onChange={handleField(setForm, 'notes')} fullWidth multiline rows={3} />
         </Stack>
       </DialogContent>
@@ -486,6 +502,172 @@ function AddActivityDialog({ open, lead, onClose, onSaved, supabase }) {
   );
 }
 
+function ConvertLeadToContactDialog({ open, lead, onClose, onSaved, supabase }) {
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    title: '',
+    accountNumber: '',
+    email: '',
+    phone: '',
+    mobilePhone: '',
+    notes: '',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [duplicateConfirmation, setDuplicateConfirmation] = useState(null);
+
+  useEffect(() => {
+    if (open) {
+      setForm({ firstName: '', lastName: '', title: '', accountNumber: '', email: '', phone: '', mobilePhone: '', notes: '' });
+      setError(null);
+      setDuplicateConfirmation(null);
+    }
+  }, [open]);
+
+  const handleSave = async (options = {}) => {
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      setError('First name and last name are required.');
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    const { data: userResult, error: userError } = await supabase.auth.getUser();
+    if (userError || !userResult.user) {
+      setError('You need to be logged in to create a contact.');
+      setIsSaving(false);
+      return;
+    }
+
+    if (!options.skipDuplicateCheck) {
+      const matches = await findPotentialDuplicates(supabase, [
+        {
+          type: 'contact',
+          record: {
+            firstName: form.firstName,
+            lastName: form.lastName,
+            accountNumber: form.accountNumber,
+            email: form.email,
+            phone: form.phone,
+            mobilePhone: form.mobilePhone,
+          },
+        },
+      ]);
+
+      if (matches.length) {
+        setDuplicateConfirmation({ matches });
+        setIsSaving(false);
+        return;
+      }
+    }
+
+    const { data: contact, error: contactError } = await supabase
+      .from('contacts')
+      .insert({
+        owner_id: userResult.user.id,
+        company_id: lead.company_id,
+        first_name: cleanText(form.firstName),
+        last_name: cleanText(form.lastName),
+        title: cleanText(form.title),
+        account_number: cleanText(form.accountNumber),
+        email: cleanText(form.email),
+        phone: cleanText(form.phone),
+        mobile_phone: cleanText(form.mobilePhone),
+        notes: cleanText(form.notes),
+      })
+      .select('id')
+      .single();
+
+    if (contactError) {
+      setError(contactError.message);
+      setIsSaving(false);
+      return;
+    }
+
+    const { error: leadError } = await supabase
+      .from('leads')
+      .update({ contact_id: contact.id })
+      .eq('id', lead.id);
+
+    if (leadError) {
+      setError(leadError.message);
+      setIsSaving(false);
+      return;
+    }
+
+    const noteBody = cleanText(form.notes);
+    if (noteBody) {
+      const { error: noteError } = await supabase.from('notes').insert({
+        owner_id: userResult.user.id,
+        contact_id: contact.id,
+        company_id: lead.company_id,
+        lead_id: lead.id,
+        body: noteBody,
+      });
+
+      if (noteError) {
+        setError(noteError.message);
+        setIsSaving(false);
+        return;
+      }
+    }
+
+    await supabase.from('activities').insert({
+      owner_id: userResult.user.id,
+      contact_id: contact.id,
+      company_id: lead.company_id,
+      lead_id: lead.id,
+      type: 'note',
+      direction: 'inbound',
+      subject: 'Lead converted to contact',
+      body: noteBody,
+      occurred_at: new Date().toISOString(),
+    });
+
+    setIsSaving(false);
+    setDuplicateConfirmation(null);
+    onSaved();
+    onClose();
+  };
+
+  return (
+    <>
+      <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+        <DialogTitle>Convert Lead to Contact</DialogTitle>
+        <DialogContent>
+          <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
+            {error && <Alert severity="error">{error}</Alert>}
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField label="First Name" value={form.firstName} onChange={handleField(setForm, 'firstName')} fullWidth required />
+              <TextField label="Last Name" value={form.lastName} onChange={handleField(setForm, 'lastName')} fullWidth required />
+            </Stack>
+            <TextField label="Title / Role" value={form.title} onChange={handleField(setForm, 'title')} fullWidth />
+            <TextField label="Account Number" value={form.accountNumber} onChange={handleField(setForm, 'accountNumber')} fullWidth />
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField label="Email" type="email" value={form.email} onChange={handleField(setForm, 'email')} fullWidth />
+              <TextField label="Phone" value={form.phone} onChange={handleField(setForm, 'phone')} fullWidth />
+            </Stack>
+            <TextField label="Mobile Phone" value={form.mobilePhone} onChange={handleField(setForm, 'mobilePhone')} fullWidth />
+            <TextField label="Initial Notes" value={form.notes} onChange={handleField(setForm, 'notes')} fullWidth multiline rows={4} />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button color="neutral" onClick={onClose}>Cancel</Button>
+          <Button variant="contained" onClick={() => handleSave()} loading={isSaving}>Create Contact</Button>
+        </DialogActions>
+      </Dialog>
+      <DuplicateRecordDialog
+        open={Boolean(duplicateConfirmation)}
+        matches={duplicateConfirmation?.matches || []}
+        onCancel={() => setDuplicateConfirmation(null)}
+        onConfirm={() => handleSave({ skipDuplicateCheck: true })}
+      />
+    </>
+  );
+}
+
 function ConvertLeadDialog({ open, lead, onClose, onSaved, supabase }) {
   const [form, setForm] = useState(() => leadToDealForm(lead));
   const [isSaving, setIsSaving] = useState(false);
@@ -514,18 +696,22 @@ function ConvertLeadDialog({ open, lead, onClose, onSaved, supabase }) {
       return;
     }
 
-    const { error: dealError } = await supabase.from('deals').insert({
-      owner_id: userResult.user.id,
-      lead_id: lead.id,
-      contact_id: lead.contact_id,
-      company_id: lead.company_id,
-      name: form.name.trim(),
-      stage: form.stage,
-      amount: form.amount || null,
-      probability: Number(form.probability) || 0,
-      expected_close_date: form.expectedCloseDate || null,
-      notes: cleanText(form.notes),
-    });
+    const { data: deal, error: dealError } = await supabase
+      .from('deals')
+      .insert({
+        owner_id: userResult.user.id,
+        lead_id: lead.id,
+        contact_id: lead.contact_id,
+        company_id: lead.company_id,
+        name: form.name.trim(),
+        stage: form.stage,
+        amount: form.amount || null,
+        probability: Number(form.probability) || 0,
+        expected_close_date: form.expectedCloseDate || null,
+        notes: cleanText(form.notes),
+      })
+      .select('id')
+      .single();
 
     if (dealError) {
       setError(dealError.message);
@@ -543,9 +729,10 @@ function ConvertLeadDialog({ open, lead, onClose, onSaved, supabase }) {
     await supabase.from('notes').insert({
       owner_id: userResult.user.id,
       lead_id: lead.id,
+      deal_id: deal.id,
       contact_id: lead.contact_id,
       company_id: lead.company_id,
-      body: `Converted lead to deal: ${form.name.trim()}`,
+      body: cleanText(form.notes) || `Created deal from lead: ${form.name.trim()}`,
     });
 
     setIsSaving(false);
@@ -555,7 +742,7 @@ function ConvertLeadDialog({ open, lead, onClose, onSaved, supabase }) {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Convert Lead to Deal</DialogTitle>
+      <DialogTitle>Create Deal from Lead</DialogTitle>
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
@@ -576,23 +763,23 @@ function ConvertLeadDialog({ open, lead, onClose, onSaved, supabase }) {
       </DialogContent>
       <DialogActions>
         <Button color="neutral" onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSave} loading={isSaving}>Convert Lead</Button>
+        <Button variant="contained" onClick={handleSave} loading={isSaving}>Create Deal</Button>
       </DialogActions>
     </Dialog>
   );
 }
 
 function AddEquipmentDialog({ open, lead, onClose, onSaved, supabase }) {
-  const [form, setForm] = useState({ category: 'tractor', make: '', model: '', condition: 'either', availability: 'availability_unknown', status: 'equipment_added', priceMin: '', priceMax: '', tradeIn: 'false', notes: '' });
+  const [form, setForm] = useState({ category: 'tractor', make: '', model: '', stockNumber: '', serialNumber: '', condition: 'either', availability: 'availability_unknown', status: 'not_started', quotePrice: '', priceMin: '', priceMax: '', tradeIn: 'false', notes: '' });
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
     setIsSaving(true);
     const { data: userResult } = await supabase.auth.getUser();
-    const { error } = await supabase.from('equipment_interests').insert({ owner_id: userResult.user.id, lead_id: lead.id, contact_id: lead.contact_id, category: form.category, make: cleanText(form.make), model: cleanText(form.model), condition: form.condition, availability: form.availability, status: form.status, price_min: form.priceMin || null, price_max: form.priceMax || null, trade_in: form.tradeIn === 'true', notes: cleanText(form.notes) });
+    const { error } = await supabase.from('equipment_interests').insert({ owner_id: userResult.user.id, lead_id: lead.id, contact_id: lead.contact_id, category: form.category, make: cleanText(form.make), model: cleanText(form.model), stock_number: cleanText(form.stockNumber), serial_number: cleanText(form.serialNumber), condition: form.condition, availability: form.availability, status: form.status, quote_price: form.quotePrice || null, price_min: form.priceMin || null, price_max: form.priceMax || null, trade_in: form.tradeIn === 'true', notes: cleanText(form.notes) });
     setIsSaving(false);
     if (!error) {
-      setForm({ category: 'tractor', make: '', model: '', condition: 'either', availability: 'availability_unknown', status: 'equipment_added', priceMin: '', priceMax: '', tradeIn: 'false', notes: '' });
+      setForm({ category: 'tractor', make: '', model: '', stockNumber: '', serialNumber: '', condition: 'either', availability: 'availability_unknown', status: 'not_started', quotePrice: '', priceMin: '', priceMax: '', tradeIn: 'false', notes: '' });
       onSaved();
       onClose();
     }
@@ -608,6 +795,10 @@ function AddEquipmentDialog({ open, lead, onClose, onSaved, supabase }) {
           </TextField>
           <TextField label="Make" value={form.make} onChange={handleField(setForm, 'make')} fullWidth />
           <TextField label="Model" value={form.model} onChange={handleField(setForm, 'model')} fullWidth />
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField label="Stock Number" value={form.stockNumber} onChange={handleStockField(setForm)} inputProps={{ maxLength: 6 }} fullWidth />
+            <TextField label="Serial Number" value={form.serialNumber} onChange={handleUppercaseField(setForm, 'serialNumber')} fullWidth />
+          </Stack>
           <TextField select label="Condition" value={form.condition} onChange={handleField(setForm, 'condition')} fullWidth>
             {equipmentConditions.map((condition) => <MenuItem key={condition} value={condition}>{formatEnum(condition)}</MenuItem>)}
           </TextField>
@@ -620,6 +811,7 @@ function AddEquipmentDialog({ open, lead, onClose, onSaved, supabase }) {
             </TextField>
           </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField label="Quote Price" type="number" value={form.quotePrice} onChange={handleField(setForm, 'quotePrice')} fullWidth />
             <TextField label="Price Min" type="number" value={form.priceMin} onChange={handleField(setForm, 'priceMin')} fullWidth />
             <TextField label="Price Max" type="number" value={form.priceMax} onChange={handleField(setForm, 'priceMax')} fullWidth />
           </Stack>
@@ -646,6 +838,14 @@ function handleField(setForm, key) {
   return (event) => setForm((prev) => ({ ...prev, [key]: event.target.value }));
 }
 
+function handleStockField(setForm) {
+  return (event) => setForm((prev) => ({ ...prev, stockNumber: event.target.value.replace(/\D/g, '').slice(0, 6) }));
+}
+
+function handleUppercaseField(setForm, key) {
+  return (event) => setForm((prev) => ({ ...prev, [key]: event.target.value.toUpperCase() }));
+}
+
 function contactName(contact) {
   return [contact?.first_name, contact?.last_name].filter(Boolean).join(' ') || 'Unnamed contact';
 }
@@ -661,7 +861,7 @@ function leadToDealForm(lead) {
 
   return {
     name: baseName || 'New deal',
-    stage: 'lead',
+    stage: 'needs_discovery',
     amount: lead?.estimated_budget || '',
     probability: 25,
     expectedCloseDate: lead?.target_purchase_date || '',
@@ -671,6 +871,12 @@ function leadToDealForm(lead) {
 
 function cleanText(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function cleanNumber(value) {
+  if (value === '' || value === null || typeof value === 'undefined') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
 }
 
 function formatCurrency(value) {
@@ -690,6 +896,7 @@ function formatDateTime(value) {
 
 function formatEnum(value) {
   if (!value) return '-';
+  if (value === 'fit_confirmed') return 'Equipment Fit Confirmed';
   return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 

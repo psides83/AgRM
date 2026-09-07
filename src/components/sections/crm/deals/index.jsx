@@ -23,12 +23,11 @@ import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
-
-const dealStages = ['lead', 'quoted', 'negotiation', 'won', 'lost'];
+import { dealStages } from 'components/sections/crm/constants';
 
 const emptyDealForm = {
   name: '',
-  stage: 'lead',
+  stage: 'needs_discovery',
   amount: '',
   probability: 0,
   expectedCloseDate: '',
@@ -125,7 +124,11 @@ const Deals = () => {
   );
 
   const handleStageChange = async (dealId, stage) => {
-    const { error: updateError } = await supabase.from('deals').update({ stage }).eq('id', dealId);
+    const payload = {
+      stage,
+      closed_at: stage === 'closed' ? new Date().toISOString() : null,
+    };
+    const { error: updateError } = await supabase.from('deals').update(payload).eq('id', dealId);
 
     if (updateError) {
       setError(updateError.message);
@@ -167,6 +170,7 @@ const Deals = () => {
               xs: '1fr',
               md: 'repeat(2, minmax(0, 1fr))',
               xl: 'repeat(5, minmax(220px, 1fr))',
+              xxl: 'repeat(6, minmax(220px, 1fr))',
             },
             gap: 2,
             alignItems: 'start',
@@ -230,6 +234,10 @@ function StageColumn({ stage, deals, isLoading, onStageChange }) {
 }
 
 function DealCard({ deal, onStageChange }) {
+  const stageIndex = dealStages.indexOf(deal.stage);
+  const nextStage = stageIndex >= 0 ? dealStages[stageIndex + 1] : null;
+  const canAdvance = Boolean(nextStage);
+
   return (
     <Paper
       variant="outlined"
@@ -273,6 +281,11 @@ function DealCard({ deal, onStageChange }) {
             </MenuItem>
           ))}
         </TextField>
+        {canAdvance && (
+          <Button size="small" variant="soft" onClick={() => onStageChange(deal.id, nextStage)}>
+            Complete {formatEnum(deal.stage)}
+          </Button>
+        )}
       </Stack>
     </Paper>
   );
@@ -319,26 +332,48 @@ function CreateDealDialog({ open, contacts, leads, onClose, onSaved, supabase })
     const contactId = selectedLead?.contact_id || form.contactId || null;
     const companyId = selectedLead?.company_id || selectedContact?.company_id || null;
 
-    const { error: insertError } = await supabase.from('deals').insert({
-      owner_id: user.id,
-      lead_id: form.leadId || null,
-      contact_id: contactId,
-      company_id: companyId,
-      name: form.name.trim(),
-      stage: form.stage,
-      amount: form.amount || null,
-      probability: Number(form.probability) || 0,
-      expected_close_date: form.expectedCloseDate || null,
-      notes: cleanText(form.notes),
-    });
-
-    setIsSaving(false);
+    const { data: deal, error: insertError } = await supabase
+      .from('deals')
+      .insert({
+        owner_id: user.id,
+        lead_id: form.leadId || null,
+        contact_id: contactId,
+        company_id: companyId,
+        name: form.name.trim(),
+        stage: form.stage,
+        amount: form.amount || null,
+        probability: Number(form.probability) || 0,
+        expected_close_date: form.expectedCloseDate || null,
+        notes: cleanText(form.notes),
+      })
+      .select('id')
+      .single();
 
     if (insertError) {
       setError(insertError.message);
+      setIsSaving(false);
       return;
     }
 
+    const noteBody = cleanText(form.notes);
+    if (noteBody) {
+      const { error: noteError } = await supabase.from('notes').insert({
+        owner_id: user.id,
+        lead_id: form.leadId || null,
+        contact_id: contactId,
+        company_id: companyId,
+        deal_id: deal.id,
+        body: noteBody,
+      });
+
+      if (noteError) {
+        setError(noteError.message);
+        setIsSaving(false);
+        return;
+      }
+    }
+
+    setIsSaving(false);
     onSaved();
   };
 
@@ -493,6 +528,7 @@ function formatDate(value) {
 
 function formatEnum(value) {
   if (!value) return '-';
+  if (value === 'fit_confirmed') return 'Equipment Fit Confirmed';
   return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 

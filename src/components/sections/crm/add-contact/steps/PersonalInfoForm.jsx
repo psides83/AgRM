@@ -9,6 +9,7 @@ export const personalInfoSchema = yup.object({
     firstName: yup.string().required('First name is required'),
     lastName: yup.string().required('Last name is required'),
     title: yup.string().optional(),
+    accountNumber: yup.string().optional(),
     email: yup
       .string()
       .transform((value) => (value === '' ? undefined : value))
@@ -22,6 +23,20 @@ export const personalInfoSchema = yup.object({
     region: yup.string().optional(),
     postalCode: yup.string().optional(),
     country: yup.string().default('US'),
+    latitude: yup
+      .number()
+      .typeError('Latitude must be a number')
+      .min(-90)
+      .max(90)
+      .nullable()
+      .transform((value, originalValue) => (originalValue === '' ? null : value)),
+    longitude: yup
+      .number()
+      .typeError('Longitude must be a number')
+      .min(-180)
+      .max(180)
+      .nullable()
+      .transform((value, originalValue) => (originalValue === '' ? null : value)),
     tags: yup.array().of(yup.string()).default([]),
     notes: yup.string().optional(),
   }),
@@ -72,6 +87,15 @@ const PersonalInfoForm = ({ label }) => {
                 error={!!errors.personalInfo?.title}
                 helperText={errors.personalInfo?.title?.message}
                 {...register('personalInfo.title')}
+              />
+            </Grid>
+            <Grid size={12}>
+              <TextField
+                fullWidth
+                label="Account Number"
+                error={!!errors.personalInfo?.accountNumber}
+                helperText={errors.personalInfo?.accountNumber?.message}
+                {...register('personalInfo.accountNumber')}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -132,6 +156,26 @@ const PersonalInfoForm = ({ label }) => {
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField fullWidth label="Country" {...register('personalInfo.country')} />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Latitude"
+                type="number"
+                error={!!errors.personalInfo?.latitude}
+                helperText={errors.personalInfo?.latitude?.message}
+                {...register('personalInfo.latitude')}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Longitude"
+                type="number"
+                error={!!errors.personalInfo?.longitude}
+                helperText={errors.personalInfo?.longitude?.message}
+                {...register('personalInfo.longitude')}
+              />
             </Grid>
           </Grid>
         </ContactFormSection>

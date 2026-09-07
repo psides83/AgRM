@@ -15,6 +15,8 @@ import LeadInfoForm, {
 import PersonalInfoForm, {
   personalInfoSchema,
 } from 'components/sections/crm/add-contact/steps/PersonalInfoForm';
+import DuplicateRecordDialog from 'components/sections/crm/shared/DuplicateRecordDialog';
+import { findPotentialDuplicates } from 'components/sections/crm/shared/duplicateRecords';
 
 const steps = [
   {
@@ -73,11 +75,13 @@ const AddContactStepper = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [duplicateConfirmation, setDuplicateConfirmation] = useState(null);
   const { enqueueSnackbar } = useSnackbar();
   const methods = useForm({
     resolver: yupResolver(validationSchema),
     defaultValues: {
       personalInfo: {
+        accountNumber: '',
         country: 'US',
         tags: [],
       },
@@ -85,6 +89,8 @@ const AddContactStepper = () => {
         country: 'US',
       },
       leadInfo: {
+        accountNumber: '',
+        initialContactMethod: 'call',
         status: '',
         priority: '',
       },
@@ -106,7 +112,7 @@ const AddContactStepper = () => {
     setActiveStep((prevStep) => prevStep - 1);
   };
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data, options = {}) => {
     setIsSaving(true);
     const supabase = createClient();
     const {
@@ -121,14 +127,26 @@ const AddContactStepper = () => {
     }
 
     try {
+      if (!options.skipDuplicateCheck) {
+        const duplicateMatches = await findPotentialDuplicates(supabase, duplicateChecksFromForm(data));
+
+        if (duplicateMatches.length) {
+          setDuplicateConfirmation({ data, matches: duplicateMatches });
+          setIsSaving(false);
+          return;
+        }
+      }
+
       const companyId = await saveCompany(supabase, user.id, data.companyInfo);
       const contact = await saveContact(supabase, user.id, companyId, data.personalInfo);
-      await saveLead(supabase, user.id, companyId, contact.id, data.leadInfo);
+      const lead = await saveLead(supabase, user.id, companyId, contact.id, data.leadInfo);
+      await saveInitialContactLog(supabase, user.id, companyId, contact.id, lead?.id, data);
 
       enqueueSnackbar('Contact added successfully', { variant: 'success' });
       reset();
       setCompletedSteps({});
       setActiveStep(0);
+      setDuplicateConfirmation(null);
     } catch (error) {
       enqueueSnackbar(error.message || 'Could not add contact.', { variant: 'error' });
     } finally {
@@ -202,12 +220,79 @@ const AddContactStepper = () => {
           </Stack>
         </Box>
       </Container>
+      <DuplicateRecordDialog
+        open={Boolean(duplicateConfirmation)}
+        matches={duplicateConfirmation?.matches || []}
+        onCancel={() => setDuplicateConfirmation(null)}
+        onConfirm={() => onSubmit(duplicateConfirmation.data, { skipDuplicateCheck: true })}
+      />
     </FormProvider>
   );
 };
 
 function cleanText(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function cleanNumber(value) {
+  if (value === '' || value === null || typeof value === 'undefined') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function duplicateChecksFromForm(data) {
+  const checks = [];
+
+  if (cleanText(data.companyInfo?.name)) {
+    checks.push({
+      type: 'company',
+      record: {
+        name: data.companyInfo.name,
+        email: data.companyInfo.email,
+        phone: data.companyInfo.phone,
+      },
+    });
+  }
+
+  checks.push({
+    type: 'contact',
+    record: {
+      firstName: data.personalInfo?.firstName,
+      lastName: data.personalInfo?.lastName,
+      accountNumber: data.personalInfo?.accountNumber,
+      email: data.personalInfo?.email,
+      phone: data.personalInfo?.phone,
+      mobilePhone: data.personalInfo?.mobilePhone,
+    },
+  });
+
+  if (hasLeadInfo(data.leadInfo)) {
+    checks.push({
+      type: 'lead',
+      record: {
+        source: data.leadInfo?.source,
+        accountNumber: data.leadInfo?.accountNumber,
+      },
+    });
+  }
+
+  return checks;
+}
+
+function hasLeadInfo(leadInfo) {
+  return Boolean(
+    cleanText(leadInfo?.source) ||
+      cleanText(leadInfo?.accountNumber) ||
+      cleanText(leadInfo?.status) ||
+      leadInfo?.priority ||
+      leadInfo?.estimatedBudget ||
+      leadInfo?.targetPurchaseDate ||
+      leadInfo?.lastContactedAt ||
+      leadInfo?.nextFollowUpAt ||
+      leadInfo?.latitude ||
+      leadInfo?.longitude ||
+      cleanText(leadInfo?.notes)
+  );
 }
 
 async function saveCompany(supabase, ownerId, companyInfo) {
@@ -228,6 +313,8 @@ async function saveCompany(supabase, ownerId, companyInfo) {
     region: cleanText(companyInfo.region),
     postal_code: cleanText(companyInfo.postalCode),
     country: cleanText(companyInfo.country) || 'US',
+    latitude: cleanNumber(companyInfo.latitude),
+    longitude: cleanNumber(companyInfo.longitude),
     notes: cleanText(companyInfo.notes),
   };
 
@@ -253,6 +340,7 @@ async function saveContact(supabase, ownerId, companyId, personalInfo) {
       first_name: cleanText(personalInfo.firstName),
       last_name: cleanText(personalInfo.lastName),
       title: cleanText(personalInfo.title),
+      account_number: cleanText(personalInfo.accountNumber),
       email: cleanText(personalInfo.email),
       phone: cleanText(personalInfo.phone),
       mobile_phone: cleanText(personalInfo.mobilePhone),
@@ -262,6 +350,8 @@ async function saveContact(supabase, ownerId, companyId, personalInfo) {
       region: cleanText(personalInfo.region),
       postal_code: cleanText(personalInfo.postalCode),
       country: cleanText(personalInfo.country) || 'US',
+      latitude: cleanNumber(personalInfo.latitude),
+      longitude: cleanNumber(personalInfo.longitude),
       tags: personalInfo.tags || [],
       notes: cleanText(personalInfo.notes),
     })
@@ -284,6 +374,8 @@ async function saveLead(supabase, ownerId, companyId, contactId, leadInfo) {
       leadInfo?.targetPurchaseDate ||
       leadInfo?.lastContactedAt ||
       leadInfo?.nextFollowUpAt ||
+      leadInfo?.latitude ||
+      leadInfo?.longitude ||
       cleanText(leadInfo?.notes)
   );
 
@@ -291,25 +383,84 @@ async function saveLead(supabase, ownerId, companyId, contactId, leadInfo) {
     return null;
   }
 
-  const { error } = await supabase.from('leads').insert({
-    owner_id: ownerId,
-    contact_id: contactId,
-    company_id: companyId,
-    source: cleanText(leadInfo.source),
-    status: cleanText(leadInfo.status) || 'new',
-    priority: Number(leadInfo.priority) || 3,
-    estimated_budget: leadInfo.estimatedBudget || null,
-    target_purchase_date: leadInfo.targetPurchaseDate || null,
-    last_contacted_at: leadInfo.lastContactedAt || null,
-    next_follow_up_at: leadInfo.nextFollowUpAt || null,
-    notes: cleanText(leadInfo.notes),
-  });
+  const { data, error } = await supabase
+    .from('leads')
+    .insert({
+      owner_id: ownerId,
+      contact_id: contactId,
+      company_id: companyId,
+      source: cleanText(leadInfo.source),
+      account_number: cleanText(leadInfo.accountNumber),
+      status: cleanText(leadInfo.status) || 'new',
+      priority: Number(leadInfo.priority) || 3,
+      estimated_budget: leadInfo.estimatedBudget || null,
+      target_purchase_date: leadInfo.targetPurchaseDate || null,
+      last_contacted_at: leadInfo.lastContactedAt || null,
+      next_follow_up_at: leadInfo.nextFollowUpAt || null,
+      latitude: cleanNumber(leadInfo.latitude),
+      longitude: cleanNumber(leadInfo.longitude),
+      notes: cleanText(leadInfo.notes),
+    })
+    .select('id')
+    .single();
 
   if (error) {
     throw error;
   }
 
-  return true;
+  return data;
+}
+
+async function saveInitialContactLog(supabase, ownerId, companyId, contactId, leadId, data) {
+  const contactNotes = cleanText(data.personalInfo?.notes);
+  const leadNotes = cleanText(data.leadInfo?.notes);
+  const firstContactAt = data.leadInfo?.lastContactedAt || new Date().toISOString();
+  const activityPayload = {
+    owner_id: ownerId,
+    contact_id: contactId,
+    company_id: companyId,
+    type: cleanText(data.leadInfo?.initialContactMethod) || 'call',
+    direction: 'inbound',
+    subject: cleanText(data.leadInfo?.source)
+      ? `Initial contact - ${cleanText(data.leadInfo.source)}`
+      : 'Initial contact',
+    body: leadNotes || contactNotes,
+    occurred_at: new Date(firstContactAt).toISOString(),
+  };
+
+  if (leadId) {
+    activityPayload.lead_id = leadId;
+  }
+
+  const noteRows = [
+    contactNotes && {
+      owner_id: ownerId,
+      contact_id: contactId,
+      company_id: companyId,
+      body: contactNotes,
+    },
+    leadNotes && {
+      owner_id: ownerId,
+      contact_id: contactId,
+      company_id: companyId,
+      ...(leadId ? { lead_id: leadId } : {}),
+      body: leadNotes,
+    },
+  ].filter(Boolean);
+
+  const { error: activityError } = await supabase.from('activities').insert(activityPayload);
+
+  if (activityError) {
+    throw activityError;
+  }
+
+  if (noteRows.length) {
+    const { error: notesError } = await supabase.from('notes').insert(noteRows);
+
+    if (notesError) {
+      throw notesError;
+    }
+  }
 }
 
 export default AddContactStepper;

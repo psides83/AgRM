@@ -117,7 +117,7 @@ const SidenavDrawerContent = ({ variant = 'permanent' }) => {
                           background: 'transparent',
                         }}
                       >
-                        {t(menu.key || menu.subheader)}
+                        {t(menu.key || menu.subheader, { defaultValue: menu.subheader })}
                       </ListSubheader>
                     )
                   }

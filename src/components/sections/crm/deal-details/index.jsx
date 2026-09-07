@@ -24,14 +24,11 @@ import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import CrmFilesPanel from 'components/sections/crm/shared/CrmFilesPanel';
+import { activityDirections, activityTypes, dealStages, equipmentStatuses } from 'components/sections/crm/constants';
 
-const dealStages = ['lead', 'quoted', 'negotiation', 'won', 'lost'];
-const activityTypes = ['call', 'email', 'meeting', 'text', 'task', 'site_visit', 'demo', 'other'];
-const activityDirections = ['outbound', 'inbound', 'internal'];
 const equipmentCategories = ['tractor', 'combine', 'planter', 'sprayer', 'hay', 'tillage', 'utility_vehicle', 'attachment', 'other'];
 const equipmentConditions = ['new', 'used', 'either'];
 const equipmentAvailability = ['availability_unknown', 'in_stock_auburn', 'in_stock_transfer', 'pending', 'unavailable'];
-const equipmentStatuses = ['equipment_added', 'setup_required', 'transfer_required', 'order_required', 'setup_requested', 'transfer_requested', 'order_placed', 'transfer_in_progress', 'order_in_progress', 'setup_in_progress', 'ready', 'delivered'];
 
 const DealDetails = ({ dealId }) => {
   const supabase = useMemo(() => createClient(), []);
@@ -58,7 +55,7 @@ const DealDetails = ({ dealId }) => {
         .select(
           `
           *,
-          contacts(id, first_name, last_name, title, email, phone, mobile_phone),
+          contacts(id, first_name, last_name, title, account_number, email, phone, mobile_phone),
           companies(id, name, company_type, website, phone, email, city, region),
           leads(id, status, source, priority, estimated_budget, next_follow_up_at)
         `
@@ -165,7 +162,7 @@ const DealDetails = ({ dealId }) => {
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ justifyContent: 'space-between' }}>
             <Box sx={{ minWidth: 0 }}>
               <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', mb: 2 }}>
-                <Chip label={formatEnum(deal.stage)} variant="soft" color={deal.stage === 'won' ? 'success' : deal.stage === 'lost' ? 'error' : 'primary'} />
+                <Chip label={formatEnum(deal.stage)} variant="soft" color={deal.stage === 'closed' ? 'success' : 'primary'} />
                 <Chip label={formatCurrency(deal.amount)} variant="soft" color="neutral" />
                 <Chip label={`${deal.probability || 0}% probability`} variant="soft" color="neutral" />
               </Stack>
@@ -193,6 +190,7 @@ const DealDetails = ({ dealId }) => {
 
       <Grid size={{ xs: 12, lg: 8 }}>
         <Stack direction="column" spacing={3}>
+          <DealProgressCard deal={deal} supabase={supabase} onSaved={fetchDetails} />
           <EquipmentCard equipmentInterests={equipmentInterests} onAdd={() => setDialog('equipment')} />
           <CrmFilesPanel recordType="deal" recordId={deal.id} />
           <TimelineCard items={timelineItems} onAddActivity={() => setDialog('activity')} onAddNote={() => setDialog('note')} supabase={supabase} onSaved={fetchDetails} />
@@ -259,7 +257,7 @@ function LinkedRecordsCard({ deal }) {
       <Stack direction="column" spacing={1.5}>
         <RecordRow
           title={deal.contacts ? contactName(deal.contacts) : 'No linked contact'}
-          subtitle={deal.contacts ? [deal.contacts.title, deal.contacts.email, deal.contacts.mobile_phone || deal.contacts.phone].filter(Boolean).join(' · ') : 'Add a contact link later from edit support.'}
+          subtitle={deal.contacts ? [deal.contacts.account_number, deal.contacts.title, deal.contacts.email, deal.contacts.mobile_phone || deal.contacts.phone].filter(Boolean).join(' · ') : 'Add a contact link later from edit support.'}
           href={deal.contact_id ? paths.contactDetails(deal.contact_id) : null}
         />
         <RecordRow
@@ -272,6 +270,67 @@ function LinkedRecordsCard({ deal }) {
           subtitle={deal.leads ? [deal.leads.source, `Priority ${deal.leads.priority || '-'}`, `Budget ${formatCurrency(deal.leads.estimated_budget)}`].filter(Boolean).join(' · ') : 'Deals can stand alone without a lead.'}
           href={deal.lead_id ? paths.leadDetails(deal.lead_id) : null}
         />
+      </Stack>
+    </Paper>
+  );
+}
+
+function DealProgressCard({ deal, supabase, onSaved }) {
+  const currentIndex = Math.max(0, dealStages.indexOf(deal.stage));
+  const nextStage = dealStages[currentIndex + 1];
+
+  const handleAdvance = async () => {
+    if (!nextStage) return;
+
+    const { error } = await supabase
+      .from('deals')
+      .update({
+        stage: nextStage,
+        closed_at: nextStage === 'closed' ? new Date().toISOString() : null,
+      })
+      .eq('id', deal.id);
+
+    if (!error) onSaved();
+  };
+
+  return (
+    <Paper sx={{ p: { xs: 3, md: 4 } }}>
+      <SectionTitle
+        title="Deal Progress"
+        icon="material-symbols:task-alt-rounded"
+        action={
+          nextStage ? (
+            <Button size="small" variant="soft" onClick={handleAdvance}>
+              Complete {formatEnum(deal.stage)}
+            </Button>
+          ) : null
+        }
+      />
+      <Stack direction="column" spacing={1}>
+        {dealStages.map((stage, index) => {
+          const isComplete = index < currentIndex || deal.stage === 'closed';
+          const isCurrent = index === currentIndex && deal.stage !== 'closed';
+
+          return (
+            <Stack
+              key={stage}
+              direction="row"
+              spacing={1.5}
+              sx={{ alignItems: 'center', py: 0.75 }}
+            >
+              <Chip
+                label={isComplete ? 'Done' : isCurrent ? 'Current' : 'Open'}
+                size="small"
+                color={isComplete ? 'success' : isCurrent ? 'primary' : 'neutral'}
+                variant="soft"
+                sx={{ minWidth: 74 }}
+              />
+              <Typography variant="body2" sx={{ fontWeight: isCurrent ? 700 : 500 }}>
+                {formatEnum(stage)}
+              </Typography>
+            </Stack>
+          );
+        })}
       </Stack>
     </Paper>
   );
@@ -371,7 +430,7 @@ function RecordRow({ title, subtitle, chip, href }) {
 function EditDealDialog({ open, deal, onClose, onSaved, supabase }) {
   const [form, setForm] = useState({
     name: deal?.name || '',
-    stage: deal?.stage || 'lead',
+    stage: deal?.stage || 'needs_discovery',
     amount: deal?.amount || '',
     probability: deal?.probability || 0,
     expectedCloseDate: deal?.expected_close_date || '',
@@ -384,7 +443,7 @@ function EditDealDialog({ open, deal, onClose, onSaved, supabase }) {
     if (open) {
       setForm({
         name: deal?.name || '',
-        stage: deal?.stage || 'lead',
+        stage: deal?.stage || 'needs_discovery',
         amount: deal?.amount || '',
         probability: deal?.probability || 0,
         expectedCloseDate: deal?.expected_close_date || '',
@@ -403,8 +462,8 @@ function EditDealDialog({ open, deal, onClose, onSaved, supabase }) {
       amount: form.amount || null,
       probability: Number(form.probability) || 0,
       expected_close_date: form.expectedCloseDate || null,
-      closed_at: ['won', 'lost'].includes(form.stage) ? deal.closed_at || new Date().toISOString() : null,
-      lost_reason: form.stage === 'lost' ? cleanText(form.lostReason) : null,
+      closed_at: form.stage === 'closed' ? deal.closed_at || new Date().toISOString() : null,
+      lost_reason: null,
       notes: cleanText(form.notes),
     };
     const { error } = await supabase.from('deals').update(payload).eq('id', deal.id);
@@ -429,7 +488,6 @@ function EditDealDialog({ open, deal, onClose, onSaved, supabase }) {
             <TextField label="Probability" type="number" value={form.probability} onChange={handleField(setForm, 'probability')} slotProps={{ htmlInput: { min: 0, max: 100 } }} fullWidth />
           </Stack>
           <TextField label="Expected Close Date" type="date" value={form.expectedCloseDate} onChange={handleField(setForm, 'expectedCloseDate')} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
-          {form.stage === 'lost' && <TextField label="Lost Reason" value={form.lostReason} onChange={handleField(setForm, 'lostReason')} fullWidth multiline rows={2} />}
           <TextField label="Notes" value={form.notes} onChange={handleField(setForm, 'notes')} fullWidth multiline rows={3} />
         </Stack>
       </DialogContent>
@@ -533,7 +591,7 @@ function AddActivityDialog({ open, deal, onClose, onSaved, supabase }) {
 }
 
 function AddEquipmentDialog({ open, deal, onClose, onSaved, supabase }) {
-  const [form, setForm] = useState({ category: 'tractor', make: '', model: '', condition: 'either', availability: 'availability_unknown', status: 'equipment_added', priceMin: '', priceMax: '', tradeIn: 'false', notes: '' });
+  const [form, setForm] = useState({ category: 'tractor', make: '', model: '', stockNumber: '', serialNumber: '', condition: 'either', availability: 'availability_unknown', status: 'not_started', quotePrice: '', priceMin: '', priceMax: '', tradeIn: 'false', notes: '' });
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
@@ -547,9 +605,12 @@ function AddEquipmentDialog({ open, deal, onClose, onSaved, supabase }) {
       category: form.category,
       make: cleanText(form.make),
       model: cleanText(form.model),
+      stock_number: cleanText(form.stockNumber),
+      serial_number: cleanText(form.serialNumber),
       condition: form.condition,
       availability: form.availability,
       status: form.status,
+      quote_price: form.quotePrice || null,
       price_min: form.priceMin || null,
       price_max: form.priceMax || null,
       trade_in: form.tradeIn === 'true',
@@ -557,7 +618,7 @@ function AddEquipmentDialog({ open, deal, onClose, onSaved, supabase }) {
     });
     setIsSaving(false);
     if (!error) {
-      setForm({ category: 'tractor', make: '', model: '', condition: 'either', availability: 'availability_unknown', status: 'equipment_added', priceMin: '', priceMax: '', tradeIn: 'false', notes: '' });
+      setForm({ category: 'tractor', make: '', model: '', stockNumber: '', serialNumber: '', condition: 'either', availability: 'availability_unknown', status: 'not_started', quotePrice: '', priceMin: '', priceMax: '', tradeIn: 'false', notes: '' });
       onSaved();
       onClose();
     }
@@ -573,6 +634,10 @@ function AddEquipmentDialog({ open, deal, onClose, onSaved, supabase }) {
           </TextField>
           <TextField label="Make" value={form.make} onChange={handleField(setForm, 'make')} fullWidth />
           <TextField label="Model" value={form.model} onChange={handleField(setForm, 'model')} fullWidth />
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField label="Stock Number" value={form.stockNumber} onChange={handleStockField(setForm)} inputProps={{ maxLength: 6 }} fullWidth />
+            <TextField label="Serial Number" value={form.serialNumber} onChange={handleUppercaseField(setForm, 'serialNumber')} fullWidth />
+          </Stack>
           <TextField select label="Condition" value={form.condition} onChange={handleField(setForm, 'condition')} fullWidth>
             {equipmentConditions.map((condition) => <MenuItem key={condition} value={condition}>{formatEnum(condition)}</MenuItem>)}
           </TextField>
@@ -585,6 +650,7 @@ function AddEquipmentDialog({ open, deal, onClose, onSaved, supabase }) {
             </TextField>
           </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField label="Quote Price" type="number" value={form.quotePrice} onChange={handleField(setForm, 'quotePrice')} fullWidth />
             <TextField label="Price Min" type="number" value={form.priceMin} onChange={handleField(setForm, 'priceMin')} fullWidth />
             <TextField label="Price Max" type="number" value={form.priceMax} onChange={handleField(setForm, 'priceMax')} fullWidth />
           </Stack>
@@ -609,6 +675,14 @@ function EmptyState({ label }) {
 
 function handleField(setForm, key) {
   return (event) => setForm((prev) => ({ ...prev, [key]: event.target.value }));
+}
+
+function handleStockField(setForm) {
+  return (event) => setForm((prev) => ({ ...prev, stockNumber: event.target.value.replace(/\D/g, '').slice(0, 6) }));
+}
+
+function handleUppercaseField(setForm, key) {
+  return (event) => setForm((prev) => ({ ...prev, [key]: event.target.value.toUpperCase() }));
 }
 
 function contactName(contact) {
@@ -640,6 +714,7 @@ function formatDateTime(value) {
 
 function formatEnum(value) {
   if (!value) return '-';
+  if (value === 'fit_confirmed') return 'Equipment Fit Confirmed';
   return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 

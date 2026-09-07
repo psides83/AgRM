@@ -105,11 +105,15 @@ const paths = {
     `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/contacts/${contactId || ''}`,
   companyDetails: (companyId) =>
     `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/companies/${companyId || ''}`,
+  leads: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/leads`,
   leadDetails: (leadId) => `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/leads/${leadId || ''}`,
   dealDetails: (dealId) => `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/deals/${dealId || ''}`,
   addContact: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/add-contact`,
   deals: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/deals`,
+  equipment: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/equipment`,
+  crmMap: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/map`,
   crmSearch: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/search`,
+  crmImport: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/import`,
 
   chat: `/${rootPaths.appsRoot}/chat`,
   newChat: `/${rootPaths.appsRoot}/chat/new`,

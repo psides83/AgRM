@@ -2,8 +2,13 @@
   "name": "agrm",
   "version": "1.12.0",
   "private": true,
+  "engines": {
+    "node": ">=20.20.0 <21"
+  },
   "scripts": {
-    "dev": "next dev -p 4000",
+    "dev": "NEXT_TELEMETRY_DISABLED=1 next dev -H 127.0.0.1 -p 4000 --webpack --disable-source-maps --no-server-fast-refresh",
+    "dev:turbo": "NEXT_TELEMETRY_DISABLED=1 next dev -H 127.0.0.1 -p 4000 --turbo",
+    "clean:next": "rm -rf .next",
     "build": "NODE_OPTIONS='--max-old-space-size=4096' next build",
     "start": "next start -p 4000",
     "lint": "eslint . --max-warnings 0",

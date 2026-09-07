@@ -29,8 +29,8 @@ async function getSearchResults(rawQuery) {
   const [contactsResult, companiesResult, leadsResult, dealsResult, equipmentResult] = await Promise.all([
     supabase
       .from('contacts')
-      .select('id, first_name, last_name, title, email, phone, mobile_phone, city, region, companies(id, name)')
-      .or(`first_name.ilike.${pattern},last_name.ilike.${pattern},email.ilike.${pattern},phone.ilike.${pattern},mobile_phone.ilike.${pattern},title.ilike.${pattern}`)
+      .select('id, first_name, last_name, title, account_number, email, phone, mobile_phone, city, region, companies(id, name)')
+      .or(`first_name.ilike.${pattern},last_name.ilike.${pattern},account_number.ilike.${pattern},email.ilike.${pattern},phone.ilike.${pattern},mobile_phone.ilike.${pattern},title.ilike.${pattern}`)
       .order('last_name', { ascending: true })
       .limit(25),
     supabase
@@ -41,8 +41,8 @@ async function getSearchResults(rawQuery) {
       .limit(25),
     supabase
       .from('leads')
-      .select('id, source, status, priority, estimated_budget, next_follow_up_at, notes, contacts(id, first_name, last_name), companies(id, name)')
-      .or(`source.ilike.${pattern},notes.ilike.${pattern}`)
+      .select('id, source, account_number, status, priority, estimated_budget, next_follow_up_at, notes, contacts(id, first_name, last_name), companies(id, name)')
+      .or(`source.ilike.${pattern},account_number.ilike.${pattern},notes.ilike.${pattern}`)
       .order('created_at', { ascending: false })
       .limit(25),
     supabase
@@ -149,7 +149,7 @@ const CRMSearch = async ({ query: rawQuery }) => {
               key={contact.id}
               href={paths.contactDetails(contact.id)}
               title={contactName(contact)}
-              subtitle={[contact.title, contact.companies?.name, contact.email, contact.mobile_phone || contact.phone].filter(Boolean).join(' · ')}
+              subtitle={[contact.title, contact.account_number, contact.companies?.name, contact.email, contact.mobile_phone || contact.phone].filter(Boolean).join(' · ')}
               chip="Contact"
             />
           )) : <EmptyState query={query} label="No matching contacts" />}
@@ -177,7 +177,7 @@ const CRMSearch = async ({ query: rawQuery }) => {
               key={lead.id}
               href={paths.leadDetails(lead.id)}
               title={entityName(lead)}
-              subtitle={[lead.source, `Budget ${formatCurrency(lead.estimated_budget)}`, `Follow-up ${formatDateTime(lead.next_follow_up_at)}`].filter(Boolean).join(' · ')}
+              subtitle={[lead.source, lead.account_number, `Budget ${formatCurrency(lead.estimated_budget)}`, `Follow-up ${formatDateTime(lead.next_follow_up_at)}`].filter(Boolean).join(' · ')}
               chip={formatEnum(lead.status)}
             />
           )) : <EmptyState query={query} label="No matching leads" />}
@@ -324,6 +324,7 @@ function formatDateTime(value) {
 
 function formatEnum(value) {
   if (!value) return '-';
+  if (value === 'fit_confirmed') return 'Equipment Fit Confirmed';
   return String(value).replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 

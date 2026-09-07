@@ -10,6 +10,11 @@ import ControlledSelect from 'components/sections/crm/add-contact/ControlledSele
 export const leadInfoSchema = yup.object({
   leadInfo: yup.object({
     source: yup.string().optional(),
+    accountNumber: yup.string().optional(),
+    initialContactMethod: yup
+      .string()
+      .oneOf(['call', 'text', 'email', 'visit', 'demo', 'quote', 'task', 'note'])
+      .default('call'),
     status: yup
       .string()
       .transform((value) => (value === '' ? undefined : value))
@@ -29,6 +34,20 @@ export const leadInfoSchema = yup.object({
     targetPurchaseDate: yup.string().nullable().optional(),
     lastContactedAt: yup.string().nullable().optional(),
     nextFollowUpAt: yup.string().nullable().optional(),
+    latitude: yup
+      .number()
+      .typeError('Latitude must be a number')
+      .min(-90)
+      .max(90)
+      .nullable()
+      .transform((value, originalValue) => (originalValue === '' ? null : value)),
+    longitude: yup
+      .number()
+      .typeError('Longitude must be a number')
+      .min(-180)
+      .max(180)
+      .nullable()
+      .transform((value, originalValue) => (originalValue === '' ? null : value)),
     notes: yup.string().optional(),
   }),
 });
@@ -47,6 +66,17 @@ const priorityOptions = [
   { value: 3, label: '3 - Normal' },
   { value: 4, label: '4 - Low' },
   { value: 5, label: '5 - Lowest' },
+];
+
+const contactMethodOptions = [
+  { value: 'call', label: 'Call' },
+  { value: 'text', label: 'Text' },
+  { value: 'email', label: 'Email' },
+  { value: 'visit', label: 'Visit' },
+  { value: 'demo', label: 'Demo' },
+  { value: 'quote', label: 'Quote' },
+  { value: 'task', label: 'Task' },
+  { value: 'note', label: 'Note' },
 ];
 
 const LeadInfoForm = ({ label }) => {
@@ -77,12 +107,30 @@ const LeadInfoForm = ({ label }) => {
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Account Number"
+                error={!!errors.leadInfo?.accountNumber}
+                helperText={errors.leadInfo?.accountNumber?.message}
+                {...register('leadInfo.accountNumber')}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <ControlledSelect
                 name="leadInfo.status"
                 label="Lead Status"
                 options={statusOptions}
                 control={control}
                 error={errors.leadInfo?.status?.message}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <ControlledSelect
+                name="leadInfo.initialContactMethod"
+                label="Initial Contact Method"
+                options={contactMethodOptions}
+                control={control}
+                error={errors.leadInfo?.initialContactMethod?.message}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -149,6 +197,31 @@ const LeadInfoForm = ({ label }) => {
                     slotProps={{ textField: { fullWidth: true } }}
                   />
                 )}
+              />
+            </Grid>
+          </Grid>
+        </ContactFormSection>
+
+        <ContactFormSection title="Lead Coordinates">
+          <Grid container spacing={2} sx={{ width: 1 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Latitude"
+                type="number"
+                error={!!errors.leadInfo?.latitude}
+                helperText={errors.leadInfo?.latitude?.message}
+                {...register('leadInfo.latitude')}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Longitude"
+                type="number"
+                error={!!errors.leadInfo?.longitude}
+                helperText={errors.leadInfo?.longitude?.message}
+                {...register('leadInfo.longitude')}
               />
             </Grid>
           </Grid>

@@ -233,10 +233,10 @@ const NavItem = ({ item, level }) => {
                   color="warning"
                   sx={{ [`& .${badgeClasses.badge}`]: { top: 6, right: -8 } }}
                 >
-                  {t(item.key || item.name)}
+                  {t(item.key || item.name, { defaultValue: item.name })}
                 </Badge>
               ) : (
-                t(item.key || item.name)
+                t(item.key || item.name, { defaultValue: item.name })
               )}
 
               {item.new && (!sidenavCollapsed || level > 0 || isStackedSideNav) && (

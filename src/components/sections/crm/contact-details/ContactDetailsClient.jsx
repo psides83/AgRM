@@ -24,10 +24,11 @@ import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import CrmFilesPanel from 'components/sections/crm/shared/CrmFilesPanel';
+import { activityDirections, activityTypes, equipmentStatuses } from 'components/sections/crm/constants';
+import DuplicateRecordDialog from 'components/sections/crm/shared/DuplicateRecordDialog';
+import { findPotentialDuplicates } from 'components/sections/crm/shared/duplicateRecords';
 
 const leadStatuses = ['new', 'working', 'qualified', 'unqualified', 'converted'];
-const activityTypes = ['call', 'email', 'meeting', 'text', 'task', 'site_visit', 'demo', 'other'];
-const activityDirections = ['outbound', 'inbound', 'internal'];
 const equipmentCategories = [
   'tractor',
   'combine',
@@ -41,7 +42,6 @@ const equipmentCategories = [
 ];
 const equipmentConditions = ['new', 'used', 'either'];
 const equipmentAvailability = ['availability_unknown', 'in_stock_auburn', 'in_stock_transfer', 'pending', 'unavailable'];
-const equipmentStatuses = ['equipment_added', 'setup_required', 'transfer_required', 'order_required', 'setup_requested', 'transfer_requested', 'order_placed', 'transfer_in_progress', 'order_in_progress', 'setup_in_progress', 'ready', 'delivered'];
 
 const ContactDetailsClient = ({ contactId }) => {
   const supabase = useMemo(() => createClient(), []);
@@ -75,6 +75,8 @@ const ContactDetailsClient = ({ contactId }) => {
               city,
               region,
               postal_code,
+              latitude,
+              longitude,
               notes
             )
           `
@@ -250,6 +252,7 @@ const ContactDetailsClient = ({ contactId }) => {
                       {[contact.title, company?.name].filter(Boolean).join(' at ') || 'Contact'}
                     </Typography>
                     <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', mt: 1 }}>
+                      {contact.account_number && <Chip label={`Account ${contact.account_number}`} size="small" variant="soft" color="primary" />}
                       {contact.email && <Chip label={contact.email} size="small" variant="soft" color="neutral" />}
                       {primaryPhone && <Chip label={primaryPhone} size="small" variant="soft" color="neutral" />}
                       {[contact.city, contact.region].filter(Boolean).length > 0 && (
@@ -321,6 +324,7 @@ const ContactDetailsClient = ({ contactId }) => {
           <Stack direction="column" spacing={3}>
             <InfoCard title="Contact Info" icon="material-symbols:contacts-outline-rounded">
               <InfoRow label="Role" value={contact.title} />
+              <InfoRow label="Account Number" value={contact.account_number} />
               <InfoRow label="Email" value={contact.email} />
               <InfoRow label="Phone" value={contact.phone} />
               <InfoRow label="Mobile" value={contact.mobile_phone} />
@@ -624,6 +628,7 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
         first_name: cleanText(form.firstName),
         last_name: cleanText(form.lastName),
         title: cleanText(form.title),
+        account_number: cleanText(form.accountNumber),
         email: cleanText(form.email),
         phone: cleanText(form.phone),
         mobile_phone: cleanText(form.mobilePhone),
@@ -633,6 +638,8 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
         region: cleanText(form.region),
         postal_code: cleanText(form.postalCode),
         country: cleanText(form.country) || 'US',
+        latitude: cleanNumber(form.latitude),
+        longitude: cleanNumber(form.longitude),
         tags: parseTags(form.tags),
         notes: cleanText(form.notes),
       })
@@ -672,6 +679,7 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
             />
           </Stack>
           <TextField label="Title / Role" value={form.title} onChange={handleField(setForm, 'title')} fullWidth />
+          <TextField label="Account Number" value={form.accountNumber} onChange={handleField(setForm, 'accountNumber')} fullWidth />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField label="Email" type="email" value={form.email} onChange={handleField(setForm, 'email')} fullWidth />
             <TextField label="Phone" value={form.phone} onChange={handleField(setForm, 'phone')} fullWidth />
@@ -686,6 +694,10 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField label="Postal Code" value={form.postalCode} onChange={handleField(setForm, 'postalCode')} fullWidth />
             <TextField label="Country" value={form.country} onChange={handleField(setForm, 'country')} fullWidth />
+          </Stack>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField label="Latitude" type="number" value={form.latitude} onChange={handleField(setForm, 'latitude')} fullWidth />
+            <TextField label="Longitude" type="number" value={form.longitude} onChange={handleField(setForm, 'longitude')} fullWidth />
           </Stack>
           <TextField
             label="Tags"
@@ -713,84 +725,148 @@ function AddLeadDialog({ open, contact, onClose, onSaved, supabase }) {
   const [form, setForm] = useState({
     source: '',
     status: 'new',
+    accountNumber: '',
     priority: 3,
     estimatedBudget: '',
     nextFollowUpAt: '',
+    latitude: '',
+    longitude: '',
     notes: '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [duplicateConfirmation, setDuplicateConfirmation] = useState(null);
 
-  const handleSave = async () => {
+  const handleSave = async (options = {}) => {
     setIsSaving(true);
     const { data: userResult } = await supabase.auth.getUser();
-    const { error } = await supabase.from('leads').insert({
-      owner_id: userResult.user.id,
-      contact_id: contact.id,
-      company_id: contact.company_id,
-      source: cleanText(form.source),
-      status: form.status,
-      priority: Number(form.priority) || 3,
-      estimated_budget: form.estimatedBudget || null,
-      next_follow_up_at: form.nextFollowUpAt || null,
-      notes: cleanText(form.notes),
-    });
+
+    if (!options.skipDuplicateCheck) {
+      const matches = await findPotentialDuplicates(supabase, [
+        {
+          type: 'lead',
+          record: {
+            source: form.source,
+            accountNumber: form.accountNumber,
+            contactId: contact.id,
+            companyId: contact.company_id,
+          },
+        },
+      ]);
+
+      if (matches.length) {
+        setDuplicateConfirmation({ matches });
+        setIsSaving(false);
+        return;
+      }
+    }
+
+    const { data: lead, error } = await supabase
+      .from('leads')
+      .insert({
+        owner_id: userResult.user.id,
+        contact_id: contact.id,
+        company_id: contact.company_id,
+        source: cleanText(form.source),
+        account_number: cleanText(form.accountNumber),
+        status: form.status,
+        priority: Number(form.priority) || 3,
+        estimated_budget: form.estimatedBudget || null,
+        next_follow_up_at: form.nextFollowUpAt || null,
+        latitude: cleanNumber(form.latitude),
+        longitude: cleanNumber(form.longitude),
+        notes: cleanText(form.notes),
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      setIsSaving(false);
+      return;
+    }
+
+    const noteBody = cleanText(form.notes);
+    if (noteBody) {
+      const { error: noteError } = await supabase.from('notes').insert({
+        owner_id: userResult.user.id,
+        contact_id: contact.id,
+        company_id: contact.company_id,
+        lead_id: lead.id,
+        body: noteBody,
+      });
+
+      if (noteError) {
+        setIsSaving(false);
+        return;
+      }
+    }
 
     setIsSaving(false);
-
-    if (!error) {
-      setForm({ source: '', status: 'new', priority: 3, estimatedBudget: '', nextFollowUpAt: '', notes: '' });
-      onSaved();
-      onClose();
-    }
+    setForm({ source: '', status: 'new', accountNumber: '', priority: 3, estimatedBudget: '', nextFollowUpAt: '', latitude: '', longitude: '', notes: '' });
+    setDuplicateConfirmation(null);
+    onSaved();
+    onClose();
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Add Lead</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ pt: 1 }}>
-          <TextField label="Source" value={form.source} onChange={handleField(setForm, 'source')} fullWidth />
-          <TextField select label="Status" value={form.status} onChange={handleField(setForm, 'status')} fullWidth>
-            {leadStatuses.map((status) => (
-              <MenuItem key={status} value={status}>
-                {status}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            label="Priority"
-            type="number"
-            value={form.priority}
-            onChange={handleField(setForm, 'priority')}
-            fullWidth
-          />
-          <TextField
-            label="Estimated Budget"
-            type="number"
-            value={form.estimatedBudget}
-            onChange={handleField(setForm, 'estimatedBudget')}
-            fullWidth
-          />
-          <TextField
-            label="Next Follow-up"
-            type="datetime-local"
-            value={form.nextFollowUpAt}
-            onChange={handleField(setForm, 'nextFollowUpAt')}
-            fullWidth
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
-          <TextField label="Notes" value={form.notes} onChange={handleField(setForm, 'notes')} fullWidth multiline rows={3} />
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button color="neutral" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button variant="contained" onClick={handleSave} loading={isSaving}>
-          Save Lead
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <>
+      <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+        <DialogTitle>Add Lead</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <TextField label="Source" value={form.source} onChange={handleField(setForm, 'source')} fullWidth />
+            <TextField label="Account Number" value={form.accountNumber} onChange={handleField(setForm, 'accountNumber')} fullWidth />
+            <TextField select label="Status" value={form.status} onChange={handleField(setForm, 'status')} fullWidth>
+              {leadStatuses.map((status) => (
+                <MenuItem key={status} value={status}>
+                  {status}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="Priority"
+              type="number"
+              value={form.priority}
+              onChange={handleField(setForm, 'priority')}
+              fullWidth
+            />
+            <TextField
+              label="Estimated Budget"
+              type="number"
+              value={form.estimatedBudget}
+              onChange={handleField(setForm, 'estimatedBudget')}
+              fullWidth
+            />
+            <TextField
+              label="Next Follow-up"
+              type="datetime-local"
+              value={form.nextFollowUpAt}
+              onChange={handleField(setForm, 'nextFollowUpAt')}
+              fullWidth
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField label="Latitude" type="number" value={form.latitude} onChange={handleField(setForm, 'latitude')} fullWidth />
+              <TextField label="Longitude" type="number" value={form.longitude} onChange={handleField(setForm, 'longitude')} fullWidth />
+            </Stack>
+            <TextField label="Notes" value={form.notes} onChange={handleField(setForm, 'notes')} fullWidth multiline rows={3} />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button color="neutral" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={() => handleSave()} loading={isSaving}>
+            Save Lead
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <DuplicateRecordDialog
+        open={Boolean(duplicateConfirmation)}
+        matches={duplicateConfirmation?.matches || []}
+        onCancel={() => setDuplicateConfirmation(null)}
+        onConfirm={() => handleSave({ skipDuplicateCheck: true })}
+      />
+    </>
   );
 }
 
@@ -918,9 +994,12 @@ function AddEquipmentDialog({ open, contact, leads, onClose, onSaved, supabase }
     category: 'tractor',
     make: '',
     model: '',
+    stockNumber: '',
+    serialNumber: '',
     condition: 'either',
     availability: 'availability_unknown',
-    status: 'equipment_added',
+    status: 'not_started',
+    quotePrice: '',
     priceMin: '',
     priceMax: '',
     tradeIn: 'false',
@@ -938,9 +1017,12 @@ function AddEquipmentDialog({ open, contact, leads, onClose, onSaved, supabase }
       category: form.category,
       make: cleanText(form.make),
       model: cleanText(form.model),
+      stock_number: cleanText(form.stockNumber),
+      serial_number: cleanText(form.serialNumber),
       condition: form.condition,
       availability: form.availability,
       status: form.status,
+      quote_price: form.quotePrice || null,
       price_min: form.priceMin || null,
       price_max: form.priceMax || null,
       trade_in: form.tradeIn === 'true',
@@ -955,9 +1037,12 @@ function AddEquipmentDialog({ open, contact, leads, onClose, onSaved, supabase }
         category: 'tractor',
         make: '',
         model: '',
+        stockNumber: '',
+        serialNumber: '',
         condition: 'either',
         availability: 'availability_unknown',
-        status: 'equipment_added',
+        status: 'not_started',
+        quotePrice: '',
         priceMin: '',
         priceMax: '',
         tradeIn: 'false',
@@ -990,6 +1075,10 @@ function AddEquipmentDialog({ open, contact, leads, onClose, onSaved, supabase }
           </TextField>
           <TextField label="Make" value={form.make} onChange={handleField(setForm, 'make')} fullWidth />
           <TextField label="Model" value={form.model} onChange={handleField(setForm, 'model')} fullWidth />
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField label="Stock Number" value={form.stockNumber} onChange={handleStockField(setForm)} inputProps={{ maxLength: 6 }} fullWidth />
+            <TextField label="Serial Number" value={form.serialNumber} onChange={handleUppercaseField(setForm, 'serialNumber')} fullWidth />
+          </Stack>
           <TextField select label="Condition" value={form.condition} onChange={handleField(setForm, 'condition')} fullWidth>
             {equipmentConditions.map((condition) => (
               <MenuItem key={condition} value={condition}>
@@ -1014,6 +1103,7 @@ function AddEquipmentDialog({ open, contact, leads, onClose, onSaved, supabase }
             </TextField>
           </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField label="Quote Price" type="number" value={form.quotePrice} onChange={handleField(setForm, 'quotePrice')} fullWidth />
             <TextField label="Price Min" type="number" value={form.priceMin} onChange={handleField(setForm, 'priceMin')} fullWidth />
             <TextField label="Price Max" type="number" value={form.priceMax} onChange={handleField(setForm, 'priceMax')} fullWidth />
           </Stack>
@@ -1042,21 +1132,32 @@ function handleField(setForm, key) {
   };
 }
 
+function handleStockField(setForm) {
+  return (event) => setForm((prev) => ({ ...prev, stockNumber: event.target.value.replace(/\D/g, '').slice(0, 6) }));
+}
+
+function handleUppercaseField(setForm, key) {
+  return (event) => setForm((prev) => ({ ...prev, [key]: event.target.value.toUpperCase() }));
+}
+
 function contactToForm(contact) {
   return {
     firstName: contact?.first_name || '',
     lastName: contact?.last_name || '',
     title: contact?.title || '',
+    accountNumber: contact?.account_number || '',
     email: contact?.email || '',
     phone: contact?.phone || '',
     mobilePhone: contact?.mobile_phone || '',
     addressLine1: contact?.address_line1 || '',
     addressLine2: contact?.address_line2 || '',
     city: contact?.city || '',
-    region: contact?.region || '',
-    postalCode: contact?.postal_code || '',
-    country: contact?.country || 'US',
-    tags: (contact?.tags || []).join(', '),
+      region: contact?.region || '',
+      postalCode: contact?.postal_code || '',
+      country: contact?.country || 'US',
+      latitude: contact?.latitude ?? '',
+      longitude: contact?.longitude ?? '',
+      tags: (contact?.tags || []).join(', '),
     notes: contact?.notes || '',
   };
 }
@@ -1070,6 +1171,12 @@ function parseTags(value) {
 
 function cleanText(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function cleanNumber(value) {
+  if (value === '' || value === null || typeof value === 'undefined') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
 }
 
 function getInitials(contact) {
@@ -1098,6 +1205,7 @@ function formatDateTime(value) {
 
 function formatEnum(value) {
   if (!value) return '-';
+  if (value === 'fit_confirmed') return 'Equipment Fit Confirmed';
   return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
