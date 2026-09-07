@@ -1,7 +1,7 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Alert,
@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { rootPaths } from 'routes/paths';
+import { normalizeAuthNextPath } from 'lib/supabase/redirect';
 import * as yup from 'yup';
 import PasswordTextField from 'components/common/PasswordTextField';
 import SocialAuth from './SocialAuth';
@@ -38,8 +39,6 @@ const LoginForm = ({
   socialAuth = true,
   rememberDevice = true,
 }) => {
-  const router = useRouter();
-
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
 
@@ -55,8 +54,7 @@ const LoginForm = ({
   const onSubmit = async (data) => {
     const res = await handleLogin(data);
     if (res?.ok) {
-      router.refresh();
-      router.push(callbackUrl ? callbackUrl : rootPaths.root);
+      window.location.assign(normalizeAuthNextPath(callbackUrl || rootPaths.root));
     }
     if (res?.error) {
       setError('root.credential', { type: 'manual', message: res.error });
