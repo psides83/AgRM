@@ -270,7 +270,7 @@ const CRMImport = () => {
       </Box>
 
       <Box sx={{ px: { xs: 2, md: 5 }, py: { xs: 2, md: 3 } }}>
-        <Stack spacing={3} sx={{ minWidth: 0 }}>
+        <Stack direction="column" spacing={3} sx={{ minWidth: 0 }}>
           <Paper sx={{ width: 1, maxWidth: 1, overflow: 'hidden', p: { xs: 2, md: 3 } }}>
             <Stack
               direction={{ xs: 'column', md: 'row' }}
@@ -316,7 +316,7 @@ const CRMImport = () => {
           )}
 
           {headers.length > 0 && (
-            <Stack spacing={3} sx={{ minWidth: 0 }}>
+            <Stack direction="column" spacing={3} sx={{ minWidth: 0 }}>
               <Paper sx={{ width: 1, maxWidth: 1, overflow: 'hidden', p: { xs: 2, md: 3 } }}>
                 <Stack
                   direction={{ xs: 'column', lg: 'row' }}
@@ -367,7 +367,7 @@ const CRMImport = () => {
               </Paper>
 
               <Paper sx={{ width: 1, maxWidth: 1, overflow: 'hidden', p: { xs: 2, md: 3 } }}>
-                <Stack spacing={1.5} sx={{ minWidth: 0 }}>
+                <Stack direction="column" spacing={1.5} sx={{ minWidth: 0 }}>
                   <SectionHeader title="Detected Fields" />
                   <Box
                     sx={{
