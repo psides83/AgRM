@@ -83,6 +83,7 @@ const ContactDetailsClient = ({ contactId }) => {
   const [error, setError] = useState(null);
   const [dialog, setDialog] = useState(null);
   const [contactMenuAnchor, setContactMenuAnchor] = useState(null);
+  const [actionMenuAnchor, setActionMenuAnchor] = useState(null);
 
   const fetchDetails = async () => {
     setError(null);
@@ -296,12 +297,17 @@ const ContactDetailsClient = ({ contactId }) => {
     }
   };
 
+  const handleMoreAction = (nextDialog) => {
+    setActionMenuAnchor(null);
+    setDialog(nextDialog);
+  };
+
   return (
     <>
       <Grid container spacing={3}>
         <Grid size={12}>
           <PageHeader
-            title={contactName}
+            title={null}
             breadcrumb={[
               { label: 'Home', url: paths.crm },
               { label: 'Contacts', url: paths.contacts },
@@ -423,16 +429,6 @@ const ContactDetailsClient = ({ contactId }) => {
                 sx={{ flexWrap: 'wrap' }}
               >
                 <Button
-                  variant="soft"
-                  color="neutral"
-                  onClick={() => setDialog('edit-contact')}
-                  startIcon={
-                    <IconifyIcon icon="material-symbols:edit-outline-rounded" />
-                  }
-                >
-                  Edit
-                </Button>
-                <Button
                   variant="contained"
                   color="primary"
                   onClick={(event) => setContactMenuAnchor(event.currentTarget)}
@@ -479,52 +475,81 @@ const ContactDetailsClient = ({ contactId }) => {
                 <Button
                   variant="soft"
                   color="neutral"
-                  onClick={() => setDialog('activity')}
-                  startIcon={
-                    <IconifyIcon icon="material-symbols:add-call-outline-rounded" />
-                  }
-                >
-                  Add Activity
-                </Button>
-                <Button
-                  variant="soft"
-                  color="neutral"
                   onClick={() => setDialog('task')}
                   startIcon={
                     <IconifyIcon icon="material-symbols:add-task-outline-rounded" />
                   }
                 >
-                  Add Task
+                  Task
                 </Button>
                 <Button
                   variant="soft"
                   color="neutral"
-                  onClick={() => setDialog('lead')}
+                  onClick={() => setDialog('activity')}
                   startIcon={
-                    <IconifyIcon icon="material-symbols:add-notes-outline-rounded" />
+                    <IconifyIcon icon="material-symbols:add-call-outline-rounded" />
                   }
                 >
-                  Add Lead
+                  Activity
                 </Button>
                 <Button
                   variant="soft"
                   color="neutral"
-                  onClick={() => setDialog('note')}
+                  onClick={(event) => setActionMenuAnchor(event.currentTarget)}
                   startIcon={
-                    <IconifyIcon icon="material-symbols:note-add-outline-rounded" />
+                    <IconifyIcon icon="material-symbols:more-horiz-rounded" />
                   }
                 >
-                  Add Note
+                  More
                 </Button>
-                <Button
-                  variant="contained"
-                  onClick={() => setDialog('equipment')}
-                  startIcon={
-                    <IconifyIcon icon="material-symbols:agriculture-outline-rounded" />
-                  }
+                <Menu
+                  anchorEl={actionMenuAnchor}
+                  open={Boolean(actionMenuAnchor)}
+                  onClose={() => setActionMenuAnchor(null)}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'right' }}
                 >
-                  Add Interest
-                </Button>
+                  <MenuItem onClick={() => handleMoreAction('equipment')}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ alignItems: 'center' }}
+                    >
+                      <IconifyIcon icon="material-symbols:agriculture-outline-rounded" />
+                      <span>Add Interest</span>
+                    </Stack>
+                  </MenuItem>
+                  <MenuItem onClick={() => handleMoreAction('note')}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ alignItems: 'center' }}
+                    >
+                      <IconifyIcon icon="material-symbols:note-add-outline-rounded" />
+                      <span>Add Note</span>
+                    </Stack>
+                  </MenuItem>
+                  <MenuItem onClick={() => handleMoreAction('lead')}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ alignItems: 'center' }}
+                    >
+                      <IconifyIcon icon="material-symbols:add-notes-outline-rounded" />
+                      <span>Add Lead</span>
+                    </Stack>
+                  </MenuItem>
+                  <MenuItem onClick={() => handleMoreAction('edit-contact')}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ alignItems: 'center' }}
+                    >
+                      <IconifyIcon icon="material-symbols:edit-outline-rounded" />
+                      <span>Edit</span>
+                    </Stack>
+                  </MenuItem>
+                </Menu>
               </Stack>
             </Stack>
           </Paper>
@@ -623,19 +648,19 @@ const ContactDetailsClient = ({ contactId }) => {
 
         <Grid size={{ xs: 12, lg: 8 }}>
           <Stack direction="column" spacing={3}>
-            <LeadsCard leads={leads} />
-            <EquipmentCard equipmentInterests={equipmentInterests} />
             <TasksCard
               tasks={tasks}
               supabase={supabase}
               onSaved={fetchDetails}
             />
-            <CrmFilesPanel recordType="contact" recordId={contact.id} />
             <TimelineCard
               items={timelineItems}
               supabase={supabase}
               onSaved={fetchDetails}
             />
+            <EquipmentCard equipmentInterests={equipmentInterests} />
+            <LeadsCard leads={leads} />
+            <CrmFilesPanel recordType="contact" recordId={contact.id} />
           </Stack>
         </Grid>
       </Grid>

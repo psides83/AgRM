@@ -9,7 +9,10 @@ const PageHeader = ({ title, breadcrumb, actionComponent, sx, paperProps }) => {
   const downLg = down('lg');
 
   return (
-    <Paper {...paperProps} sx={{ px: { xs: 3, md: 5 }, py: 3, ...paperProps?.sx }}>
+    <Paper
+      {...paperProps}
+      sx={{ px: { xs: 3, md: 5 }, py: 3, ...paperProps?.sx }}
+    >
       <Stack
         sx={{
           gap: 2,
@@ -21,9 +24,14 @@ const PageHeader = ({ title, breadcrumb, actionComponent, sx, paperProps }) => {
       >
         <div>
           <PageBreadcrumb items={breadcrumb} sx={{ mb: 1 }} />
-          <Typography variant="h4" sx={[downLg && { fontSize: 'h5.fontSize' }]}>
-            {title}
-          </Typography>
+          {title && (
+            <Typography
+              variant="h4"
+              sx={[downLg && { fontSize: 'h5.fontSize' }]}
+            >
+              {title}
+            </Typography>
+          )}
         </div>
 
         {actionComponent}
