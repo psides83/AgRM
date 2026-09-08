@@ -313,15 +313,16 @@ const CRMImport = () => {
       const normalizedRow = normalizeImportRow(row.raw, headers, rowFieldMap, createType, row.index, {
         isGoogleSavedCollection: row.isGoogleSavedCollection,
       });
+      const createRow = mergeFetchedGoogleDetails(row, normalizedRow);
 
       if (createType === 'contacts') {
-        const contactRow = row.isGoogleSavedCollection ? googleRowToContact(normalizedRow) : { ...normalizedRow, shouldCreateContact: true, shouldCreateLead: false };
+        const contactRow = row.isGoogleSavedCollection ? googleRowToContact(createRow) : { ...createRow, shouldCreateContact: true, shouldCreateLead: false };
         if (!contactRow.firstName || !contactRow.lastName) throw new Error('Choose fields for first and last name before creating a contact.');
         const companyId = await saveCompany(supabase, userResult.user.id, contactRow);
         await saveContact(supabase, userResult.user.id, companyId, contactRow);
         setResult({ contacts: 1, leads: 0, mapUpdates: 0, skipped: 0 });
       } else {
-        const leadRow = { ...normalizedRow, shouldCreateContact: false, shouldCreateLead: true };
+        const leadRow = { ...createRow, shouldCreateContact: false, shouldCreateLead: true };
         const companyId = await saveCompany(supabase, userResult.user.id, leadRow);
         await saveLead(supabase, userResult.user.id, companyId, null, leadRow);
         setResult({ contacts: 0, leads: 1, mapUpdates: 0, skipped: 0 });
@@ -827,6 +828,8 @@ function CreateRowDialog({ open, value, headers, onClose, onChange, onCreate, lo
 
   if (!row) return null;
 
+  const fetchedDetails = googleDetailItems(row);
+
   const handleFieldChange = (header, field) => {
     onChange({
       rowFieldMap: {
@@ -845,6 +848,19 @@ function CreateRowDialog({ open, value, headers, onClose, onChange, onCreate, lo
             <MenuItem value="leads">Lead</MenuItem>
             <MenuItem value="contacts">Contact</MenuItem>
           </TextField>
+
+          {fetchedDetails.length > 0 && (
+            <Box sx={{ border: 1, borderColor: 'dividerLight', borderRadius: 1, p: 1.5 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Fetched Google Details
+              </Typography>
+              <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                {fetchedDetails.map((item) => (
+                  <Chip key={item.label} label={`${item.label}: ${item.value}`} size="small" variant="soft" />
+                ))}
+              </Stack>
+            </Box>
+          )}
 
           <Box
             sx={{
@@ -887,6 +903,18 @@ function CreateRowDialog({ open, value, headers, onClose, onChange, onCreate, lo
       </DialogActions>
     </Dialog>
   );
+}
+
+function googleDetailItems(row) {
+  if (!row) return [];
+
+  return [
+    { label: 'Company', value: row.companyName },
+    { label: 'Phone', value: row.companyPhone },
+    { label: 'Address', value: [row.addressLine1, row.city, row.region, row.postalCode].filter(Boolean).join(', ') },
+    { label: 'County', value: row.county },
+    { label: 'Coordinates', value: row.latitude !== null && row.longitude !== null ? `${row.latitude}, ${row.longitude}` : '' },
+  ].filter((item) => cleanText(item.value));
 }
 
 function GoogleTargetSelect({ row, crmTargets, onChange }) {
@@ -1481,6 +1509,41 @@ function applyGooglePlaceDetails(row, place) {
   nextRow.notes = appendText(row.notes, detailNotes);
   nextRow.leadNotes = appendText(row.leadNotes, detailNotes);
   return { ...nextRow, isValid: true, errors: [] };
+}
+
+function mergeFetchedGoogleDetails(sourceRow, mappedRow) {
+  const googleFields = [
+    'companyName',
+    'companyPhone',
+    'website',
+    'addressLine1',
+    'addressLine2',
+    'city',
+    'county',
+    'region',
+    'postalCode',
+    'country',
+    'latitude',
+    'longitude',
+    'leadLatitude',
+    'leadLongitude',
+  ];
+
+  const mergedRow = { ...mappedRow };
+  googleFields.forEach((field) => {
+    if (hasFieldValue(sourceRow[field]) && !hasFieldValue(mergedRow[field])) {
+      mergedRow[field] = sourceRow[field];
+    }
+  });
+
+  mergedRow.notes = appendText(mappedRow.notes, sourceRow.notes);
+  mergedRow.leadNotes = appendText(mappedRow.leadNotes, sourceRow.leadNotes);
+
+  return mergedRow;
+}
+
+function hasFieldValue(value) {
+  return value !== null && typeof value !== 'undefined' && value !== '';
 }
 
 function defaultGoogleAction(importType) {
