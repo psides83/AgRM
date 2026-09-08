@@ -217,9 +217,11 @@ const ContactsList = () => {
                         >
                           {contact.first_name} {contact.last_name}
                         </Link>
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                          {contact.title || 'No role set'}
-                        </Typography>
+                        {contact.title && (
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            {contact.title}
+                          </Typography>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">{contact.account_number || '-'}</Typography>
