@@ -9,6 +9,10 @@ import {
   Chip,
   CircularProgress,
   Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Link,
   MenuItem,
   Paper,
@@ -17,6 +21,7 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
+import { useRouter } from 'next/navigation';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import paths from 'routes/paths';
@@ -34,15 +39,20 @@ const filters = [
 ];
 
 const CrmMap = () => {
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
+  const droppedLeadMarkerRef = useRef(null);
   const geocodeCacheRef = useRef(new Map());
   const [records, setRecords] = useState([]);
   const [mappedRecords, setMappedRecords] = useState([]);
   const [unmappedRecords, setUnmappedRecords] = useState([]);
   const [filter, setFilter] = useState('all');
+  const [isDroppingLeadPin, setIsDroppingLeadPin] = useState(false);
+  const [leadPin, setLeadPin] = useState(null);
+  const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [error, setError] = useState(null);
@@ -80,6 +90,58 @@ const CrmMap = () => {
       mapRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (!mapRef.current || !isDroppingLeadPin) return undefined;
+
+    const handleMapClick = (event) => {
+      const pin = {
+        latitude: Number(event.lngLat.lat.toFixed(6)),
+        longitude: Number(event.lngLat.lng.toFixed(6)),
+      };
+
+      setLeadPin(pin);
+      setIsLeadDialogOpen(true);
+      setIsDroppingLeadPin(false);
+    };
+
+    mapRef.current.getCanvas().style.cursor = 'crosshair';
+    mapRef.current.once('click', handleMapClick);
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.off('click', handleMapClick);
+        mapRef.current.getCanvas().style.cursor = '';
+      }
+    };
+  }, [isDroppingLeadPin]);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    droppedLeadMarkerRef.current?.remove();
+    droppedLeadMarkerRef.current = null;
+
+    if (!leadPin) return;
+
+    const node = document.createElement('div');
+    node.style.width = '30px';
+    node.style.height = '30px';
+    node.style.borderRadius = '50%';
+    node.style.background = '#ffab00';
+    node.style.border = '3px solid #ffffff';
+    node.style.boxShadow = '0 4px 12px rgba(0,0,0,0.25)';
+
+    droppedLeadMarkerRef.current = new mapboxgl.Marker({ element: node })
+      .setLngLat([leadPin.longitude, leadPin.latitude])
+      .addTo(mapRef.current);
+
+    mapRef.current.flyTo({
+      center: [leadPin.longitude, leadPin.latitude],
+      zoom: Math.max(mapRef.current.getZoom(), 12),
+      duration: 500,
+    });
+  }, [leadPin]);
 
   useEffect(() => {
     geocodeRecords(records);
@@ -245,9 +307,20 @@ const CrmMap = () => {
             { label: 'Map', active: true },
           ]}
           actionComponent={
-            <Button href={paths.addContact} component={Link} underline="none" variant="contained" startIcon={<IconifyIcon icon="material-symbols:person-add-outline-rounded" />}>
-              Add Contact / Lead
-            </Button>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+              <Button
+                variant={isDroppingLeadPin ? 'contained' : 'soft'}
+                color={isDroppingLeadPin ? 'warning' : 'neutral'}
+                disabled={!mapboxToken}
+                onClick={() => setIsDroppingLeadPin((value) => !value)}
+                startIcon={<IconifyIcon icon="material-symbols:add-location-alt-outline-rounded" />}
+              >
+                Drop Lead Pin
+              </Button>
+              <Button href={paths.addContact} component={Link} underline="none" variant="contained" startIcon={<IconifyIcon icon="material-symbols:person-add-outline-rounded" />}>
+                Add Contact / Lead
+              </Button>
+            </Stack>
           }
         />
       </Grid>
@@ -339,6 +412,27 @@ const CrmMap = () => {
                     <Typography variant="body2">Loading locations</Typography>
                   </Box>
                 )}
+                {isDroppingLeadPin && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      left: 16,
+                      top: isLoading || isGeocoding ? 68 : 16,
+                      bgcolor: 'background.paper',
+                      border: 1,
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      px: 1.5,
+                      py: 1,
+                      boxShadow: 1,
+                    }}
+                  >
+                    <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                      <IconifyIcon icon="material-symbols:add-location-alt-outline-rounded" />
+                      <Typography variant="body2">Click the map to place a lead pin.</Typography>
+                    </Stack>
+                  </Box>
+                )}
               </Box>
 
               <Box
@@ -386,6 +480,21 @@ const CrmMap = () => {
           </Box>
         </Paper>
       </Grid>
+      <CreateLeadFromPinDialog
+        open={isLeadDialogOpen}
+        pin={leadPin}
+        supabase={supabase}
+        onClose={() => {
+          setIsLeadDialogOpen(false);
+          setLeadPin(null);
+        }}
+        onSaved={(leadId) => {
+          setIsLeadDialogOpen(false);
+          setLeadPin(null);
+          fetchRecords();
+          router.push(paths.leadDetails(leadId));
+        }}
+      />
     </Grid>
   );
 };
@@ -511,6 +620,115 @@ function MapRecordRow({ record, compact = false }) {
   );
 }
 
+function CreateLeadFromPinDialog({ open, pin, supabase, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    source: 'Map pin',
+    accountNumber: '',
+    status: 'new',
+    priority: 3,
+    estimatedBudget: '',
+    nextFollowUpAt: '',
+    notes: '',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (open) {
+      setForm({
+        source: 'Map pin',
+        accountNumber: '',
+        status: 'new',
+        priority: 3,
+        estimatedBudget: '',
+        nextFollowUpAt: '',
+        notes: '',
+      });
+      setError(null);
+    }
+  }, [open]);
+
+  const handleSave = async () => {
+    if (!pin) return;
+
+    setIsSaving(true);
+    setError(null);
+
+    const { data: userResult, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userResult.user) {
+      setError('Could not confirm the signed-in user.');
+      setIsSaving(false);
+      return;
+    }
+
+    const { data, error: saveError } = await supabase
+      .from('leads')
+      .insert({
+        owner_id: userResult.user.id,
+        source: cleanText(form.source) || 'Map pin',
+        account_number: cleanText(form.accountNumber),
+        status: form.status,
+        priority: Number(form.priority) || 3,
+        estimated_budget: form.estimatedBudget || null,
+        next_follow_up_at: form.nextFollowUpAt ? new Date(form.nextFollowUpAt).toISOString() : null,
+        latitude: pin.latitude,
+        longitude: pin.longitude,
+        notes: cleanText(form.notes),
+      })
+      .select('id')
+      .single();
+
+    setIsSaving(false);
+
+    if (saveError) {
+      setError(saveError.message);
+      return;
+    }
+
+    onSaved(data.id);
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Create Lead From Pin</DialogTitle>
+      <DialogContent>
+        <Stack direction="column" spacing={2} sx={{ pt: 1, minWidth: 0 }}>
+          {error && <Alert severity="error">{error}</Alert>}
+          <Alert severity="info">
+            Lead location: {pin ? `${pin.latitude}, ${pin.longitude}` : 'No pin selected'}
+          </Alert>
+          <TextField label="Lead Source" value={form.source} onChange={handleField(setForm, 'source')} fullWidth />
+          <TextField label="Account Number" value={form.accountNumber} onChange={handleField(setForm, 'accountNumber')} fullWidth />
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ minWidth: 0 }}>
+            <TextField select label="Status" value={form.status} onChange={handleField(setForm, 'status')} fullWidth>
+              {['new', 'working', 'qualified', 'unqualified'].map((status) => (
+                <MenuItem key={status} value={status}>
+                  {formatEnum(status)}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField label="Priority" type="number" value={form.priority} onChange={handleField(setForm, 'priority')} fullWidth inputProps={{ min: 1, max: 5 }} />
+          </Stack>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ minWidth: 0 }}>
+            <TextField label="Estimated Budget" type="number" value={form.estimatedBudget} onChange={handleField(setForm, 'estimatedBudget')} fullWidth />
+            <TextField label="Next Follow-up" type="datetime-local" value={form.nextFollowUpAt} onChange={handleField(setForm, 'nextFollowUpAt')} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
+          </Stack>
+          <TextField label="Notes" value={form.notes} onChange={handleField(setForm, 'notes')} fullWidth multiline rows={3} />
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button color="neutral" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="contained" onClick={handleSave} loading={isSaving} disabled={!pin}>
+          Create Lead
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 function EmptyState({ label }) {
   return (
     <Typography variant="body2" sx={{ color: 'text.secondary', py: 2, textAlign: 'center' }}>
@@ -574,6 +792,17 @@ function formatCurrency(value) {
 function formatEnum(value) {
   if (!value) return '-';
   return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function cleanText(value) {
+  const cleaned = typeof value === 'string' ? value.trim() : value;
+  return cleaned || null;
+}
+
+function handleField(setter, field) {
+  return (event) => {
+    setter((current) => ({ ...current, [field]: event.target.value }));
+  };
 }
 
 function escapeHtml(value) {
