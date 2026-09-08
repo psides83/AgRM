@@ -3,7 +3,16 @@
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Box, Button, Container, Stack, Step, StepLabel, Stepper, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Container,
+  Stack,
+  Step,
+  StepLabel,
+  Stepper,
+  Typography,
+} from '@mui/material';
 import { useSnackbar } from 'notistack';
 import { createClient } from 'lib/supabase/client';
 import CompanyInfoForm, {
@@ -69,7 +78,9 @@ const steps = [
   },
 ];
 
-const validationSchema = personalInfoSchema.concat(companyInfoSchema).concat(leadInfoSchema);
+const validationSchema = personalInfoSchema
+  .concat(companyInfoSchema)
+  .concat(leadInfoSchema);
 
 const AddContactStepper = () => {
   const [activeStep, setActiveStep] = useState(0);
@@ -82,10 +93,23 @@ const AddContactStepper = () => {
     defaultValues: {
       personalInfo: {
         accountNumber: '',
+        sameAccountNumberAsCompany: false,
+        sameEmailAsCompany: false,
+        samePhoneAsCompany: false,
+        sameAddressAsCompany: false,
+        sameCoordinatesAsCompany: false,
+        county: '',
         country: 'US',
         tags: [],
       },
       companyInfo: {
+        accountNumber: '',
+        sameAccountNumberAsContact: false,
+        sameEmailAsContact: false,
+        samePhoneAsContact: false,
+        sameAddressAsContact: false,
+        sameCoordinatesAsContact: false,
+        county: '',
         country: 'US',
       },
       leadInfo: {
@@ -121,14 +145,19 @@ const AddContactStepper = () => {
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      enqueueSnackbar('You need to be logged in to add a contact.', { variant: 'error' });
+      enqueueSnackbar('You need to be logged in to add a contact.', {
+        variant: 'error',
+      });
       setIsSaving(false);
       return;
     }
 
     try {
       if (!options.skipDuplicateCheck) {
-        const duplicateMatches = await findPotentialDuplicates(supabase, duplicateChecksFromForm(data));
+        const duplicateMatches = await findPotentialDuplicates(
+          supabase,
+          duplicateChecksFromForm(data),
+        );
 
         if (duplicateMatches.length) {
           setDuplicateConfirmation({ data, matches: duplicateMatches });
@@ -138,9 +167,27 @@ const AddContactStepper = () => {
       }
 
       const companyId = await saveCompany(supabase, user.id, data.companyInfo);
-      const contact = await saveContact(supabase, user.id, companyId, data.personalInfo);
-      const lead = await saveLead(supabase, user.id, companyId, contact.id, data.leadInfo);
-      await saveInitialContactLog(supabase, user.id, companyId, contact.id, lead?.id, data);
+      const contact = await saveContact(
+        supabase,
+        user.id,
+        companyId,
+        data.personalInfo,
+      );
+      const lead = await saveLead(
+        supabase,
+        user.id,
+        companyId,
+        contact.id,
+        data.leadInfo,
+      );
+      await saveInitialContactLog(
+        supabase,
+        user.id,
+        companyId,
+        contact.id,
+        lead?.id,
+        data,
+      );
 
       enqueueSnackbar('Contact added successfully', { variant: 'success' });
       reset();
@@ -148,7 +195,9 @@ const AddContactStepper = () => {
       setActiveStep(0);
       setDuplicateConfirmation(null);
     } catch (error) {
-      enqueueSnackbar(error.message || 'Could not add contact.', { variant: 'error' });
+      enqueueSnackbar(error.message || 'Could not add contact.', {
+        variant: 'error',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -176,10 +225,18 @@ const AddContactStepper = () => {
   return (
     <FormProvider {...methods}>
       <Container maxWidth="sm" sx={{ p: 0 }}>
-        <Stepper nonLinear activeStep={activeStep} alternativeLabel sx={{ mb: 3 }}>
+        <Stepper
+          nonLinear
+          activeStep={activeStep}
+          alternativeLabel
+          sx={{ mb: 3 }}
+        >
           {steps.map(({ id, label }, index) => (
             <Step key={id} completed={!!completedSteps[index]} sx={{ p: 0 }}>
-              <StepLabel onClick={() => handleStepClick(index)} sx={{ cursor: 'pointer' }}>
+              <StepLabel
+                onClick={() => handleStepClick(index)}
+                sx={{ cursor: 'pointer' }}
+              >
                 {label}
               </StepLabel>
             </Step>
@@ -224,7 +281,9 @@ const AddContactStepper = () => {
         open={Boolean(duplicateConfirmation)}
         matches={duplicateConfirmation?.matches || []}
         onCancel={() => setDuplicateConfirmation(null)}
-        onConfirm={() => onSubmit(duplicateConfirmation.data, { skipDuplicateCheck: true })}
+        onConfirm={() =>
+          onSubmit(duplicateConfirmation.data, { skipDuplicateCheck: true })
+        }
       />
     </FormProvider>
   );
@@ -235,7 +294,8 @@ function cleanText(value) {
 }
 
 function cleanNumber(value) {
-  if (value === '' || value === null || typeof value === 'undefined') return null;
+  if (value === '' || value === null || typeof value === 'undefined')
+    return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
@@ -282,16 +342,16 @@ function duplicateChecksFromForm(data) {
 function hasLeadInfo(leadInfo) {
   return Boolean(
     cleanText(leadInfo?.source) ||
-      cleanText(leadInfo?.accountNumber) ||
-      cleanText(leadInfo?.status) ||
-      leadInfo?.priority ||
-      leadInfo?.estimatedBudget ||
-      leadInfo?.targetPurchaseDate ||
-      leadInfo?.lastContactedAt ||
-      leadInfo?.nextFollowUpAt ||
-      leadInfo?.latitude ||
-      leadInfo?.longitude ||
-      cleanText(leadInfo?.notes)
+    cleanText(leadInfo?.accountNumber) ||
+    cleanText(leadInfo?.status) ||
+    leadInfo?.priority ||
+    leadInfo?.estimatedBudget ||
+    leadInfo?.targetPurchaseDate ||
+    leadInfo?.lastContactedAt ||
+    leadInfo?.nextFollowUpAt ||
+    leadInfo?.latitude ||
+    leadInfo?.longitude ||
+    cleanText(leadInfo?.notes),
   );
 }
 
@@ -304,12 +364,14 @@ async function saveCompany(supabase, ownerId, companyInfo) {
     owner_id: ownerId,
     name: cleanText(companyInfo.name),
     company_type: cleanText(companyInfo.companyType),
+    account_number: cleanText(companyInfo.accountNumber),
     website: cleanText(companyInfo.website),
     phone: cleanText(companyInfo.phone),
     email: cleanText(companyInfo.email),
     address_line1: cleanText(companyInfo.addressLine1),
     address_line2: cleanText(companyInfo.addressLine2),
     city: cleanText(companyInfo.city),
+    county: cleanText(companyInfo.county),
     region: cleanText(companyInfo.region),
     postal_code: cleanText(companyInfo.postalCode),
     country: cleanText(companyInfo.country) || 'US',
@@ -347,6 +409,7 @@ async function saveContact(supabase, ownerId, companyId, personalInfo) {
       address_line1: cleanText(personalInfo.addressLine1),
       address_line2: cleanText(personalInfo.addressLine2),
       city: cleanText(personalInfo.city),
+      county: cleanText(personalInfo.county),
       region: cleanText(personalInfo.region),
       postal_code: cleanText(personalInfo.postalCode),
       country: cleanText(personalInfo.country) || 'US',
@@ -368,15 +431,15 @@ async function saveContact(supabase, ownerId, companyId, personalInfo) {
 async function saveLead(supabase, ownerId, companyId, contactId, leadInfo) {
   const shouldCreateLead = Boolean(
     cleanText(leadInfo?.source) ||
-      cleanText(leadInfo?.status) ||
-      leadInfo?.priority ||
-      leadInfo?.estimatedBudget ||
-      leadInfo?.targetPurchaseDate ||
-      leadInfo?.lastContactedAt ||
-      leadInfo?.nextFollowUpAt ||
-      leadInfo?.latitude ||
-      leadInfo?.longitude ||
-      cleanText(leadInfo?.notes)
+    cleanText(leadInfo?.status) ||
+    leadInfo?.priority ||
+    leadInfo?.estimatedBudget ||
+    leadInfo?.targetPurchaseDate ||
+    leadInfo?.lastContactedAt ||
+    leadInfo?.nextFollowUpAt ||
+    leadInfo?.latitude ||
+    leadInfo?.longitude ||
+    cleanText(leadInfo?.notes),
   );
 
   if (!shouldCreateLead) {
@@ -411,10 +474,18 @@ async function saveLead(supabase, ownerId, companyId, contactId, leadInfo) {
   return data;
 }
 
-async function saveInitialContactLog(supabase, ownerId, companyId, contactId, leadId, data) {
+async function saveInitialContactLog(
+  supabase,
+  ownerId,
+  companyId,
+  contactId,
+  leadId,
+  data,
+) {
   const contactNotes = cleanText(data.personalInfo?.notes);
   const leadNotes = cleanText(data.leadInfo?.notes);
-  const firstContactAt = data.leadInfo?.lastContactedAt || new Date().toISOString();
+  const firstContactAt =
+    data.leadInfo?.lastContactedAt || new Date().toISOString();
   const activityPayload = {
     owner_id: ownerId,
     contact_id: contactId,
@@ -448,7 +519,9 @@ async function saveInitialContactLog(supabase, ownerId, companyId, contactId, le
     },
   ].filter(Boolean);
 
-  const { error: activityError } = await supabase.from('activities').insert(activityPayload);
+  const { error: activityError } = await supabase
+    .from('activities')
+    .insert(activityPayload);
 
   if (activityError) {
     throw activityError;

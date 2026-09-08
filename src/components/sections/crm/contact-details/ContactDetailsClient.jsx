@@ -5,12 +5,14 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
+  FormControlLabel,
   Link,
   MenuItem,
   Paper,
@@ -89,13 +91,17 @@ const ContactDetailsClient = ({ contactId }) => {
               id,
               name,
               company_type,
+              account_number,
               website,
               phone,
               email,
               address_line1,
+              address_line2,
               city,
+              county,
               region,
               postal_code,
+              country,
               latitude,
               longitude,
               notes
@@ -873,6 +879,15 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
     onClose();
   };
 
+  const handleUseCompanyField = (key, fields) => (event) => {
+    const checked = event.target.checked;
+    setForm((prev) => ({
+      ...prev,
+      [key]: checked,
+      ...(checked ? fieldsFromCompany(contact?.companies, fields) : {}),
+    }));
+  };
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>Edit Contact</DialogTitle>
@@ -905,12 +920,54 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
             onChange={handleField(setForm, 'title')}
             fullWidth
           />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={form.sameAccountNumberAsCompany}
+                onChange={handleUseCompanyField('sameAccountNumberAsCompany', [
+                  'accountNumber',
+                ])}
+                disabled={!contact?.companies}
+              />
+            }
+            label="Use company account number"
+          />
           <TextField
             label="Account Number"
             value={form.accountNumber}
             onChange={handleField(setForm, 'accountNumber')}
             fullWidth
           />
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ minWidth: 0 }}
+          >
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={form.sameEmailAsCompany}
+                  onChange={handleUseCompanyField('sameEmailAsCompany', [
+                    'email',
+                  ])}
+                  disabled={!contact?.companies}
+                />
+              }
+              label="Use company email"
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={form.samePhoneAsCompany}
+                  onChange={handleUseCompanyField('samePhoneAsCompany', [
+                    'phone',
+                  ])}
+                  disabled={!contact?.companies}
+                />
+              }
+              label="Use company phone"
+            />
+          </Stack>
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={2}
@@ -935,6 +992,19 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
             value={form.mobilePhone}
             onChange={handleField(setForm, 'mobilePhone')}
             fullWidth
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={form.sameAddressAsCompany}
+                onChange={handleUseCompanyField(
+                  'sameAddressAsCompany',
+                  addressFields,
+                )}
+                disabled={!contact?.companies}
+              />
+            }
+            label="Use company address"
           />
           <TextField
             label="Address Line 1"
@@ -972,6 +1042,19 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
               fullWidth
             />
           </Stack>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={form.sameCoordinatesAsCompany}
+                onChange={handleUseCompanyField(
+                  'sameCoordinatesAsCompany',
+                  coordinateFields,
+                )}
+                disabled={!contact?.companies}
+              />
+            }
+            label="Use company coordinates"
+          />
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={2}
@@ -1671,6 +1754,39 @@ function handleField(setForm, key) {
   };
 }
 
+const addressFields = [
+  'addressLine1',
+  'addressLine2',
+  'city',
+  'county',
+  'region',
+  'postalCode',
+  'country',
+];
+const coordinateFields = ['latitude', 'longitude'];
+
+function fieldsFromCompany(company, fields) {
+  const values = {
+    accountNumber: company?.account_number || '',
+    email: company?.email || '',
+    phone: company?.phone || '',
+    addressLine1: company?.address_line1 || '',
+    addressLine2: company?.address_line2 || '',
+    city: company?.city || '',
+    county: company?.county || '',
+    region: company?.region || '',
+    postalCode: company?.postal_code || '',
+    country: company?.country || 'US',
+    latitude: company?.latitude ?? '',
+    longitude: company?.longitude ?? '',
+  };
+
+  return fields.reduce(
+    (selected, field) => ({ ...selected, [field]: values[field] }),
+    {},
+  );
+}
+
 function handleStockField(setForm) {
   return (event) =>
     setForm((prev) => ({
@@ -1690,9 +1806,13 @@ function contactToForm(contact) {
     lastName: contact?.last_name || '',
     title: contact?.title || '',
     accountNumber: contact?.account_number || '',
+    sameAccountNumberAsCompany: false,
     email: contact?.email || '',
+    sameEmailAsCompany: false,
     phone: contact?.phone || '',
+    samePhoneAsCompany: false,
     mobilePhone: contact?.mobile_phone || '',
+    sameAddressAsCompany: false,
     addressLine1: contact?.address_line1 || '',
     addressLine2: contact?.address_line2 || '',
     city: contact?.city || '',
@@ -1700,6 +1820,7 @@ function contactToForm(contact) {
     region: contact?.region || '',
     postalCode: contact?.postal_code || '',
     country: contact?.country || 'US',
+    sameCoordinatesAsCompany: false,
     latitude: contact?.latitude ?? '',
     longitude: contact?.longitude ?? '',
     tags: (contact?.tags || []).join(', '),

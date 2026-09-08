@@ -7,6 +7,10 @@ import {
   Button,
   Checkbox,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControlLabel,
   Link,
   LinearProgress,
@@ -37,6 +41,7 @@ const importTypes = [
 const googleSavedCollectionFieldMap = {
   title: 'companyName',
   item_content_url: 'website',
+  url: 'website',
   tags: 'tags',
   note: 'notes',
   comment: 'leadNotes',
@@ -178,6 +183,8 @@ const CRMImport = () => {
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [rowCreateDialog, setRowCreateDialog] = useState(null);
+  const [isRowSaving, setIsRowSaving] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
@@ -264,6 +271,67 @@ const CRMImport = () => {
 
   const updateGoogleImportRow = (rowIndex, changes) => {
     setPreviewRows((rows) => rows.map((row) => (row.index === rowIndex ? { ...row, ...changes } : row)));
+  };
+
+  const rebuildPreviewRows = async (nextFieldMap) => {
+    setIsAnalyzing(true);
+    setError(null);
+
+    try {
+      const nextRows = previewRows.map((row) =>
+        normalizeImportRow(row.raw, headers, nextFieldMap, importType, row.index, {
+          isGoogleSavedCollection,
+        }),
+      );
+      setPreviewRows(await markDuplicates(supabase, nextRows));
+    } catch (nextError) {
+      setError(nextError.message || 'Could not update the field mapping.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleFieldMapChange = (header, field) => {
+    const nextFieldMap = {
+      ...fieldMap,
+      [header]: field || null,
+    };
+
+    setFieldMap(nextFieldMap);
+    rebuildPreviewRows(nextFieldMap);
+  };
+
+  const handleCreateSingleRow = async ({ row, createType, rowFieldMap }) => {
+    setError(null);
+    setIsRowSaving(true);
+
+    try {
+      const { data: userResult, error: userError } = await supabase.auth.getUser();
+      if (userError || !userResult.user) throw new Error('You need to be logged in to import records.');
+
+      const normalizedRow = normalizeImportRow(row.raw, headers, rowFieldMap, createType, row.index, {
+        isGoogleSavedCollection: row.isGoogleSavedCollection,
+      });
+
+      if (createType === 'contacts') {
+        const contactRow = row.isGoogleSavedCollection ? googleRowToContact(normalizedRow) : { ...normalizedRow, shouldCreateContact: true, shouldCreateLead: false };
+        if (!contactRow.firstName || !contactRow.lastName) throw new Error('Choose fields for first and last name before creating a contact.');
+        const companyId = await saveCompany(supabase, userResult.user.id, contactRow);
+        await saveContact(supabase, userResult.user.id, companyId, contactRow);
+        setResult({ contacts: 1, leads: 0, mapUpdates: 0, skipped: 0 });
+      } else {
+        const leadRow = { ...normalizedRow, shouldCreateContact: false, shouldCreateLead: true };
+        const companyId = await saveCompany(supabase, userResult.user.id, leadRow);
+        await saveLead(supabase, userResult.user.id, companyId, null, leadRow);
+        setResult({ contacts: 0, leads: 1, mapUpdates: 0, skipped: 0 });
+      }
+
+      setRowCreateDialog(null);
+    } catch (nextError) {
+      setError(nextError.message || 'Could not create this row.');
+    } finally {
+      setIsRowSaving(false);
+    }
   };
 
   return (
@@ -452,7 +520,7 @@ const CRMImport = () => {
                     }}
                   >
                     {headers.map((header) => (
-                      <FieldMapping key={header} header={header} field={fieldMap[header]} />
+                      <FieldMapping key={header} header={header} field={fieldMap[header]} onChange={(field) => handleFieldMapChange(header, field)} />
                     ))}
                   </Box>
                 </Stack>
@@ -479,7 +547,12 @@ const CRMImport = () => {
                   )}
                 </Stack>
                 <TableContainer sx={{ width: 1, maxWidth: 1, overflowX: 'auto' }}>
-                  <Table sx={{ minWidth: isGoogleSavedCollection ? 1360 : 1060, tableLayout: 'fixed' }}>
+                  <Table
+                    sx={{
+                      minWidth: isGoogleSavedCollection ? 1690 : 1390,
+                      tableLayout: 'fixed',
+                    }}
+                  >
                     <TableHead>
                       <TableRow>
                         <TableCell sx={{ width: 72 }}>Row</TableCell>
@@ -488,6 +561,8 @@ const CRMImport = () => {
                         <TableCell sx={{ width: 260 }}>Company</TableCell>
                         <TableCell sx={{ width: isGoogleSavedCollection ? 220 : 180 }}>{isGoogleSavedCollection ? 'Action' : 'Lead'}</TableCell>
                         {isGoogleSavedCollection && <TableCell sx={{ width: 260 }}>Target</TableCell>}
+                        <TableCell sx={{ width: 190 }}>Coordinates</TableCell>
+                        <TableCell sx={{ width: 140 }}>Create</TableCell>
                         <TableCell sx={{ width: 128 }}>Status</TableCell>
                       </TableRow>
                     </TableHead>
@@ -505,7 +580,12 @@ const CRMImport = () => {
                                   select
                                   size="small"
                                   value={row.googleAction || 'create_lead'}
-                                  onChange={(event) => updateGoogleImportRow(row.index, { googleAction: event.target.value, googleTargetId: '' })}
+                                  onChange={(event) =>
+                                    updateGoogleImportRow(row.index, {
+                                      googleAction: event.target.value,
+                                      googleTargetId: '',
+                                    })
+                                  }
                                   fullWidth
                                 >
                                   {googleImportActions.map((option) => (
@@ -516,12 +596,32 @@ const CRMImport = () => {
                                 </TextField>
                               </TableCell>
                               <TableCell>
-                                <GoogleTargetSelect row={row} crmTargets={crmTargets} onChange={(googleTargetId) => updateGoogleImportRow(row.index, { googleTargetId })} />
+                                <GoogleTargetSelect
+                                  row={row}
+                                  crmTargets={crmTargets}
+                                  onChange={(googleTargetId) =>
+                                    updateGoogleImportRow(row.index, {
+                                      googleTargetId,
+                                    })
+                                  }
+                                />
                               </TableCell>
                             </>
                           ) : (
                             <PreviewTableCell value={row.shouldCreateLead ? [row.leadAccountNumber, row.leadSource || 'Lead'].filter(Boolean).join(' · ') : '-'} />
                           )}
+                          <TableCell>
+                            <CoordinatesCell row={row} />
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="small"
+                              variant="soft"
+                              onClick={() => setRowCreateDialog({ row, createType: row.googleAction === 'create_contact' ? 'contacts' : 'leads', rowFieldMap: { ...fieldMap } })}
+                            >
+                              Create
+                            </Button>
+                          </TableCell>
                           <TableCell>
                             <RowStatus row={row} />
                           </TableCell>
@@ -535,6 +635,15 @@ const CRMImport = () => {
           )}
         </Stack>
       </Box>
+      <CreateRowDialog
+        open={Boolean(rowCreateDialog)}
+        value={rowCreateDialog}
+        headers={headers}
+        onClose={() => setRowCreateDialog(null)}
+        onChange={(changes) => setRowCreateDialog((current) => (current ? { ...current, ...changes } : current))}
+        onCreate={handleCreateSingleRow}
+        loading={isRowSaving}
+      />
     </Box>
   );
 };
@@ -589,7 +698,7 @@ function SummaryStat({ label, value, color = 'primary' }) {
   );
 }
 
-function FieldMapping({ header, field }) {
+function FieldMapping({ header, field, onChange }) {
   return (
     <Stack
       direction="row"
@@ -618,21 +727,27 @@ function FieldMapping({ header, field }) {
       >
         {header}
       </Typography>
-      <Chip
-        label={field ? fieldLabels[field] : 'Ignored'}
+      <TextField
+        select
         size="small"
-        variant="soft"
-        color={field ? 'primary' : 'neutral'}
+        value={field || ''}
+        onChange={(event) => onChange(event.target.value)}
         sx={{
           flexShrink: 0,
-          maxWidth: 160,
-          '& .MuiChip-label': {
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+          width: 190,
+          '& .MuiSelect-select': {
+            py: 0.75,
+            fontSize: 'caption.fontSize',
           },
         }}
-      />
+      >
+        <MenuItem value="">Ignored</MenuItem>
+        {Object.entries(fieldLabels).map(([value, label]) => (
+          <MenuItem key={value} value={value}>
+            {label}
+          </MenuItem>
+        ))}
+      </TextField>
     </Stack>
   );
 }
@@ -659,6 +774,85 @@ function PreviewTableCell({ value, secondary }) {
         </Typography>
       )}
     </TableCell>
+  );
+}
+
+function CoordinatesCell({ row }) {
+  const hasCoordinates = row.latitude !== null && row.longitude !== null;
+
+  return (
+    <Typography variant="body2" noWrap title={hasCoordinates ? `${row.latitude}, ${row.longitude}` : undefined} sx={{ color: hasCoordinates ? 'text.primary' : 'text.secondary' }}>
+      {hasCoordinates ? `${row.latitude}, ${row.longitude}` : 'Not found'}
+    </Typography>
+  );
+}
+
+function CreateRowDialog({ open, value, headers, onClose, onChange, onCreate, loading }) {
+  const row = value?.row;
+  const createType = value?.createType || 'leads';
+  const rowFieldMap = value?.rowFieldMap || {};
+
+  if (!row) return null;
+
+  const handleFieldChange = (header, field) => {
+    onChange({
+      rowFieldMap: {
+        ...rowFieldMap,
+        [header]: field || null,
+      },
+    });
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+      <DialogTitle>Create From Row {row.index + 1}</DialogTitle>
+      <DialogContent>
+        <Stack direction="column" spacing={2} sx={{ pt: 1, minWidth: 0 }}>
+          <TextField select label="Create" value={createType} onChange={(event) => onChange({ createType: event.target.value })} fullWidth>
+            <MenuItem value="leads">Lead</MenuItem>
+            <MenuItem value="contacts">Contact</MenuItem>
+          </TextField>
+
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(220px, 260px)' },
+              gap: 1,
+              minWidth: 0,
+            }}
+          >
+            {headers.map((header) => (
+              <Box key={header} sx={{ display: 'contents' }}>
+                <Box sx={{ minWidth: 0, border: 1, borderColor: 'dividerLight', borderRadius: 1, px: 1.5, py: 1 }}>
+                  <Typography variant="caption" noWrap title={header} sx={{ display: 'block', color: 'text.secondary' }}>
+                    {header}
+                  </Typography>
+                  <Typography variant="body2" noWrap title={row.raw[header] || ''}>
+                    {row.raw[header] || '-'}
+                  </Typography>
+                </Box>
+                <TextField select size="small" label="Goes To" value={rowFieldMap[header] || ''} onChange={(event) => handleFieldChange(header, event.target.value)} fullWidth>
+                  <MenuItem value="">Ignored</MenuItem>
+                  {Object.entries(fieldLabels).map(([field, label]) => (
+                    <MenuItem key={field} value={field}>
+                      {label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+            ))}
+          </Box>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button color="neutral" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="contained" loading={loading} onClick={() => onCreate({ row, createType, rowFieldMap })}>
+          Create {createType === 'contacts' ? 'Contact' : 'Lead'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
@@ -957,7 +1151,10 @@ async function saveGoogleSavedCollectionRow(supabase, ownerId, row) {
 
   if (action === 'create_lead') {
     const companyId = await saveCompany(supabase, ownerId, row);
-    await saveLead(supabase, ownerId, companyId, null, { ...row, shouldCreateLead: true });
+    await saveLead(supabase, ownerId, companyId, null, {
+      ...row,
+      shouldCreateLead: true,
+    });
     return { contacts: 0, leads: 1, mapUpdates: 0 };
   }
 
@@ -1078,7 +1275,7 @@ function buildGoogleSavedCollectionFieldMap(headers) {
 
 function isGoogleSavedCollectionsCsv(headers) {
   const normalizedHeaders = headers.map(normalizeHeaderWithUnderscores);
-  return normalizedHeaders.includes('title') && normalizedHeaders.includes('item_content_url');
+  return normalizedHeaders.includes('title') && (normalizedHeaders.includes('item_content_url') || normalizedHeaders.includes('url'));
 }
 
 function detectField(header) {
@@ -1116,7 +1313,7 @@ function parseCsv(text) {
 function findHeaderRowIndex(lines) {
   const index = lines.findIndex((row) => {
     const normalizedHeaders = row.map(normalizeHeaderWithUnderscores);
-    return normalizedHeaders.includes('title') && normalizedHeaders.includes('item_content_url');
+    return normalizedHeaders.includes('title') && (normalizedHeaders.includes('item_content_url') || normalizedHeaders.includes('url'));
   });
 
   return index === -1 ? 0 : index;
@@ -1252,7 +1449,30 @@ function parseGoogleMapsCoordinates(value) {
   const dataMatch = url.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
   if (dataMatch) return toCoordinatePair(dataMatch[1], dataMatch[2]);
 
+  const bangMatch = url.match(/!2d(-?\d+(?:\.\d+)?)!3d(-?\d+(?:\.\d+)?)/);
+  if (bangMatch) return toCoordinatePair(bangMatch[2], bangMatch[1]);
+
+  const coordinateTextMatch = safeDecodeURIComponent(url).match(/(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)/);
+  if (coordinateTextMatch) return toCoordinatePair(coordinateTextMatch[1], coordinateTextMatch[2]);
+
+  try {
+    const parsedUrl = new URL(url);
+    const queryValue = parsedUrl.searchParams.get('q') || parsedUrl.searchParams.get('query') || parsedUrl.searchParams.get('ll') || parsedUrl.searchParams.get('center');
+    const queryMatch = queryValue?.match(/(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)/);
+    if (queryMatch) return toCoordinatePair(queryMatch[1], queryMatch[2]);
+  } catch {
+    return null;
+  }
+
   return null;
+}
+
+function safeDecodeURIComponent(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 function toCoordinatePair(latitudeValue, longitudeValue) {
