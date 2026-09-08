@@ -412,16 +412,6 @@ const ContactDetailsClient = ({ contactId }) => {
                 </Button>
                 <Button
                   variant="soft"
-                  color="error"
-                  onClick={() => setDialog('delete-contact')}
-                  startIcon={
-                    <IconifyIcon icon="material-symbols:delete-outline-rounded" />
-                  }
-                >
-                  Delete
-                </Button>
-                <Button
-                  variant="soft"
                   color="neutral"
                   onClick={() => setDialog('activity')}
                   startIcon={
@@ -604,6 +594,7 @@ const ContactDetailsClient = ({ contactId }) => {
         contact={contact}
         onClose={() => setDialog(null)}
         onSaved={fetchDetails}
+        onDelete={() => setDialog('delete-contact')}
         supabase={supabase}
       />
       <DeleteContactDialog
@@ -743,16 +734,6 @@ function TimelineCard({ items, supabase, onSaved }) {
     if (!error) onSaved();
   };
 
-  const handleDeleteActivity = async (activityId) => {
-    if (!window.confirm('Delete this activity?')) return;
-
-    const { error } = await supabase
-      .from('activities')
-      .delete()
-      .eq('id', activityId);
-    if (!error) onSaved();
-  };
-
   return (
     <>
       <Paper sx={{ p: { xs: 3, md: 4 } }}>
@@ -816,16 +797,6 @@ function TimelineCard({ items, supabase, onSaved }) {
                         Complete
                       </Button>
                     )}
-                    {item.activityId && (
-                      <Button
-                        size="small"
-                        variant="soft"
-                        color="error"
-                        onClick={() => handleDeleteActivity(item.activityId)}
-                      >
-                        Delete
-                      </Button>
-                    )}
                   </Stack>
                 </Stack>
                 {item.body && (
@@ -879,6 +850,7 @@ function TimelineCard({ items, supabase, onSaved }) {
 function EditNoteDialog({ open, note, onClose, onSaved, supabase }) {
   const [body, setBody] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (open) setBody(note?.body || '');
@@ -897,6 +869,19 @@ function EditNoteDialog({ open, note, onClose, onSaved, supabase }) {
     if (!error) onSaved();
   };
 
+  const handleDelete = async () => {
+    if (!note?.noteId || !window.confirm('Delete this note?')) return;
+
+    setIsDeleting(true);
+    const { error } = await supabase
+      .from('notes')
+      .delete()
+      .eq('id', note.noteId);
+    setIsDeleting(false);
+
+    if (!error) onSaved();
+  };
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Edit Note</DialogTitle>
@@ -911,13 +896,23 @@ function EditNoteDialog({ open, note, onClose, onSaved, supabase }) {
           sx={{ mt: 1 }}
         />
       </DialogContent>
-      <DialogActions>
-        <Button color="neutral" onClick={onClose}>
-          Cancel
+      <DialogActions sx={{ justifyContent: 'space-between' }}>
+        <Button
+          color="error"
+          variant="soft"
+          onClick={handleDelete}
+          loading={isDeleting}
+        >
+          Delete Note
         </Button>
-        <Button variant="contained" onClick={handleSave} loading={isSaving}>
-          Save Note
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button color="neutral" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleSave} loading={isSaving}>
+            Save Note
+          </Button>
+        </Stack>
       </DialogActions>
     </Dialog>
   );
@@ -933,6 +928,7 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
     dueAt: '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -965,6 +961,20 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
       })
       .eq('id', activity.activityId);
     setIsSaving(false);
+
+    if (!error) onSaved();
+  };
+
+  const handleDelete = async () => {
+    if (!activity?.activityId || !window.confirm('Delete this activity?'))
+      return;
+
+    setIsDeleting(true);
+    const { error } = await supabase
+      .from('activities')
+      .delete()
+      .eq('id', activity.activityId);
+    setIsDeleting(false);
 
     if (!error) onSaved();
   };
@@ -1044,13 +1054,23 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
           </Stack>
         </Stack>
       </DialogContent>
-      <DialogActions>
-        <Button color="neutral" onClick={onClose}>
-          Cancel
+      <DialogActions sx={{ justifyContent: 'space-between' }}>
+        <Button
+          color="error"
+          variant="soft"
+          onClick={handleDelete}
+          loading={isDeleting}
+        >
+          Delete Activity
         </Button>
-        <Button variant="contained" onClick={handleSave} loading={isSaving}>
-          Save Activity
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button color="neutral" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleSave} loading={isSaving}>
+            Save Activity
+          </Button>
+        </Stack>
       </DialogActions>
     </Dialog>
   );
@@ -1119,8 +1139,16 @@ function EmptyState({ label }) {
   );
 }
 
-function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
+function EditContactDialog({
+  open,
+  contact,
+  onClose,
+  onSaved,
+  onDelete,
+  supabase,
+}) {
   const [form, setForm] = useState(() => contactToForm(contact));
+  const [companies, setCompanies] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -1128,8 +1156,26 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
     if (open) {
       setForm(contactToForm(contact));
       setError(null);
+
+      supabase
+        .from('companies')
+        .select(
+          'id, name, company_type, account_number, website, phone, email, address_line1, address_line2, city, county, region, postal_code, country, latitude, longitude, notes',
+        )
+        .order('name', { ascending: true })
+        .limit(500)
+        .then(({ data }) => setCompanies(data || []));
     }
-  }, [contact, open]);
+  }, [contact, open, supabase]);
+
+  const companyOptions = useMemo(
+    () => mergeCompanyOptions(companies, contact?.companies),
+    [companies, contact?.companies],
+  );
+  const selectedCompany =
+    form.companyAssociationMode === 'existing'
+      ? companyOptions.find((company) => company.id === form.existingCompanyId)
+      : null;
 
   const handleSave = async () => {
     if (!form.firstName.trim() || !form.lastName.trim()) {
@@ -1140,9 +1186,37 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
     setIsSaving(true);
     setError(null);
 
+    let companyId = null;
+
+    if (form.companyAssociationMode === 'existing') {
+      if (!cleanText(form.existingCompanyId)) {
+        setError('Select a company or choose No Company.');
+        setIsSaving(false);
+        return;
+      }
+      companyId = form.existingCompanyId;
+    }
+
+    if (form.companyAssociationMode === 'create') {
+      if (!cleanText(form.newCompanyName)) {
+        setError('Company name is required to create a company.');
+        setIsSaving(false);
+        return;
+      }
+
+      try {
+        companyId = await saveCompanyFromContactEdit(supabase, form);
+      } catch (error) {
+        setError(error.message);
+        setIsSaving(false);
+        return;
+      }
+    }
+
     const { error: updateError } = await supabase
       .from('contacts')
       .update({
+        company_id: companyId,
         first_name: cleanText(form.firstName),
         last_name: cleanText(form.lastName),
         title: cleanText(form.title),
@@ -1164,13 +1238,36 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
       })
       .eq('id', contact.id);
 
-    setIsSaving(false);
-
     if (updateError) {
       setError(updateError.message);
+      setIsSaving(false);
       return;
     }
 
+    const relatedTables = [
+      'leads',
+      'activities',
+      'notes',
+      'equipment_interests',
+      'deals',
+    ];
+    const associationErrors = await Promise.all(
+      relatedTables.map((table) =>
+        supabase
+          .from(table)
+          .update({ company_id: companyId })
+          .eq('contact_id', contact.id),
+      ),
+    );
+    const associationError = associationErrors.find((result) => result.error);
+
+    if (associationError?.error) {
+      setError(associationError.error.message);
+      setIsSaving(false);
+      return;
+    }
+
+    setIsSaving(false);
     onSaved();
     onClose();
   };
@@ -1180,7 +1277,7 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
     setForm((prev) => ({
       ...prev,
       [key]: checked,
-      ...(checked ? fieldsFromCompany(contact?.companies, fields) : {}),
+      ...(checked ? fieldsFromCompany(selectedCompany, fields) : {}),
     }));
   };
 
@@ -1190,6 +1287,68 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ pt: 1, minWidth: 0 }}>
           {error && <Alert severity="error">{error}</Alert>}
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ minWidth: 0 }}
+          >
+            <TextField
+              select
+              label="Company"
+              value={form.companyAssociationMode}
+              onChange={handleField(setForm, 'companyAssociationMode')}
+              fullWidth
+            >
+              <MenuItem value="existing">Use Existing Company</MenuItem>
+              <MenuItem value="create">Create New Company</MenuItem>
+              <MenuItem value="none">No Company</MenuItem>
+            </TextField>
+            {form.companyAssociationMode === 'existing' && (
+              <TextField
+                select
+                label="Existing Company"
+                value={form.existingCompanyId}
+                onChange={handleField(setForm, 'existingCompanyId')}
+                fullWidth
+              >
+                <MenuItem value="">Select a company</MenuItem>
+                {companyOptions.map((company) => (
+                  <MenuItem key={company.id} value={company.id}>
+                    {companyLabel(company)}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          </Stack>
+          {form.companyAssociationMode === 'create' && (
+            <>
+              <TextField
+                label="New Company Name"
+                value={form.newCompanyName}
+                onChange={handleField(setForm, 'newCompanyName')}
+                fullWidth
+                required
+              />
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={2}
+                sx={{ minWidth: 0 }}
+              >
+                <TextField
+                  label="Company Type"
+                  value={form.newCompanyType}
+                  onChange={handleField(setForm, 'newCompanyType')}
+                  fullWidth
+                />
+                <TextField
+                  label="Company Account Number"
+                  value={form.newCompanyAccountNumber}
+                  onChange={handleField(setForm, 'newCompanyAccountNumber')}
+                  fullWidth
+                />
+              </Stack>
+            </>
+          )}
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={2}
@@ -1223,7 +1382,7 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
                 onChange={handleUseCompanyField('sameAccountNumberAsCompany', [
                   'accountNumber',
                 ])}
-                disabled={!contact?.companies}
+                disabled={!selectedCompany}
               />
             }
             label="Use company account number"
@@ -1246,7 +1405,7 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
                   onChange={handleUseCompanyField('sameEmailAsCompany', [
                     'email',
                   ])}
-                  disabled={!contact?.companies}
+                  disabled={!selectedCompany}
                 />
               }
               label="Use company email"
@@ -1258,7 +1417,7 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
                   onChange={handleUseCompanyField('samePhoneAsCompany', [
                     'phone',
                   ])}
-                  disabled={!contact?.companies}
+                  disabled={!selectedCompany}
                 />
               }
               label="Use company phone"
@@ -1297,7 +1456,7 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
                   'sameAddressAsCompany',
                   addressFields,
                 )}
-                disabled={!contact?.companies}
+                disabled={!selectedCompany}
               />
             }
             label="Use company address"
@@ -1346,7 +1505,7 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
                   'sameCoordinatesAsCompany',
                   coordinateFields,
                 )}
-                disabled={!contact?.companies}
+                disabled={!selectedCompany}
               />
             }
             label="Use company coordinates"
@@ -1406,13 +1565,25 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
           />
         </Stack>
       </DialogContent>
-      <DialogActions>
-        <Button color="neutral" onClick={onClose}>
-          Cancel
+      <DialogActions sx={{ justifyContent: 'space-between' }}>
+        <Button
+          color="error"
+          variant="soft"
+          onClick={onDelete}
+          startIcon={
+            <IconifyIcon icon="material-symbols:delete-outline-rounded" />
+          }
+        >
+          Delete Contact
         </Button>
-        <Button variant="contained" onClick={handleSave} loading={isSaving}>
-          Save Changes
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button color="neutral" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleSave} loading={isSaving}>
+            Save Changes
+          </Button>
+        </Stack>
       </DialogActions>
     </Dialog>
   );
@@ -2236,6 +2407,11 @@ function handleUppercaseField(setForm, key) {
 
 function contactToForm(contact) {
   return {
+    companyAssociationMode: contact?.company_id ? 'existing' : 'none',
+    existingCompanyId: contact?.company_id || '',
+    newCompanyName: '',
+    newCompanyType: '',
+    newCompanyAccountNumber: contact?.account_number || '',
     firstName: contact?.first_name || '',
     lastName: contact?.last_name || '',
     title: contact?.title || '',
@@ -2262,6 +2438,41 @@ function contactToForm(contact) {
   };
 }
 
+async function saveCompanyFromContactEdit(supabase, form) {
+  const { data: userResult, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !userResult.user) {
+    throw new Error('You need to be logged in to create a company.');
+  }
+
+  const payload = {
+    owner_id: userResult.user.id,
+    name: cleanText(form.newCompanyName),
+    company_type: cleanText(form.newCompanyType),
+    account_number: cleanText(form.newCompanyAccountNumber),
+    phone: cleanPhone(form.phone),
+    email: cleanText(form.email),
+    address_line1: cleanText(form.addressLine1),
+    address_line2: cleanText(form.addressLine2),
+    city: cleanText(form.city),
+    county: cleanText(form.county),
+    region: cleanText(form.region),
+    postal_code: cleanText(form.postalCode),
+    country: cleanText(form.country) || 'US',
+    latitude: cleanNumber(form.latitude),
+    longitude: cleanNumber(form.longitude),
+  };
+
+  const { data, error } = await supabase
+    .from('companies')
+    .upsert(payload, { onConflict: 'owner_id,name' })
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return data.id;
+}
+
 function parseTags(value) {
   return value
     .split(',')
@@ -2271,6 +2482,20 @@ function parseTags(value) {
 
 function cleanText(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function companyLabel(company) {
+  return [company.name, company.city, company.region]
+    .filter(Boolean)
+    .join(' - ');
+}
+
+function mergeCompanyOptions(companies, currentCompany) {
+  if (!currentCompany?.id) return companies;
+  if (companies.some((company) => company.id === currentCompany.id)) {
+    return companies;
+  }
+  return [currentCompany, ...companies];
 }
 
 function preserveText(value) {

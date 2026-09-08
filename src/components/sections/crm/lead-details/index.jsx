@@ -674,16 +674,6 @@ function TimelineCard({ items, supabase, onSaved }) {
     if (!error) onSaved();
   };
 
-  const handleDeleteActivity = async (activityId) => {
-    if (!window.confirm('Delete this activity?')) return;
-
-    const { error } = await supabase
-      .from('activities')
-      .delete()
-      .eq('id', activityId);
-    if (!error) onSaved();
-  };
-
   return (
     <>
       <Paper sx={{ p: { xs: 3, md: 4 } }}>
@@ -747,16 +737,6 @@ function TimelineCard({ items, supabase, onSaved }) {
                         Complete
                       </Button>
                     )}
-                    {item.activityId && (
-                      <Button
-                        size="small"
-                        variant="soft"
-                        color="error"
-                        onClick={() => handleDeleteActivity(item.activityId)}
-                      >
-                        Delete
-                      </Button>
-                    )}
                   </Stack>
                 </Stack>
                 {item.body && (
@@ -810,6 +790,7 @@ function TimelineCard({ items, supabase, onSaved }) {
 function EditNoteDialog({ open, note, onClose, onSaved, supabase }) {
   const [body, setBody] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (open) setBody(note?.body || '');
@@ -828,6 +809,19 @@ function EditNoteDialog({ open, note, onClose, onSaved, supabase }) {
     if (!error) onSaved();
   };
 
+  const handleDelete = async () => {
+    if (!note?.noteId || !window.confirm('Delete this note?')) return;
+
+    setIsDeleting(true);
+    const { error } = await supabase
+      .from('notes')
+      .delete()
+      .eq('id', note.noteId);
+    setIsDeleting(false);
+
+    if (!error) onSaved();
+  };
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Edit Note</DialogTitle>
@@ -842,13 +836,23 @@ function EditNoteDialog({ open, note, onClose, onSaved, supabase }) {
           sx={{ mt: 1 }}
         />
       </DialogContent>
-      <DialogActions>
-        <Button color="neutral" onClick={onClose}>
-          Cancel
+      <DialogActions sx={{ justifyContent: 'space-between' }}>
+        <Button
+          color="error"
+          variant="soft"
+          onClick={handleDelete}
+          loading={isDeleting}
+        >
+          Delete Note
         </Button>
-        <Button variant="contained" onClick={handleSave} loading={isSaving}>
-          Save Note
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button color="neutral" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleSave} loading={isSaving}>
+            Save Note
+          </Button>
+        </Stack>
       </DialogActions>
     </Dialog>
   );
@@ -864,6 +868,7 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
     dueAt: '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (open)
@@ -895,6 +900,20 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
       })
       .eq('id', activity.activityId);
     setIsSaving(false);
+
+    if (!error) onSaved();
+  };
+
+  const handleDelete = async () => {
+    if (!activity?.activityId || !window.confirm('Delete this activity?'))
+      return;
+
+    setIsDeleting(true);
+    const { error } = await supabase
+      .from('activities')
+      .delete()
+      .eq('id', activity.activityId);
+    setIsDeleting(false);
 
     if (!error) onSaved();
   };
@@ -966,13 +985,23 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
           </Stack>
         </Stack>
       </DialogContent>
-      <DialogActions>
-        <Button color="neutral" onClick={onClose}>
-          Cancel
+      <DialogActions sx={{ justifyContent: 'space-between' }}>
+        <Button
+          color="error"
+          variant="soft"
+          onClick={handleDelete}
+          loading={isDeleting}
+        >
+          Delete Activity
         </Button>
-        <Button variant="contained" onClick={handleSave} loading={isSaving}>
-          Save Activity
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button color="neutral" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleSave} loading={isSaving}>
+            Save Activity
+          </Button>
+        </Stack>
       </DialogActions>
     </Dialog>
   );

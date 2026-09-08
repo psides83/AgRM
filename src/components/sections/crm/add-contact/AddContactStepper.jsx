@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
@@ -87,6 +87,7 @@ const AddContactStepper = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [companies, setCompanies] = useState([]);
   const [duplicateConfirmation, setDuplicateConfirmation] = useState(null);
   const { enqueueSnackbar } = useSnackbar();
   const methods = useForm({
@@ -104,6 +105,8 @@ const AddContactStepper = () => {
         tags: [],
       },
       companyInfo: {
+        associationMode: 'create',
+        existingCompanyId: '',
         accountNumber: '',
         sameAccountNumberAsContact: false,
         sameEmailAsContact: false,
@@ -123,6 +126,21 @@ const AddContactStepper = () => {
   });
 
   const { getValues, reset } = methods;
+
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('companies')
+        .select('id, name, city, region')
+        .order('name', { ascending: true })
+        .limit(500);
+
+      setCompanies(data || []);
+    };
+
+    fetchCompanies();
+  }, []);
 
   const handleNext = async () => {
     const stepKey = ['personalInfo', 'companyInfo', 'leadInfo'][activeStep];
@@ -167,7 +185,11 @@ const AddContactStepper = () => {
         }
       }
 
-      const companyId = await saveCompany(supabase, user.id, data.companyInfo);
+      const companyId = await resolveCompanyId(
+        supabase,
+        user.id,
+        data.companyInfo,
+      );
       const contact = await saveContact(
         supabase,
         user.id,
@@ -245,7 +267,18 @@ const AddContactStepper = () => {
         </Stepper>
 
         <Box component="form" onSubmit={handleFormSubmit}>
-          <Box sx={{ mb: 7 }}>{steps[activeStep]?.content}</Box>
+          <Box sx={{ mb: 7 }}>
+            {activeStep === 0 && (
+              <PersonalInfoForm label="Personal Information" />
+            )}
+            {activeStep === 1 && (
+              <CompanyInfoForm
+                label="Company Information"
+                companies={companies}
+              />
+            )}
+            {activeStep === 2 && <LeadInfoForm label="Lead Information" />}
+          </Box>
 
           <Stack gap={2} justifyContent="flex-end">
             {activeStep > 0 && (
@@ -304,7 +337,10 @@ function cleanNumber(value) {
 function duplicateChecksFromForm(data) {
   const checks = [];
 
-  if (cleanText(data.companyInfo?.name)) {
+  if (
+    data.companyInfo?.associationMode === 'create' &&
+    cleanText(data.companyInfo?.name)
+  ) {
     checks.push({
       type: 'company',
       record: {
@@ -354,6 +390,22 @@ function hasLeadInfo(leadInfo) {
     leadInfo?.longitude ||
     cleanText(leadInfo?.notes),
   );
+}
+
+async function resolveCompanyId(supabase, ownerId, companyInfo) {
+  if (companyInfo?.associationMode === 'existing') {
+    const companyId = cleanText(companyInfo.existingCompanyId);
+    if (!companyId) {
+      throw new Error('Select an existing company or choose No Company.');
+    }
+    return companyId;
+  }
+
+  if (companyInfo?.associationMode === 'none') {
+    return null;
+  }
+
+  return saveCompany(supabase, ownerId, companyInfo);
 }
 
 async function saveCompany(supabase, ownerId, companyInfo) {

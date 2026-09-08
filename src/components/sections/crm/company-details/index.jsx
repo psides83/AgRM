@@ -272,6 +272,7 @@ const CompanyDetails = ({ companyId }) => {
         })),
         ...notes.map((note) => ({
           id: `note-${note.id}`,
+          noteId: note.id,
           type: 'note',
           title: note.pinned ? 'Pinned note' : 'Note',
           body: note.body,
@@ -767,6 +768,8 @@ function EquipmentCard({ equipmentInterests }) {
 }
 
 function TimelineCard({ items, supabase, onSaved }) {
+  const [editingItem, setEditingItem] = useState(null);
+
   const handleComplete = async (activityId) => {
     const { error } = await supabase
       .from('activities')
@@ -775,103 +778,334 @@ function TimelineCard({ items, supabase, onSaved }) {
     if (!error) onSaved();
   };
 
-  const handleDeleteActivity = async (activityId) => {
-    if (!window.confirm('Delete this activity?')) return;
+  return (
+    <>
+      <Paper sx={{ p: { xs: 3, md: 4 } }}>
+        <SectionTitle
+          title="Activities & Notes"
+          icon="material-symbols:history-rounded"
+        />
+        <Stack direction="column" divider={<Divider flexItem />} spacing={2}>
+          {items.length ? (
+            items.map((item) => (
+              <Box key={item.id}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1}
+                  sx={{ justifyContent: 'space-between', mb: 0.5 }}
+                >
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    useFlexGap
+                    sx={{ flexWrap: 'wrap', alignItems: 'center' }}
+                  >
+                    <Typography variant="subtitle2">{item.title}</Typography>
+                    {item.completedAt && (
+                      <Chip
+                        label="Complete"
+                        size="small"
+                        variant="soft"
+                        color="success"
+                      />
+                    )}
+                  </Stack>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+                  >
+                    <Chip
+                      label={formatEnum(item.type)}
+                      size="small"
+                      variant="soft"
+                    />
+                    <Button
+                      size="small"
+                      variant="soft"
+                      color="neutral"
+                      onClick={() => setEditingItem(item)}
+                    >
+                      Edit
+                    </Button>
+                    {item.activityId && !item.completedAt && (
+                      <Button
+                        size="small"
+                        variant="soft"
+                        color="success"
+                        onClick={() => handleComplete(item.activityId)}
+                      >
+                        Complete
+                      </Button>
+                    )}
+                  </Stack>
+                </Stack>
+                {item.body && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: 'text.secondary',
+                      mb: 0.5,
+                      whiteSpace: 'pre-wrap',
+                      overflowWrap: 'anywhere',
+                    }}
+                  >
+                    {item.body}
+                  </Typography>
+                )}
+                <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                  {formatDateTime(item.date)}
+                  {item.dueAt ? ` · Due ${formatDateTime(item.dueAt)}` : ''}
+                </Typography>
+              </Box>
+            ))
+          ) : (
+            <EmptyState label="No activities or notes yet" />
+          )}
+        </Stack>
+      </Paper>
+      <EditNoteDialog
+        open={Boolean(editingItem?.noteId)}
+        note={editingItem}
+        onClose={() => setEditingItem(null)}
+        onSaved={() => {
+          setEditingItem(null);
+          onSaved();
+        }}
+        supabase={supabase}
+      />
+      <EditActivityDialog
+        open={Boolean(editingItem?.activityId)}
+        activity={editingItem}
+        onClose={() => setEditingItem(null)}
+        onSaved={() => {
+          setEditingItem(null);
+          onSaved();
+        }}
+        supabase={supabase}
+      />
+    </>
+  );
+}
 
+function EditNoteDialog({ open, note, onClose, onSaved, supabase }) {
+  const [body, setBody] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (open) setBody(note?.body || '');
+  }, [note, open]);
+
+  const handleSave = async () => {
+    if (!note?.noteId || !body.trim()) return;
+
+    setIsSaving(true);
     const { error } = await supabase
-      .from('activities')
+      .from('notes')
+      .update({ body })
+      .eq('id', note.noteId);
+    setIsSaving(false);
+
+    if (!error) onSaved();
+  };
+
+  const handleDelete = async () => {
+    if (!note?.noteId || !window.confirm('Delete this note?')) return;
+
+    setIsDeleting(true);
+    const { error } = await supabase
+      .from('notes')
       .delete()
-      .eq('id', activityId);
+      .eq('id', note.noteId);
+    setIsDeleting(false);
+
     if (!error) onSaved();
   };
 
   return (
-    <Paper sx={{ p: { xs: 3, md: 4 } }}>
-      <SectionTitle
-        title="Activities & Notes"
-        icon="material-symbols:history-rounded"
-      />
-      <Stack direction="column" divider={<Divider flexItem />} spacing={2}>
-        {items.length ? (
-          items.map((item) => (
-            <Box key={item.id}>
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={1}
-                sx={{ justifyContent: 'space-between', mb: 0.5 }}
-              >
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  useFlexGap
-                  sx={{ flexWrap: 'wrap', alignItems: 'center' }}
-                >
-                  <Typography variant="subtitle2">{item.title}</Typography>
-                  {item.completedAt && (
-                    <Chip
-                      label="Complete"
-                      size="small"
-                      variant="soft"
-                      color="success"
-                    />
-                  )}
-                </Stack>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
-                >
-                  <Chip
-                    label={formatEnum(item.type)}
-                    size="small"
-                    variant="soft"
-                  />
-                  {item.activityId && !item.completedAt && (
-                    <Button
-                      size="small"
-                      variant="soft"
-                      color="success"
-                      onClick={() => handleComplete(item.activityId)}
-                    >
-                      Complete
-                    </Button>
-                  )}
-                  {item.activityId && (
-                    <Button
-                      size="small"
-                      variant="soft"
-                      color="error"
-                      onClick={() => handleDeleteActivity(item.activityId)}
-                    >
-                      Delete
-                    </Button>
-                  )}
-                </Stack>
-              </Stack>
-              {item.body && (
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: 'text.secondary',
-                    mb: 0.5,
-                    whiteSpace: 'pre-wrap',
-                    overflowWrap: 'anywhere',
-                  }}
-                >
-                  {item.body}
-                </Typography>
-              )}
-              <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-                {formatDateTime(item.date)}
-                {item.dueAt ? ` · Due ${formatDateTime(item.dueAt)}` : ''}
-              </Typography>
-            </Box>
-          ))
-        ) : (
-          <EmptyState label="No activities or notes yet" />
-        )}
-      </Stack>
-    </Paper>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Edit Note</DialogTitle>
+      <DialogContent>
+        <TextField
+          label="Note"
+          value={body}
+          onChange={(event) => setBody(event.target.value)}
+          fullWidth
+          multiline
+          rows={5}
+          sx={{ mt: 1 }}
+        />
+      </DialogContent>
+      <DialogActions sx={{ justifyContent: 'space-between' }}>
+        <Button
+          color="error"
+          variant="soft"
+          onClick={handleDelete}
+          loading={isDeleting}
+        >
+          Delete Note
+        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button color="neutral" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleSave} loading={isSaving}>
+            Save Note
+          </Button>
+        </Stack>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
+  const [form, setForm] = useState({
+    type: 'call',
+    direction: 'outbound',
+    subject: '',
+    body: '',
+    occurredAt: '',
+    dueAt: '',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setForm({
+        type: activity?.type || 'call',
+        direction: activity?.direction || 'outbound',
+        subject: activity?.title || '',
+        body: activity?.body || '',
+        occurredAt: toDateTimeLocal(activity?.date),
+        dueAt: toDateTimeLocal(activity?.dueAt),
+      });
+    }
+  }, [activity, open]);
+
+  const handleSave = async () => {
+    if (!activity?.activityId) return;
+
+    setIsSaving(true);
+    const { error } = await supabase
+      .from('activities')
+      .update({
+        type: form.type,
+        direction: form.direction,
+        subject: cleanText(form.subject) || formatEnum(form.type),
+        body: preserveText(form.body),
+        occurred_at: form.occurredAt
+          ? new Date(form.occurredAt).toISOString()
+          : new Date().toISOString(),
+        due_at: form.dueAt ? new Date(form.dueAt).toISOString() : null,
+      })
+      .eq('id', activity.activityId);
+    setIsSaving(false);
+
+    if (!error) onSaved();
+  };
+
+  const handleDelete = async () => {
+    if (!activity?.activityId || !window.confirm('Delete this activity?'))
+      return;
+
+    setIsDeleting(true);
+    const { error } = await supabase
+      .from('activities')
+      .delete()
+      .eq('id', activity.activityId);
+    setIsDeleting(false);
+
+    if (!error) onSaved();
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Edit Activity</DialogTitle>
+      <DialogContent>
+        <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField
+              select
+              label="Type"
+              value={form.type}
+              onChange={handleField(setForm, 'type')}
+              fullWidth
+            >
+              {activityTypes.map((type) => (
+                <MenuItem key={type} value={type}>
+                  {formatEnum(type)}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Direction"
+              value={form.direction}
+              onChange={handleField(setForm, 'direction')}
+              fullWidth
+            >
+              {activityDirections.map((direction) => (
+                <MenuItem key={direction} value={direction}>
+                  {formatEnum(direction)}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Stack>
+          <TextField
+            label="Subject"
+            value={form.subject}
+            onChange={handleField(setForm, 'subject')}
+            fullWidth
+          />
+          <TextField
+            label="Details"
+            value={form.body}
+            onChange={handleField(setForm, 'body')}
+            fullWidth
+            multiline
+            rows={3}
+          />
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField
+              label="Occurred At"
+              type="datetime-local"
+              value={form.occurredAt}
+              onChange={handleField(setForm, 'occurredAt')}
+              slotProps={{ inputLabel: { shrink: true } }}
+              fullWidth
+            />
+            <TextField
+              label="Due At"
+              type="datetime-local"
+              value={form.dueAt}
+              onChange={handleField(setForm, 'dueAt')}
+              slotProps={{ inputLabel: { shrink: true } }}
+              fullWidth
+            />
+          </Stack>
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ justifyContent: 'space-between' }}>
+        <Button
+          color="error"
+          variant="soft"
+          onClick={handleDelete}
+          loading={isDeleting}
+        >
+          Delete Activity
+        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button color="neutral" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleSave} loading={isSaving}>
+            Save Activity
+          </Button>
+        </Stack>
+      </DialogActions>
+    </Dialog>
   );
 }
 

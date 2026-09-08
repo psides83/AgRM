@@ -5,6 +5,7 @@ import {
   Checkbox,
   Divider,
   FormControlLabel,
+  MenuItem,
   Stack,
   TextField,
   Typography,
@@ -19,6 +20,11 @@ import {
 
 export const companyInfoSchema = yup.object({
   companyInfo: yup.object({
+    associationMode: yup
+      .string()
+      .oneOf(['create', 'existing', 'none'])
+      .default('create'),
+    existingCompanyId: yup.string().optional(),
     name: yup.string().optional(),
     companyType: yup.string().optional(),
     accountNumber: yup.string().optional(),
@@ -67,7 +73,7 @@ export const companyInfoSchema = yup.object({
   }),
 });
 
-const CompanyInfoForm = ({ label }) => {
+const CompanyInfoForm = ({ label, companies = [] }) => {
   const {
     register,
     watch,
@@ -75,6 +81,7 @@ const CompanyInfoForm = ({ label }) => {
     formState: { errors },
   } = useFormContext();
   const personalInfo = watch('personalInfo');
+  const associationMode = watch('companyInfo.associationMode') || 'create';
   const sameAccountNumberAsContact = watch(
     'companyInfo.sameAccountNumberAsContact',
   );
@@ -146,184 +153,230 @@ const CompanyInfoForm = ({ label }) => {
       </Box>
 
       <Stack direction="column" spacing={4}>
-        <ContactFormSection title="Company Details">
+        <ContactFormSection title="Company Association">
           <Grid container spacing={2} sx={{ width: 1 }}>
-            <Grid size={12}>
-              <TextField
-                fullWidth
-                label="Company / Farm Name"
-                error={!!errors.companyInfo?.name}
-                helperText={errors.companyInfo?.name?.message}
-                {...register('companyInfo.name')}
-              />
-            </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
+                select
                 fullWidth
-                label="Company Type"
-                placeholder="Farm, contractor, municipality..."
-                {...register('companyInfo.companyType')}
-              />
+                label="Company"
+                defaultValue="create"
+                {...register('companyInfo.associationMode')}
+              >
+                <MenuItem value="create">Create New Company</MenuItem>
+                <MenuItem value="existing">Use Existing Company</MenuItem>
+                <MenuItem value="none">No Company</MenuItem>
+              </TextField>
             </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    {...register('companyInfo.sameAccountNumberAsContact')}
-                  />
-                }
-                label="Use contact account number"
-              />
-              <TextField
-                fullWidth
-                label="Account Number"
-                {...register('companyInfo.accountNumber')}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Website"
-                {...register('companyInfo.website')}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControlLabel
-                control={
-                  <Checkbox {...register('companyInfo.samePhoneAsContact')} />
-                }
-                label="Use contact phone"
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormControlLabel
-                control={
-                  <Checkbox {...register('companyInfo.sameEmailAsContact')} />
-                }
-                label="Use contact email"
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Company Phone"
-                {...registerPhoneInput(register, 'companyInfo.phone')}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Company Email"
-                type="email"
-                error={!!errors.companyInfo?.email}
-                helperText={errors.companyInfo?.email?.message}
-                {...register('companyInfo.email')}
-              />
-            </Grid>
+            {associationMode === 'existing' && (
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Existing Company"
+                  defaultValue=""
+                  {...register('companyInfo.existingCompanyId')}
+                >
+                  <MenuItem value="">Select a company</MenuItem>
+                  {companies.map((company) => (
+                    <MenuItem key={company.id} value={company.id}>
+                      {companyLabel(company)}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            )}
           </Grid>
         </ContactFormSection>
 
-        <ContactFormSection title="Company Address">
-          <Grid container spacing={2} sx={{ width: 1 }}>
-            <Grid size={12}>
-              <FormControlLabel
-                control={
-                  <Checkbox {...register('companyInfo.sameAddressAsContact')} />
-                }
-                label="Use contact address"
-              />
-            </Grid>
-            <Grid size={12}>
-              <TextField
-                fullWidth
-                label="Address Line 1"
-                {...register('companyInfo.addressLine1')}
-              />
-            </Grid>
-            <Grid size={12}>
-              <TextField
-                fullWidth
-                label="Address Line 2"
-                {...register('companyInfo.addressLine2')}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="City"
-                {...register('companyInfo.city')}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="County"
-                {...register('companyInfo.county')}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="State / Region"
-                {...register('companyInfo.region')}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Postal Code"
-                {...register('companyInfo.postalCode')}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Country"
-                {...register('companyInfo.country')}
-              />
-            </Grid>
-            <Grid size={12}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    {...register('companyInfo.sameCoordinatesAsContact')}
+        {associationMode === 'create' && (
+          <>
+            <ContactFormSection title="Company Details">
+              <Grid container spacing={2} sx={{ width: 1 }}>
+                <Grid size={12}>
+                  <TextField
+                    fullWidth
+                    label="Company / Farm Name"
+                    error={!!errors.companyInfo?.name}
+                    helperText={errors.companyInfo?.name?.message}
+                    {...register('companyInfo.name')}
                   />
-                }
-                label="Use contact coordinates"
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Latitude"
-                type="number"
-                error={!!errors.companyInfo?.latitude}
-                helperText={errors.companyInfo?.latitude?.message}
-                {...register('companyInfo.latitude')}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Longitude"
-                type="number"
-                error={!!errors.companyInfo?.longitude}
-                helperText={errors.companyInfo?.longitude?.message}
-                {...register('companyInfo.longitude')}
-              />
-            </Grid>
-          </Grid>
-        </ContactFormSection>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Company Type"
+                    placeholder="Farm, contractor, municipality..."
+                    {...register('companyInfo.companyType')}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        {...register('companyInfo.sameAccountNumberAsContact')}
+                      />
+                    }
+                    label="Use contact account number"
+                  />
+                  <TextField
+                    fullWidth
+                    label="Account Number"
+                    {...register('companyInfo.accountNumber')}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Website"
+                    {...register('companyInfo.website')}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        {...register('companyInfo.samePhoneAsContact')}
+                      />
+                    }
+                    label="Use contact phone"
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        {...register('companyInfo.sameEmailAsContact')}
+                      />
+                    }
+                    label="Use contact email"
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Company Phone"
+                    {...registerPhoneInput(register, 'companyInfo.phone')}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Company Email"
+                    type="email"
+                    error={!!errors.companyInfo?.email}
+                    helperText={errors.companyInfo?.email?.message}
+                    {...register('companyInfo.email')}
+                  />
+                </Grid>
+              </Grid>
+            </ContactFormSection>
 
-        <ContactFormSection title="Company Notes">
-          <TextField
-            fullWidth
-            label="Company Notes"
-            multiline
-            rows={3}
-            {...register('companyInfo.notes')}
-          />
-        </ContactFormSection>
+            <ContactFormSection title="Company Address">
+              <Grid container spacing={2} sx={{ width: 1 }}>
+                <Grid size={12}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        {...register('companyInfo.sameAddressAsContact')}
+                      />
+                    }
+                    label="Use contact address"
+                  />
+                </Grid>
+                <Grid size={12}>
+                  <TextField
+                    fullWidth
+                    label="Address Line 1"
+                    {...register('companyInfo.addressLine1')}
+                  />
+                </Grid>
+                <Grid size={12}>
+                  <TextField
+                    fullWidth
+                    label="Address Line 2"
+                    {...register('companyInfo.addressLine2')}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="City"
+                    {...register('companyInfo.city')}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="County"
+                    {...register('companyInfo.county')}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="State / Region"
+                    {...register('companyInfo.region')}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Postal Code"
+                    {...register('companyInfo.postalCode')}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Country"
+                    {...register('companyInfo.country')}
+                  />
+                </Grid>
+                <Grid size={12}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        {...register('companyInfo.sameCoordinatesAsContact')}
+                      />
+                    }
+                    label="Use contact coordinates"
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Latitude"
+                    type="number"
+                    error={!!errors.companyInfo?.latitude}
+                    helperText={errors.companyInfo?.latitude?.message}
+                    {...register('companyInfo.latitude')}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Longitude"
+                    type="number"
+                    error={!!errors.companyInfo?.longitude}
+                    helperText={errors.companyInfo?.longitude?.message}
+                    {...register('companyInfo.longitude')}
+                  />
+                </Grid>
+              </Grid>
+            </ContactFormSection>
+
+            <ContactFormSection title="Company Notes">
+              <TextField
+                fullWidth
+                label="Company Notes"
+                multiline
+                rows={3}
+                {...register('companyInfo.notes')}
+              />
+            </ContactFormSection>
+          </>
+        )}
       </Stack>
     </div>
   );
@@ -346,6 +399,12 @@ function copyFields(setValue, targetPrefix, source, fields) {
       shouldDirty: true,
     });
   });
+}
+
+function companyLabel(company) {
+  return [company.name, company.city, company.region]
+    .filter(Boolean)
+    .join(' - ');
 }
 
 export default CompanyInfoForm;
