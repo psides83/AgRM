@@ -24,11 +24,21 @@ import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import CrmFilesPanel from 'components/sections/crm/shared/CrmFilesPanel';
-import { activityDirections, activityTypes, equipmentStatuses } from 'components/sections/crm/constants';
+import {
+  activityDirections,
+  activityTypes,
+  equipmentStatuses,
+} from 'components/sections/crm/constants';
 import DuplicateRecordDialog from 'components/sections/crm/shared/DuplicateRecordDialog';
 import { findPotentialDuplicates } from 'components/sections/crm/shared/duplicateRecords';
 
-const leadStatuses = ['new', 'working', 'qualified', 'unqualified', 'converted'];
+const leadStatuses = [
+  'new',
+  'working',
+  'qualified',
+  'unqualified',
+  'converted',
+];
 const equipmentCategories = [
   'tractor',
   'combine',
@@ -41,7 +51,13 @@ const equipmentCategories = [
   'other',
 ];
 const equipmentConditions = ['new', 'used', 'either'];
-const equipmentAvailability = ['availability_unknown', 'in_stock_auburn', 'in_stock_transfer', 'pending', 'unavailable'];
+const equipmentAvailability = [
+  'availability_unknown',
+  'in_stock_auburn',
+  'in_stock_transfer',
+  'pending',
+  'unavailable',
+];
 
 const ContactDetailsClient = ({ contactId }) => {
   const supabase = useMemo(() => createClient(), []);
@@ -57,12 +73,17 @@ const ContactDetailsClient = ({ contactId }) => {
   const fetchDetails = async () => {
     setError(null);
 
-    const [contactResult, leadsResult, equipmentResult, activitiesResult, notesResult] =
-      await Promise.all([
-        supabase
-          .from('contacts')
-          .select(
-            `
+    const [
+      contactResult,
+      leadsResult,
+      equipmentResult,
+      activitiesResult,
+      notesResult,
+    ] = await Promise.all([
+      supabase
+        .from('contacts')
+        .select(
+          `
             *,
             companies (
               id,
@@ -79,31 +100,31 @@ const ContactDetailsClient = ({ contactId }) => {
               longitude,
               notes
             )
-          `
-          )
-          .eq('id', contactId)
-          .single(),
-        supabase
-          .from('leads')
-          .select('*')
-          .eq('contact_id', contactId)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('equipment_interests')
-          .select('*')
-          .eq('contact_id', contactId)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('activities')
-          .select('*')
-          .eq('contact_id', contactId)
-          .order('occurred_at', { ascending: false }),
-        supabase
-          .from('notes')
-          .select('*')
-          .eq('contact_id', contactId)
-          .order('created_at', { ascending: false }),
-      ]);
+          `,
+        )
+        .eq('id', contactId)
+        .single(),
+      supabase
+        .from('leads')
+        .select('*')
+        .eq('contact_id', contactId)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('equipment_interests')
+        .select('*')
+        .eq('contact_id', contactId)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('activities')
+        .select('*')
+        .eq('contact_id', contactId)
+        .order('occurred_at', { ascending: false }),
+      supabase
+        .from('notes')
+        .select('*')
+        .eq('contact_id', contactId)
+        .order('created_at', { ascending: false }),
+    ]);
 
     const queryError = [
       contactResult.error,
@@ -133,13 +154,23 @@ const ContactDetailsClient = ({ contactId }) => {
       .channel(`agrm-contact-${contactId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'contacts', filter: `id=eq.${contactId}` },
-        () => fetchDetails()
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contacts',
+          filter: `id=eq.${contactId}`,
+        },
+        () => fetchDetails(),
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'leads', filter: `contact_id=eq.${contactId}` },
-        () => fetchDetails()
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads',
+          filter: `contact_id=eq.${contactId}`,
+        },
+        () => fetchDetails(),
       )
       .on(
         'postgres_changes',
@@ -149,17 +180,27 @@ const ContactDetailsClient = ({ contactId }) => {
           table: 'equipment_interests',
           filter: `contact_id=eq.${contactId}`,
         },
-        () => fetchDetails()
+        () => fetchDetails(),
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'activities', filter: `contact_id=eq.${contactId}` },
-        () => fetchDetails()
+        {
+          event: '*',
+          schema: 'public',
+          table: 'activities',
+          filter: `contact_id=eq.${contactId}`,
+        },
+        () => fetchDetails(),
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'notes', filter: `contact_id=eq.${contactId}` },
-        () => fetchDetails()
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notes',
+          filter: `contact_id=eq.${contactId}`,
+        },
+        () => fetchDetails(),
       )
       .subscribe();
 
@@ -188,7 +229,9 @@ const ContactDetailsClient = ({ contactId }) => {
       completedAt: activity.completed_at,
     }));
 
-    return [...noteItems, ...activityItems].sort((a, b) => new Date(b.date) - new Date(a.date));
+    return [...noteItems, ...activityItems].sort(
+      (a, b) => new Date(b.date) - new Date(a.date),
+    );
   }, [activities, notes]);
 
   if (isLoading) {
@@ -204,7 +247,9 @@ const ContactDetailsClient = ({ contactId }) => {
   }
 
   const company = contact.companies;
-  const contactName = [contact.first_name, contact.last_name].filter(Boolean).join(' ');
+  const contactName = [contact.first_name, contact.last_name]
+    .filter(Boolean)
+    .join(' ');
   const primaryPhone = contact.mobile_phone || contact.phone;
 
   return (
@@ -226,10 +271,17 @@ const ContactDetailsClient = ({ contactId }) => {
             <Stack
               direction={{ xs: 'column', lg: 'row' }}
               spacing={3}
-              sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', lg: 'center' } }}
+              sx={{
+                justifyContent: 'space-between',
+                alignItems: { xs: 'flex-start', lg: 'center' },
+              }}
             >
               <Stack direction="column" spacing={2} sx={{ minWidth: 0 }}>
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' } }}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={2}
+                  sx={{ alignItems: { sm: 'center' } }}
+                >
                   <Box
                     sx={{
                       width: 64,
@@ -248,16 +300,50 @@ const ContactDetailsClient = ({ contactId }) => {
                     <Typography variant="h4" sx={{ overflowWrap: 'anywhere' }}>
                       {contactName}
                     </Typography>
-                    <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                      {[contact.title, company?.name].filter(Boolean).join(' at ') || 'Contact'}
+                    <Typography
+                      variant="body1"
+                      sx={{ color: 'text.secondary' }}
+                    >
+                      {[contact.title, company?.name]
+                        .filter(Boolean)
+                        .join(' at ') || 'Contact'}
                     </Typography>
-                    <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', mt: 1 }}>
-                      {contact.account_number && <Chip label={`Account ${contact.account_number}`} size="small" variant="soft" color="primary" />}
-                      {contact.email && <Chip label={contact.email} size="small" variant="soft" color="neutral" />}
-                      {primaryPhone && <Chip label={primaryPhone} size="small" variant="soft" color="neutral" />}
-                      {[contact.city, contact.region].filter(Boolean).length > 0 && (
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      useFlexGap
+                      sx={{ flexWrap: 'wrap', mt: 1 }}
+                    >
+                      {contact.account_number && (
                         <Chip
-                          label={[contact.city, contact.region].filter(Boolean).join(', ')}
+                          label={`Account ${contact.account_number}`}
+                          size="small"
+                          variant="soft"
+                          color="primary"
+                        />
+                      )}
+                      {contact.email && (
+                        <Chip
+                          label={contact.email}
+                          size="small"
+                          variant="soft"
+                          color="neutral"
+                        />
+                      )}
+                      {primaryPhone && (
+                        <Chip
+                          label={primaryPhone}
+                          size="small"
+                          variant="soft"
+                          color="neutral"
+                        />
+                      )}
+                      {[contact.city, contact.region].filter(Boolean).length >
+                        0 && (
+                        <Chip
+                          label={[contact.city, contact.region]
+                            .filter(Boolean)
+                            .join(', ')}
                           size="small"
                           variant="soft"
                           color="neutral"
@@ -267,20 +353,38 @@ const ContactDetailsClient = ({ contactId }) => {
                   </Box>
                 </Stack>
                 {(contact.tags || []).length > 0 && (
-                  <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                  <Stack
+                    direction="row"
+                    spacing={0.75}
+                    useFlexGap
+                    sx={{ flexWrap: 'wrap' }}
+                  >
                     {contact.tags.map((tag) => (
-                      <Chip key={tag} label={tag} size="small" variant="soft" color="primary" />
+                      <Chip
+                        key={tag}
+                        label={tag}
+                        size="small"
+                        variant="soft"
+                        color="primary"
+                      />
                     ))}
                   </Stack>
                 )}
               </Stack>
 
-              <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+              <Stack
+                direction="row"
+                spacing={1}
+                useFlexGap
+                sx={{ flexWrap: 'wrap' }}
+              >
                 <Button
                   variant="soft"
                   color="neutral"
                   onClick={() => setDialog('edit-contact')}
-                  startIcon={<IconifyIcon icon="material-symbols:edit-outline-rounded" />}
+                  startIcon={
+                    <IconifyIcon icon="material-symbols:edit-outline-rounded" />
+                  }
                 >
                   Edit
                 </Button>
@@ -288,7 +392,9 @@ const ContactDetailsClient = ({ contactId }) => {
                   variant="soft"
                   color="neutral"
                   onClick={() => setDialog('activity')}
-                  startIcon={<IconifyIcon icon="material-symbols:add-call-outline-rounded" />}
+                  startIcon={
+                    <IconifyIcon icon="material-symbols:add-call-outline-rounded" />
+                  }
                 >
                   Add Activity
                 </Button>
@@ -296,7 +402,9 @@ const ContactDetailsClient = ({ contactId }) => {
                   variant="soft"
                   color="neutral"
                   onClick={() => setDialog('lead')}
-                  startIcon={<IconifyIcon icon="material-symbols:add-notes-outline-rounded" />}
+                  startIcon={
+                    <IconifyIcon icon="material-symbols:add-notes-outline-rounded" />
+                  }
                 >
                   Add Lead
                 </Button>
@@ -304,14 +412,18 @@ const ContactDetailsClient = ({ contactId }) => {
                   variant="soft"
                   color="neutral"
                   onClick={() => setDialog('note')}
-                  startIcon={<IconifyIcon icon="material-symbols:note-add-outline-rounded" />}
+                  startIcon={
+                    <IconifyIcon icon="material-symbols:note-add-outline-rounded" />
+                  }
                 >
                   Add Note
                 </Button>
                 <Button
                   variant="contained"
                   onClick={() => setDialog('equipment')}
-                  startIcon={<IconifyIcon icon="material-symbols:agriculture-outline-rounded" />}
+                  startIcon={
+                    <IconifyIcon icon="material-symbols:agriculture-outline-rounded" />
+                  }
                 >
                   Add Interest
                 </Button>
@@ -322,7 +434,10 @@ const ContactDetailsClient = ({ contactId }) => {
 
         <Grid size={{ xs: 12, lg: 4 }}>
           <Stack direction="column" spacing={3}>
-            <InfoCard title="Contact Info" icon="material-symbols:contacts-outline-rounded">
+            <InfoCard
+              title="Contact Info"
+              icon="material-symbols:contacts-outline-rounded"
+            >
               <InfoRow label="Role" value={contact.title} />
               <InfoRow label="Account Number" value={contact.account_number} />
               <InfoRow label="Email" value={contact.email} />
@@ -330,16 +445,24 @@ const ContactDetailsClient = ({ contactId }) => {
               <InfoRow label="Mobile" value={contact.mobile_phone} />
               <InfoRow
                 label="Location"
-                value={[contact.city, contact.region, contact.postal_code].filter(Boolean).join(', ')}
+                value={[contact.city, contact.region, contact.postal_code]
+                  .filter(Boolean)
+                  .join(', ')}
               />
               {contact.notes && (
-                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 2 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'text.secondary', mt: 2 }}
+                >
                   {contact.notes}
                 </Typography>
               )}
             </InfoCard>
 
-            <InfoCard title="Linked Company" icon="material-symbols:business-center-outline-rounded">
+            <InfoCard
+              title="Linked Company"
+              icon="material-symbols:business-center-outline-rounded"
+            >
               {company ? (
                 <>
                   <InfoRow label="Name" value={company.name} />
@@ -348,13 +471,26 @@ const ContactDetailsClient = ({ contactId }) => {
                   <InfoRow label="Phone" value={company.phone} />
                   <InfoRow
                     label="Location"
-                    value={[company.city, company.region, company.postal_code].filter(Boolean).join(', ')}
+                    value={[company.city, company.region, company.postal_code]
+                      .filter(Boolean)
+                      .join(', ')}
                   />
-                  <Button component={Link} href={paths.companyDetails(company.id)} underline="none" variant="soft" color="neutral" sx={{ mt: 1 }}>
+                  <Button
+                    component={Link}
+                    href={paths.companyDetails(company.id)}
+                    underline="none"
+                    variant="soft"
+                    color="neutral"
+                    sx={{ mt: 1 }}
+                  >
                     Open Company
                   </Button>
                   {company.website && (
-                    <Link href={company.website} target="_blank" rel="noreferrer">
+                    <Link
+                      href={company.website}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
                       {company.website}
                     </Link>
                   )}
@@ -373,7 +509,11 @@ const ContactDetailsClient = ({ contactId }) => {
             <LeadsCard leads={leads} />
             <EquipmentCard equipmentInterests={equipmentInterests} />
             <CrmFilesPanel recordType="contact" recordId={contact.id} />
-            <TimelineCard items={timelineItems} supabase={supabase} onSaved={fetchDetails} />
+            <TimelineCard
+              items={timelineItems}
+              supabase={supabase}
+              onSaved={fetchDetails}
+            />
           </Stack>
         </Grid>
       </Grid>
@@ -422,7 +562,9 @@ function InfoCard({ title, icon, children }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
       <SectionTitle title={title} icon={icon} />
-      <Stack direction="column" spacing={1.25}>{children}</Stack>
+      <Stack direction="column" spacing={1.25}>
+        {children}
+      </Stack>
     </Paper>
   );
 }
@@ -438,11 +580,18 @@ function SectionTitle({ title, icon }) {
 
 function InfoRow({ label, value }) {
   return (
-    <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    <Stack
+      direction="row"
+      spacing={2}
+      sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}
+    >
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
         {label}
       </Typography>
-      <Typography variant="body2" sx={{ textAlign: 'right', fontWeight: 600, overflowWrap: 'anywhere' }}>
+      <Typography
+        variant="body2"
+        sx={{ textAlign: 'right', fontWeight: 600, overflowWrap: 'anywhere' }}
+      >
         {value || '-'}
       </Typography>
     </Stack>
@@ -452,7 +601,10 @@ function InfoRow({ label, value }) {
 function LeadsCard({ leads }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
-      <SectionTitle title="Related Leads" icon="material-symbols:filter-alt-outline-rounded" />
+      <SectionTitle
+        title="Related Leads"
+        icon="material-symbols:filter-alt-outline-rounded"
+      />
       <Stack direction="column" spacing={1.5}>
         {leads.length ? (
           leads.map((lead) => (
@@ -475,13 +627,25 @@ function LeadsCard({ leads }) {
 function EquipmentCard({ equipmentInterests }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
-      <SectionTitle title="Equipment Interests" icon="material-symbols:agriculture-outline-rounded" />
+      <SectionTitle
+        title="Equipment Interests"
+        icon="material-symbols:agriculture-outline-rounded"
+      />
       <Stack direction="column" spacing={1.5}>
         {equipmentInterests.length ? (
           equipmentInterests.map((interest) => {
-            const equipmentName = [interest.model_year, interest.make, interest.model].filter(Boolean).join(' ');
+            const equipmentName = [
+              interest.model_year,
+              interest.make,
+              interest.model,
+            ]
+              .filter(Boolean)
+              .join(' ');
             const budget =
-              [formatCurrency(interest.price_min), formatCurrency(interest.price_max)]
+              [
+                formatCurrency(interest.price_min),
+                formatCurrency(interest.price_max),
+              ]
                 .filter((value) => value !== '-')
                 .join(' - ') || '-';
 
@@ -504,13 +668,19 @@ function EquipmentCard({ equipmentInterests }) {
 
 function TimelineCard({ items, supabase, onSaved }) {
   const handleComplete = async (activityId) => {
-    const { error } = await supabase.from('activities').update({ completed_at: new Date().toISOString() }).eq('id', activityId);
+    const { error } = await supabase
+      .from('activities')
+      .update({ completed_at: new Date().toISOString() })
+      .eq('id', activityId);
     if (!error) onSaved();
   };
 
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
-      <SectionTitle title="Activities & Notes" icon="material-symbols:history-rounded" />
+      <SectionTitle
+        title="Activities & Notes"
+        icon="material-symbols:history-rounded"
+      />
       <Stack direction="column" divider={<Divider flexItem />} spacing={2}>
         {items.length ? (
           items.map((item) => (
@@ -520,21 +690,53 @@ function TimelineCard({ items, supabase, onSaved }) {
                 spacing={1}
                 sx={{ justifyContent: 'space-between', mb: 0.5 }}
               >
-                <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  useFlexGap
+                  sx={{ flexWrap: 'wrap', alignItems: 'center' }}
+                >
                   <Typography variant="subtitle2">{item.title}</Typography>
-                  {item.completedAt && <Chip label="Complete" size="small" variant="soft" color="success" />}
+                  {item.completedAt && (
+                    <Chip
+                      label="Complete"
+                      size="small"
+                      variant="soft"
+                      color="success"
+                    />
+                  )}
                 </Stack>
-                <Stack direction="row" spacing={1} sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}>
-                  <Chip label={formatEnum(item.type)} size="small" variant="soft" />
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+                >
+                  <Chip
+                    label={formatEnum(item.type)}
+                    size="small"
+                    variant="soft"
+                  />
                   {item.activityId && !item.completedAt && (
-                    <Button size="small" variant="soft" color="success" onClick={() => handleComplete(item.activityId)}>
+                    <Button
+                      size="small"
+                      variant="soft"
+                      color="success"
+                      onClick={() => handleComplete(item.activityId)}
+                    >
                       Complete
                     </Button>
                   )}
                 </Stack>
               </Stack>
               {item.body && (
-                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5, overflowWrap: 'anywhere' }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary',
+                    mb: 0.5,
+                    overflowWrap: 'anywhere',
+                  }}
+                >
                   {item.body}
                 </Typography>
               )}
@@ -554,7 +756,11 @@ function TimelineCard({ items, supabase, onSaved }) {
 
 function RecordRow({ title, subtitle, chip, href }) {
   const titleNode = href ? (
-    <Link href={href} underline="hover" sx={{ color: 'text.primary', fontWeight: 700 }}>
+    <Link
+      href={href}
+      underline="hover"
+      sx={{ color: 'text.primary', fontWeight: 700 }}
+    >
       {title}
     </Link>
   ) : (
@@ -570,12 +776,19 @@ function RecordRow({ title, subtitle, chip, href }) {
         borderRadius: 2,
       }}
     >
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ justifyContent: 'space-between' }}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={1}
+        sx={{ justifyContent: 'space-between' }}
+      >
         <Box sx={{ minWidth: 0 }}>
           <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
             {titleNode}
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', overflowWrap: 'anywhere' }}>
+          <Typography
+            variant="body2"
+            sx={{ color: 'text.secondary', overflowWrap: 'anywhere' }}
+          >
             {subtitle}
           </Typography>
         </Box>
@@ -595,7 +808,10 @@ function RecordRow({ title, subtitle, chip, href }) {
 
 function EmptyState({ label }) {
   return (
-    <Typography variant="body2" sx={{ color: 'text.secondary', py: 2, textAlign: 'center' }}>
+    <Typography
+      variant="body2"
+      sx={{ color: 'text.secondary', py: 2, textAlign: 'center' }}
+    >
       {label}
     </Typography>
   );
@@ -635,6 +851,7 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
         address_line1: cleanText(form.addressLine1),
         address_line2: cleanText(form.addressLine2),
         city: cleanText(form.city),
+        county: cleanText(form.county),
         region: cleanText(form.region),
         postal_code: cleanText(form.postalCode),
         country: cleanText(form.country) || 'US',
@@ -660,9 +877,13 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>Edit Contact</DialogTitle>
       <DialogContent>
-        <Stack spacing={2} sx={{ pt: 1 }}>
+        <Stack direction="column" spacing={2} sx={{ pt: 1, minWidth: 0 }}>
           {error && <Alert severity="error">{error}</Alert>}
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ minWidth: 0 }}
+          >
             <TextField
               label="First Name"
               value={form.firstName}
@@ -678,26 +899,116 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
               required
             />
           </Stack>
-          <TextField label="Title / Role" value={form.title} onChange={handleField(setForm, 'title')} fullWidth />
-          <TextField label="Account Number" value={form.accountNumber} onChange={handleField(setForm, 'accountNumber')} fullWidth />
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField label="Email" type="email" value={form.email} onChange={handleField(setForm, 'email')} fullWidth />
-            <TextField label="Phone" value={form.phone} onChange={handleField(setForm, 'phone')} fullWidth />
+          <TextField
+            label="Title / Role"
+            value={form.title}
+            onChange={handleField(setForm, 'title')}
+            fullWidth
+          />
+          <TextField
+            label="Account Number"
+            value={form.accountNumber}
+            onChange={handleField(setForm, 'accountNumber')}
+            fullWidth
+          />
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ minWidth: 0 }}
+          >
+            <TextField
+              label="Email"
+              type="email"
+              value={form.email}
+              onChange={handleField(setForm, 'email')}
+              fullWidth
+            />
+            <TextField
+              label="Phone"
+              value={form.phone}
+              onChange={handleField(setForm, 'phone')}
+              fullWidth
+            />
           </Stack>
-          <TextField label="Mobile Phone" value={form.mobilePhone} onChange={handleField(setForm, 'mobilePhone')} fullWidth />
-          <TextField label="Address Line 1" value={form.addressLine1} onChange={handleField(setForm, 'addressLine1')} fullWidth />
-          <TextField label="Address Line 2" value={form.addressLine2} onChange={handleField(setForm, 'addressLine2')} fullWidth />
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField label="City" value={form.city} onChange={handleField(setForm, 'city')} fullWidth />
-            <TextField label="State / Region" value={form.region} onChange={handleField(setForm, 'region')} fullWidth />
+          <TextField
+            label="Mobile Phone"
+            value={form.mobilePhone}
+            onChange={handleField(setForm, 'mobilePhone')}
+            fullWidth
+          />
+          <TextField
+            label="Address Line 1"
+            value={form.addressLine1}
+            onChange={handleField(setForm, 'addressLine1')}
+            fullWidth
+          />
+          <TextField
+            label="Address Line 2"
+            value={form.addressLine2}
+            onChange={handleField(setForm, 'addressLine2')}
+            fullWidth
+          />
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ minWidth: 0 }}
+          >
+            <TextField
+              label="City"
+              value={form.city}
+              onChange={handleField(setForm, 'city')}
+              fullWidth
+            />
+            <TextField
+              label="County"
+              value={form.county}
+              onChange={handleField(setForm, 'county')}
+              fullWidth
+            />
+            <TextField
+              label="State / Region"
+              value={form.region}
+              onChange={handleField(setForm, 'region')}
+              fullWidth
+            />
           </Stack>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField label="Postal Code" value={form.postalCode} onChange={handleField(setForm, 'postalCode')} fullWidth />
-            <TextField label="Country" value={form.country} onChange={handleField(setForm, 'country')} fullWidth />
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ minWidth: 0 }}
+          >
+            <TextField
+              label="Postal Code"
+              value={form.postalCode}
+              onChange={handleField(setForm, 'postalCode')}
+              fullWidth
+            />
+            <TextField
+              label="Country"
+              value={form.country}
+              onChange={handleField(setForm, 'country')}
+              fullWidth
+            />
           </Stack>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField label="Latitude" type="number" value={form.latitude} onChange={handleField(setForm, 'latitude')} fullWidth />
-            <TextField label="Longitude" type="number" value={form.longitude} onChange={handleField(setForm, 'longitude')} fullWidth />
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ minWidth: 0 }}
+          >
+            <TextField
+              label="Latitude"
+              type="number"
+              value={form.latitude}
+              onChange={handleField(setForm, 'latitude')}
+              fullWidth
+            />
+            <TextField
+              label="Longitude"
+              type="number"
+              value={form.longitude}
+              onChange={handleField(setForm, 'longitude')}
+              fullWidth
+            />
           </Stack>
           <TextField
             label="Tags"
@@ -706,7 +1017,14 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
             helperText="Separate tags with commas."
             fullWidth
           />
-          <TextField label="Notes" value={form.notes} onChange={handleField(setForm, 'notes')} fullWidth multiline rows={4} />
+          <TextField
+            label="Notes"
+            value={form.notes}
+            onChange={handleField(setForm, 'notes')}
+            fullWidth
+            multiline
+            rows={4}
+          />
         </Stack>
       </DialogContent>
       <DialogActions>
@@ -801,7 +1119,17 @@ function AddLeadDialog({ open, contact, onClose, onSaved, supabase }) {
     }
 
     setIsSaving(false);
-    setForm({ source: '', status: 'new', accountNumber: '', priority: 3, estimatedBudget: '', nextFollowUpAt: '', latitude: '', longitude: '', notes: '' });
+    setForm({
+      source: '',
+      status: 'new',
+      accountNumber: '',
+      priority: 3,
+      estimatedBudget: '',
+      nextFollowUpAt: '',
+      latitude: '',
+      longitude: '',
+      notes: '',
+    });
     setDuplicateConfirmation(null);
     onSaved();
     onClose();
@@ -812,10 +1140,26 @@ function AddLeadDialog({ open, contact, onClose, onSaved, supabase }) {
       <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
         <DialogTitle>Add Lead</DialogTitle>
         <DialogContent>
-          <Stack spacing={2} sx={{ pt: 1 }}>
-            <TextField label="Source" value={form.source} onChange={handleField(setForm, 'source')} fullWidth />
-            <TextField label="Account Number" value={form.accountNumber} onChange={handleField(setForm, 'accountNumber')} fullWidth />
-            <TextField select label="Status" value={form.status} onChange={handleField(setForm, 'status')} fullWidth>
+          <Stack direction="column" spacing={2} sx={{ pt: 1, minWidth: 0 }}>
+            <TextField
+              label="Source"
+              value={form.source}
+              onChange={handleField(setForm, 'source')}
+              fullWidth
+            />
+            <TextField
+              label="Account Number"
+              value={form.accountNumber}
+              onChange={handleField(setForm, 'accountNumber')}
+              fullWidth
+            />
+            <TextField
+              select
+              label="Status"
+              value={form.status}
+              onChange={handleField(setForm, 'status')}
+              fullWidth
+            >
               {leadStatuses.map((status) => (
                 <MenuItem key={status} value={status}>
                   {status}
@@ -844,18 +1188,45 @@ function AddLeadDialog({ open, contact, onClose, onSaved, supabase }) {
               fullWidth
               slotProps={{ inputLabel: { shrink: true } }}
             />
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField label="Latitude" type="number" value={form.latitude} onChange={handleField(setForm, 'latitude')} fullWidth />
-              <TextField label="Longitude" type="number" value={form.longitude} onChange={handleField(setForm, 'longitude')} fullWidth />
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={2}
+              sx={{ minWidth: 0 }}
+            >
+              <TextField
+                label="Latitude"
+                type="number"
+                value={form.latitude}
+                onChange={handleField(setForm, 'latitude')}
+                fullWidth
+              />
+              <TextField
+                label="Longitude"
+                type="number"
+                value={form.longitude}
+                onChange={handleField(setForm, 'longitude')}
+                fullWidth
+              />
             </Stack>
-            <TextField label="Notes" value={form.notes} onChange={handleField(setForm, 'notes')} fullWidth multiline rows={3} />
+            <TextField
+              label="Notes"
+              value={form.notes}
+              onChange={handleField(setForm, 'notes')}
+              fullWidth
+              multiline
+              rows={3}
+            />
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button color="neutral" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="contained" onClick={() => handleSave()} loading={isSaving}>
+          <Button
+            variant="contained"
+            onClick={() => handleSave()}
+            loading={isSaving}
+          >
             Save Lead
           </Button>
         </DialogActions>
@@ -934,7 +1305,14 @@ function AddActivityDialog({ open, contact, onClose, onSaved, supabase }) {
 
   useEffect(() => {
     if (open) {
-      setForm({ type: 'call', direction: 'outbound', subject: '', body: '', occurredAt: toDateTimeLocal(new Date().toISOString()), dueAt: '' });
+      setForm({
+        type: 'call',
+        direction: 'outbound',
+        subject: '',
+        body: '',
+        occurredAt: toDateTimeLocal(new Date().toISOString()),
+        dueAt: '',
+      });
     }
   }, [open]);
 
@@ -949,7 +1327,9 @@ function AddActivityDialog({ open, contact, onClose, onSaved, supabase }) {
       direction: form.direction,
       subject: cleanText(form.subject) || formatEnum(form.type),
       body: cleanText(form.body),
-      occurred_at: form.occurredAt ? new Date(form.occurredAt).toISOString() : new Date().toISOString(),
+      occurred_at: form.occurredAt
+        ? new Date(form.occurredAt).toISOString()
+        : new Date().toISOString(),
       due_at: form.dueAt ? new Date(form.dueAt).toISOString() : null,
     });
     setIsSaving(false);
@@ -963,32 +1343,97 @@ function AddActivityDialog({ open, contact, onClose, onSaved, supabase }) {
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Add Activity</DialogTitle>
       <DialogContent>
-        <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField select label="Type" value={form.type} onChange={handleField(setForm, 'type')} fullWidth>
-              {activityTypes.map((type) => <MenuItem key={type} value={type}>{formatEnum(type)}</MenuItem>)}
+        <Stack direction="column" spacing={2} sx={{ pt: 1, minWidth: 0 }}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ minWidth: 0 }}
+          >
+            <TextField
+              select
+              label="Type"
+              value={form.type}
+              onChange={handleField(setForm, 'type')}
+              fullWidth
+            >
+              {activityTypes.map((type) => (
+                <MenuItem key={type} value={type}>
+                  {formatEnum(type)}
+                </MenuItem>
+              ))}
             </TextField>
-            <TextField select label="Direction" value={form.direction} onChange={handleField(setForm, 'direction')} fullWidth>
-              {activityDirections.map((direction) => <MenuItem key={direction} value={direction}>{formatEnum(direction)}</MenuItem>)}
+            <TextField
+              select
+              label="Direction"
+              value={form.direction}
+              onChange={handleField(setForm, 'direction')}
+              fullWidth
+            >
+              {activityDirections.map((direction) => (
+                <MenuItem key={direction} value={direction}>
+                  {formatEnum(direction)}
+                </MenuItem>
+              ))}
             </TextField>
           </Stack>
-          <TextField label="Subject" value={form.subject} onChange={handleField(setForm, 'subject')} fullWidth />
-          <TextField label="Details" value={form.body} onChange={handleField(setForm, 'body')} fullWidth multiline rows={3} />
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField label="Occurred At" type="datetime-local" value={form.occurredAt} onChange={handleField(setForm, 'occurredAt')} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
-            <TextField label="Due At" type="datetime-local" value={form.dueAt} onChange={handleField(setForm, 'dueAt')} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
+          <TextField
+            label="Subject"
+            value={form.subject}
+            onChange={handleField(setForm, 'subject')}
+            fullWidth
+          />
+          <TextField
+            label="Details"
+            value={form.body}
+            onChange={handleField(setForm, 'body')}
+            fullWidth
+            multiline
+            rows={3}
+          />
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ minWidth: 0 }}
+          >
+            <TextField
+              label="Occurred At"
+              type="datetime-local"
+              value={form.occurredAt}
+              onChange={handleField(setForm, 'occurredAt')}
+              slotProps={{ inputLabel: { shrink: true } }}
+              fullWidth
+            />
+            <TextField
+              label="Due At"
+              type="datetime-local"
+              value={form.dueAt}
+              onChange={handleField(setForm, 'dueAt')}
+              slotProps={{ inputLabel: { shrink: true } }}
+              fullWidth
+            />
           </Stack>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button color="neutral" onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSave} loading={isSaving}>Save Activity</Button>
+        <Button color="neutral" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="contained" onClick={handleSave} loading={isSaving}>
+          Save Activity
+        </Button>
       </DialogActions>
     </Dialog>
   );
 }
 
-function AddEquipmentDialog({ open, contact, leads, onClose, onSaved, supabase }) {
+function AddEquipmentDialog({
+  open,
+  contact,
+  leads,
+  onClose,
+  onSaved,
+  supabase,
+}) {
   const [form, setForm] = useState({
     leadId: '',
     category: 'tractor',
@@ -1057,8 +1502,14 @@ function AddEquipmentDialog({ open, contact, leads, onClose, onSaved, supabase }
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Add Equipment Interest</DialogTitle>
       <DialogContent>
-        <Stack spacing={2} sx={{ pt: 1 }}>
-          <TextField select label="Related Lead" value={form.leadId} onChange={handleField(setForm, 'leadId')} fullWidth>
+        <Stack direction="column" spacing={2} sx={{ pt: 1, minWidth: 0 }}>
+          <TextField
+            select
+            label="Related Lead"
+            value={form.leadId}
+            onChange={handleField(setForm, 'leadId')}
+            fullWidth
+          >
             <MenuItem value="">No specific lead</MenuItem>
             {leads.map((lead) => (
               <MenuItem key={lead.id} value={lead.id}>
@@ -1066,35 +1517,88 @@ function AddEquipmentDialog({ open, contact, leads, onClose, onSaved, supabase }
               </MenuItem>
             ))}
           </TextField>
-          <TextField select label="Category" value={form.category} onChange={handleField(setForm, 'category')} fullWidth>
+          <TextField
+            select
+            label="Category"
+            value={form.category}
+            onChange={handleField(setForm, 'category')}
+            fullWidth
+          >
             {equipmentCategories.map((category) => (
               <MenuItem key={category} value={category}>
                 {category}
               </MenuItem>
             ))}
           </TextField>
-          <TextField label="Make" value={form.make} onChange={handleField(setForm, 'make')} fullWidth />
-          <TextField label="Model" value={form.model} onChange={handleField(setForm, 'model')} fullWidth />
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField label="Stock Number" value={form.stockNumber} onChange={handleStockField(setForm)} inputProps={{ maxLength: 6 }} fullWidth />
-            <TextField label="Serial Number" value={form.serialNumber} onChange={handleUppercaseField(setForm, 'serialNumber')} fullWidth />
+          <TextField
+            label="Make"
+            value={form.make}
+            onChange={handleField(setForm, 'make')}
+            fullWidth
+          />
+          <TextField
+            label="Model"
+            value={form.model}
+            onChange={handleField(setForm, 'model')}
+            fullWidth
+          />
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ minWidth: 0 }}
+          >
+            <TextField
+              label="Stock Number"
+              value={form.stockNumber}
+              onChange={handleStockField(setForm)}
+              inputProps={{ maxLength: 6 }}
+              fullWidth
+            />
+            <TextField
+              label="Serial Number"
+              value={form.serialNumber}
+              onChange={handleUppercaseField(setForm, 'serialNumber')}
+              fullWidth
+            />
           </Stack>
-          <TextField select label="Condition" value={form.condition} onChange={handleField(setForm, 'condition')} fullWidth>
+          <TextField
+            select
+            label="Condition"
+            value={form.condition}
+            onChange={handleField(setForm, 'condition')}
+            fullWidth
+          >
             {equipmentConditions.map((condition) => (
               <MenuItem key={condition} value={condition}>
                 {condition}
               </MenuItem>
             ))}
           </TextField>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField select label="Availability" value={form.availability} onChange={handleField(setForm, 'availability')} fullWidth>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ minWidth: 0 }}
+          >
+            <TextField
+              select
+              label="Availability"
+              value={form.availability}
+              onChange={handleField(setForm, 'availability')}
+              fullWidth
+            >
               {equipmentAvailability.map((availability) => (
                 <MenuItem key={availability} value={availability}>
                   {formatEnum(availability)}
                 </MenuItem>
               ))}
             </TextField>
-            <TextField select label="Status" value={form.status} onChange={handleField(setForm, 'status')} fullWidth>
+            <TextField
+              select
+              label="Status"
+              value={form.status}
+              onChange={handleField(setForm, 'status')}
+              fullWidth
+            >
               {equipmentStatuses.map((status) => (
                 <MenuItem key={status} value={status}>
                   {formatEnum(status)}
@@ -1102,16 +1606,51 @@ function AddEquipmentDialog({ open, contact, leads, onClose, onSaved, supabase }
               ))}
             </TextField>
           </Stack>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField label="Quote Price" type="number" value={form.quotePrice} onChange={handleField(setForm, 'quotePrice')} fullWidth />
-            <TextField label="Price Min" type="number" value={form.priceMin} onChange={handleField(setForm, 'priceMin')} fullWidth />
-            <TextField label="Price Max" type="number" value={form.priceMax} onChange={handleField(setForm, 'priceMax')} fullWidth />
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ minWidth: 0 }}
+          >
+            <TextField
+              label="Quote Price"
+              type="number"
+              value={form.quotePrice}
+              onChange={handleField(setForm, 'quotePrice')}
+              fullWidth
+            />
+            <TextField
+              label="Price Min"
+              type="number"
+              value={form.priceMin}
+              onChange={handleField(setForm, 'priceMin')}
+              fullWidth
+            />
+            <TextField
+              label="Price Max"
+              type="number"
+              value={form.priceMax}
+              onChange={handleField(setForm, 'priceMax')}
+              fullWidth
+            />
           </Stack>
-          <TextField select label="Trade-in" value={form.tradeIn} onChange={handleField(setForm, 'tradeIn')} fullWidth>
+          <TextField
+            select
+            label="Trade-in"
+            value={form.tradeIn}
+            onChange={handleField(setForm, 'tradeIn')}
+            fullWidth
+          >
             <MenuItem value="false">No</MenuItem>
             <MenuItem value="true">Yes</MenuItem>
           </TextField>
-          <TextField label="Notes" value={form.notes} onChange={handleField(setForm, 'notes')} fullWidth multiline rows={3} />
+          <TextField
+            label="Notes"
+            value={form.notes}
+            onChange={handleField(setForm, 'notes')}
+            fullWidth
+            multiline
+            rows={3}
+          />
         </Stack>
       </DialogContent>
       <DialogActions>
@@ -1133,11 +1672,16 @@ function handleField(setForm, key) {
 }
 
 function handleStockField(setForm) {
-  return (event) => setForm((prev) => ({ ...prev, stockNumber: event.target.value.replace(/\D/g, '').slice(0, 6) }));
+  return (event) =>
+    setForm((prev) => ({
+      ...prev,
+      stockNumber: event.target.value.replace(/\D/g, '').slice(0, 6),
+    }));
 }
 
 function handleUppercaseField(setForm, key) {
-  return (event) => setForm((prev) => ({ ...prev, [key]: event.target.value.toUpperCase() }));
+  return (event) =>
+    setForm((prev) => ({ ...prev, [key]: event.target.value.toUpperCase() }));
 }
 
 function contactToForm(contact) {
@@ -1152,12 +1696,13 @@ function contactToForm(contact) {
     addressLine1: contact?.address_line1 || '',
     addressLine2: contact?.address_line2 || '',
     city: contact?.city || '',
-      region: contact?.region || '',
-      postalCode: contact?.postal_code || '',
-      country: contact?.country || 'US',
-      latitude: contact?.latitude ?? '',
-      longitude: contact?.longitude ?? '',
-      tags: (contact?.tags || []).join(', '),
+    county: contact?.county || '',
+    region: contact?.region || '',
+    postalCode: contact?.postal_code || '',
+    country: contact?.country || 'US',
+    latitude: contact?.latitude ?? '',
+    longitude: contact?.longitude ?? '',
+    tags: (contact?.tags || []).join(', '),
     notes: contact?.notes || '',
   };
 }
@@ -1174,13 +1719,19 @@ function cleanText(value) {
 }
 
 function cleanNumber(value) {
-  if (value === '' || value === null || typeof value === 'undefined') return null;
+  if (value === '' || value === null || typeof value === 'undefined')
+    return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
 
 function getInitials(contact) {
-  return [contact?.first_name?.[0], contact?.last_name?.[0]].filter(Boolean).join('').toUpperCase() || 'A';
+  return (
+    [contact?.first_name?.[0], contact?.last_name?.[0]]
+      .filter(Boolean)
+      .join('')
+      .toUpperCase() || 'A'
+  );
 }
 
 function formatCurrency(value) {
@@ -1206,7 +1757,9 @@ function formatDateTime(value) {
 function formatEnum(value) {
   if (!value) return '-';
   if (value === 'fit_confirmed') return 'Equipment Fit Confirmed';
-  return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return value
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function toDateTimeLocal(value) {

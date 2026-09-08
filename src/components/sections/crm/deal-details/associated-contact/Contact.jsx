@@ -28,9 +28,20 @@ const Contact = ({ contact }) => {
       sx={{ width: 1, borderRadius: 2, p: 2, bgcolor: 'background.elevation1' }}
     >
       <Stack direction="column" gap={3}>
-        <Stack sx={{ justifyContent: 'space-between' }}>
-          <Stack gap={2}>
-            <Avatar variant="rounded" src={contact.avatar} sx={{ width: 80, height: 80 }} />
+        <Stack
+          direction="row"
+          sx={{
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            minWidth: 0,
+          }}
+        >
+          <Stack direction="row" gap={2} sx={{ minWidth: 0 }}>
+            <Avatar
+              variant="rounded"
+              src={contact.avatar}
+              sx={{ width: 80, height: 80 }}
+            />
 
             <Stack direction="column" gap={1}>
               <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
@@ -41,31 +52,57 @@ const Contact = ({ contact }) => {
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                   {contact.designation}
                 </Typography>
-                <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ color: 'text.secondary' }}
+                >
                   {contact.company}
                 </Typography>
               </Stack>
             </Stack>
           </Stack>
 
-          <Button shape="square" color="neutral" onClick={(e) => setAnchorEl(e.currentTarget)}>
-            <IconifyIcon icon="material-symbols:more-horiz" sx={{ fontSize: 20 }} />
+          <Button
+            shape="square"
+            color="neutral"
+            onClick={(e) => setAnchorEl(e.currentTarget)}
+          >
+            <IconifyIcon
+              icon="material-symbols:more-horiz"
+              sx={{ fontSize: 20 }}
+            />
           </Button>
-          <CRMDropdownMenu anchorEl={anchorEl} open={open} handleClose={() => setAnchorEl(null)} />
+          <CRMDropdownMenu
+            anchorEl={anchorEl}
+            open={open}
+            handleClose={() => setAnchorEl(null)}
+          />
         </Stack>
 
-        <Stack gap={1}>
+        <Stack direction="row" gap={1}>
           <Button shape="square" variant="soft" color="neutral" fullWidth>
-            <IconifyIcon icon="material-symbols:call-outline-rounded" sx={{ fontSize: 20 }} />
+            <IconifyIcon
+              icon="material-symbols:call-outline-rounded"
+              sx={{ fontSize: 20 }}
+            />
           </Button>
           <Button shape="square" variant="soft" color="neutral" fullWidth>
-            <IconifyIcon icon="material-symbols:mail-outline-rounded" sx={{ fontSize: 20 }} />
+            <IconifyIcon
+              icon="material-symbols:mail-outline-rounded"
+              sx={{ fontSize: 20 }}
+            />
           </Button>
           <Button shape="square" variant="soft" color="neutral" fullWidth>
-            <IconifyIcon icon="material-symbols:video-call-outline-rounded" sx={{ fontSize: 20 }} />
+            <IconifyIcon
+              icon="material-symbols:video-call-outline-rounded"
+              sx={{ fontSize: 20 }}
+            />
           </Button>
           <Button shape="square" variant="soft" color="neutral" fullWidth>
-            <IconifyIcon icon="material-symbols:calendar-add-on" sx={{ fontSize: 20 }} />
+            <IconifyIcon
+              icon="material-symbols:calendar-add-on"
+              sx={{ fontSize: 20 }}
+            />
           </Button>
         </Stack>
 
@@ -97,7 +134,10 @@ const Contact = ({ contact }) => {
                   <CopyableText text={contact.contactInfo.email} />
                 </TableCell>
                 <TableCell align="right">
-                  <Stack sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
+                  <Stack
+                    direction="row"
+                    sx={{ alignItems: 'center', justifyContent: 'flex-end' }}
+                  >
                     {contact.contactInfo.contactOwner.map((owner) => (
                       <Chip
                         key={owner.id}

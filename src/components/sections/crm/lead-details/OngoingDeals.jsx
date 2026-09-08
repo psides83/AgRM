@@ -10,9 +10,17 @@ import Deal from './Deal';
 const OngoingDeals = ({ ongoingDeals }) => {
   return (
     <Paper sx={{ px: { xs: 3, md: 5 }, py: 5, flex: 1, height: 1 }}>
-      <Stack sx={{ mb: 4, justifyContent: 'space-between' }}>
+      <Stack
+        direction="row"
+        sx={{
+          mb: 4,
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          minWidth: 0,
+        }}
+      >
         <Typography variant="h6">Ongoing Deals</Typography>
-        <Stack gap={1}>
+        <Stack direction="row" gap={1}>
           <Button
             variant="contained"
             href={paths.addContact}

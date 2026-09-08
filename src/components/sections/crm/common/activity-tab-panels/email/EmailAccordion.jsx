@@ -29,18 +29,22 @@ const EmailAccordion = ({ email }) => {
       }}
     >
       <Stack
+        direction="row"
         sx={{
           bgcolor: 'background.elevation1',
           justifyContent: 'space-between',
           alignItems: 'center',
+          gap: 1,
+          minWidth: 0,
         }}
       >
         <Stack
+          direction="row"
           gap={2}
           flexGrow={1}
           role="button"
           onClick={() => setOpen(!open)}
-          sx={{ cursor: 'pointer', alignItems: 'center' }}
+          sx={{ cursor: 'pointer', alignItems: 'center', minWidth: 0 }}
         >
           {email.avatar && typeof email.avatar === 'string' ? (
             <Avatar src={email.avatar} sx={{ width: 48, height: 48 }} />
@@ -56,8 +60,15 @@ const EmailAccordion = ({ email }) => {
                 {email.name}
               </Typography>
               {upSm && email.sentVia && (
-                <Stack gap={0.5} sx={{ alignItems: 'flex-end' }}>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                <Stack
+                  direction="row"
+                  gap={0.5}
+                  sx={{ alignItems: 'flex-end' }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{ color: 'text.secondary' }}
+                  >
                     Sent via{' '}
                   </Typography>
                   <Typography variant="subtitle2">{email.sentVia}</Typography>
@@ -82,7 +93,10 @@ const EmailAccordion = ({ email }) => {
             setAnchorEl(e.currentTarget);
           }}
         >
-          <IconifyIcon icon="material-symbols:more-horiz" sx={{ fontSize: 18 }} />
+          <IconifyIcon
+            icon="material-symbols:more-horiz"
+            sx={{ fontSize: 18 }}
+          />
         </Button>
         <CRMDropdownMenu
           anchorEl={anchorEl}
@@ -104,17 +118,31 @@ const EmailAccordion = ({ email }) => {
             <Stack gap={1} sx={{ overflow: 'hidden' }}>
               {email.attachment.map((attachment) => (
                 <Stack key={attachment.name} direction="column" gap={1}>
-                  <Box sx={{ borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
+                  <Box
+                    sx={{
+                      borderRadius: 2,
+                      position: 'relative',
+                      overflow: 'hidden',
+                    }}
+                  >
                     <Image
                       src={attachment.src}
                       width={200}
                       height={200}
-                      sx={{ objectFit: 'fill', height: 1, width: 1, borderRadius: 2 }}
+                      sx={{
+                        objectFit: 'fill',
+                        height: 1,
+                        width: 1,
+                        borderRadius: 2,
+                      }}
                     />
                   </Box>
                   <Typography variant="caption" sx={{ fontWeight: 700 }}>
                     {attachment.name}
-                    <Box component="span" sx={{ color: 'text.disabled', fontWeight: 400 }}>
+                    <Box
+                      component="span"
+                      sx={{ color: 'text.disabled', fontWeight: 400 }}
+                    >
                       {' ' + attachment.size}
                     </Box>
                   </Typography>

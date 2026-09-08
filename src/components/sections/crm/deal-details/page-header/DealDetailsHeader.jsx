@@ -28,14 +28,15 @@ const DealDetailsHeader = ({ title }) => {
           sx={{ mb: 1 }}
         />
         <Stack
-          sx={{ gap: 2, justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}
+          direction="row"
+          sx={{ gap: 2, justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}
         >
           <Typography variant="h4" sx={[{ flexGrow: 999 }, downLg && { fontSize: 'h5.fontSize' }]}>
             {title}
           </Typography>
 
-          <Stack gap={2} sx={{ justifyContent: 'space-between', flexGrow: 1 }}>
-            <Stack gap={{ xs: 1, sm: 2 }}>
+          <Stack direction="row" gap={2} sx={{ justifyContent: 'space-between', alignItems: 'center', flexGrow: 1, minWidth: 0 }}>
+            <Stack direction="row" gap={{ xs: 1, sm: 2 }} sx={{ flexWrap: 'wrap' }}>
               <AccessToggle />
               <DealStatus />
             </Stack>

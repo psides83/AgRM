@@ -7,8 +7,19 @@ import DealInfoItem from './DealInfoItem';
 
 const DealInformation = ({ dealInformation }) => {
   return (
-    <Paper component={Stack} direction="column" sx={{ p: { xs: 3, md: 5 }, gap: 3 }}>
-      <Stack sx={{ justifyContent: 'space-between' }}>
+    <Paper
+      component={Stack}
+      direction="column"
+      sx={{ p: { xs: 3, md: 5 }, gap: 3 }}
+    >
+      <Stack
+        direction="row"
+        sx={{
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          minWidth: 0,
+        }}
+      >
         <Typography variant="body1" sx={{ fontWeight: 700 }}>
           Deal Information
         </Typography>
@@ -16,7 +27,9 @@ const DealInformation = ({ dealInformation }) => {
           variant="soft"
           color="neutral"
           size="small"
-          startIcon={<IconifyIcon icon="material-symbols:edit-outline-rounded" />}
+          startIcon={
+            <IconifyIcon icon="material-symbols:edit-outline-rounded" />
+          }
         >
           Modify
         </Button>

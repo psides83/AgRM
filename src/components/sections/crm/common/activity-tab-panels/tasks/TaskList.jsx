@@ -16,7 +16,9 @@ const TaskList = ({ tasksData }) => {
   const handleCheck = (taskItem) => {
     setTaskList((prev) =>
       prev.map((task) =>
-        task.id === taskItem.id ? { ...task, completed: !task.completed } : task,
+        task.id === taskItem.id
+          ? { ...task, completed: !task.completed }
+          : task,
       ),
     );
   };
@@ -31,6 +33,7 @@ const TaskList = ({ tasksData }) => {
       }}
     >
       <Stack
+        direction="row"
         role="button"
         onClick={() => setOpen(!open)}
         sx={{
@@ -38,9 +41,14 @@ const TaskList = ({ tasksData }) => {
           bgcolor: 'background.elevation1',
           justifyContent: 'space-between',
           alignItems: 'center',
+          minWidth: 0,
         }}
       >
-        <Stack gap={1} sx={{ flexShrink: 0, alignItems: 'center', width: 220 }}>
+        <Stack
+          direction="row"
+          gap={1}
+          sx={{ flexShrink: 0, alignItems: 'center', width: 220 }}
+        >
           <IconifyIcon
             icon="material-symbols:expand-less"
             sx={({ transitions }) => ({
@@ -52,12 +60,18 @@ const TaskList = ({ tasksData }) => {
               }),
             })}
           />
-          <Typography variant="body1" sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
+          <Typography
+            variant="body1"
+            sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}
+          >
             {tasksData.title}
           </Typography>
         </Stack>
         <Stack direction="column" gap={0.25} sx={{ maxWidth: 266, width: 1 }}>
-          <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+          <Typography
+            variant="overline"
+            sx={{ color: 'text.secondary', fontWeight: 500 }}
+          >
             {noOfCompletedTasks}/{taskList.length}
           </Typography>
           <LinearProgress

@@ -59,9 +59,22 @@ const DealCard = memo(({ deal }) => {
   };
 
   return (
-    <Card sx={{ borderRadius: 4, bgcolor: 'background.elevation1', outline: 'none' }}>
+    <Card
+      sx={{
+        borderRadius: 4,
+        bgcolor: 'background.elevation1',
+        outline: 'none',
+      }}
+    >
       <CardHeader
-        avatar={<Image src={deal.company.logo} width={48} height={48} sx={{ borderRadius: 2 }} />}
+        avatar={
+          <Image
+            src={deal.company.logo}
+            width={48}
+            height={48}
+            sx={{ borderRadius: 2 }}
+          />
+        }
         title={
           <Typography
             variant="subtitle2"
@@ -106,12 +119,24 @@ const DealCard = memo(({ deal }) => {
         <CardContent sx={{ p: 3, pt: 0 }}>
           <Typography variant="body2" sx={{ mb: 2 }}>
             Budget:{' '}
-            <Typography variant="body2" component="strong" sx={{ fontWeight: 600 }}>
+            <Typography
+              variant="body2"
+              component="strong"
+              sx={{ fontWeight: 600 }}
+            >
               {currencyFormat(deal.amount, { minimumFractionDigits: 0 })}
             </Typography>
           </Typography>
 
-          <Stack sx={{ mb: 2, alignItems: 'center', justifyContent: 'space-between' }}>
+          <Stack
+            direction="row"
+            sx={{
+              mb: 2,
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              minWidth: 0,
+            }}
+          >
             <AvatarGroup
               max={5}
               sx={{
@@ -134,7 +159,9 @@ const DealCard = memo(({ deal }) => {
             </AvatarGroup>
 
             <Chip
-              icon={<IconifyIcon icon="material-symbols:timer-outline-rounded" />}
+              icon={
+                <IconifyIcon icon="material-symbols:timer-outline-rounded" />
+              }
               label={dayjs(deal.closeDate).format('DD.MM.YY')}
               color="info"
             />
@@ -216,7 +243,10 @@ const DealCard = memo(({ deal }) => {
                   <Avatar
                     alt={user.name}
                     src={user.avatar}
-                    sx={{ border: (theme) => `1px solid ${theme.vars.palette.background.default}` }}
+                    sx={{
+                      border: (theme) =>
+                        `1px solid ${theme.vars.palette.background.default}`,
+                    }}
                   />
                 }
                 label={user.name.replace(/(\w)\w+$/, '$1.')}

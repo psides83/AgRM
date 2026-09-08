@@ -15,6 +15,7 @@ const Activity = ({ activity }) => {
 
   return (
     <Stack
+      direction={{ xs: 'column', sm: 'row' }}
       sx={{
         bgcolor: 'background.elevation1',
         justifyContent: 'space-between',
@@ -24,10 +25,11 @@ const Activity = ({ activity }) => {
         gap: 1,
       }}
     >
-      <Stack gap={2} flexGrow={1}>
+      <Stack direction="row" gap={2} flexGrow={1} sx={{ minWidth: 0 }}>
         <Stack
           sx={{
-            bgcolor: (theme) => cssVarRgba(theme.vars.palette[activity.color].mainChannel, 0.15),
+            bgcolor: (theme) =>
+              cssVarRgba(theme.vars.palette[activity.color].mainChannel, 0.15),
             justifyContent: 'center',
             alignItems: 'center',
             width: 48,
@@ -56,12 +58,14 @@ const Activity = ({ activity }) => {
           alignItems={{ xs: 'flex-start', sm: 'center' }}
         >
           <Stack direction="column" gap={0.5}>
-            <Typography variant="subtitle2">
-              <strong>{activity.title}</strong> <Link href="#!">{activity.assignment}</Link>
+            <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
+              <strong>{activity.title}</strong>{' '}
+              <Link href="#!">{activity.assignment}</Link>
             </Typography>
 
             <Typography variant="body2">
-              {activity.type === 'mail' ? 'Sent by' : 'By'} <Link href="#!">{activity.user}</Link>
+              {activity.type === 'mail' ? 'Sent by' : 'By'}{' '}
+              <Link href="#!">{activity.user}</Link>
             </Typography>
           </Stack>
           <Stack gap={0.5} sx={{ py: 0.75 }}>
@@ -69,7 +73,10 @@ const Activity = ({ activity }) => {
               icon="material-symbols:schedule-outline"
               sx={{ fontSize: 16, color: 'primary.main' }}
             />
-            <Typography variant="caption" sx={{ lineHeight: '18px', textWrap: 'nowrap' }}>
+            <Typography
+              variant="caption"
+              sx={{ lineHeight: '18px', textWrap: 'nowrap' }}
+            >
               {dayjs(activity.timeStamp).format('h:mm a')}
             </Typography>
           </Stack>
@@ -83,7 +90,10 @@ const Activity = ({ activity }) => {
             color="neutral"
             onClick={(event) => setAnchorEl(event.currentTarget)}
           >
-            <IconifyIcon icon="material-symbols:more-horiz" sx={{ fontSize: 18 }} />
+            <IconifyIcon
+              icon="material-symbols:more-horiz"
+              sx={{ fontSize: 18 }}
+            />
           </Button>
           <CRMDropdownMenu
             anchorEl={anchorEl}

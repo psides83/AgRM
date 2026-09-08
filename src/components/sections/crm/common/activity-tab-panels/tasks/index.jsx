@@ -14,14 +14,40 @@ const TaskTabPanel = ({ tasksData }) => {
 
   return (
     <Container maxWidth={false} sx={{ maxWidth: 800, px: { xs: 0 } }}>
-      <Stack gap={2} sx={{ justifyContent: 'space-between' }}>
-        <StyledTextField placeholder="Search tasks" fullWidth sx={{ maxWidth: 300 }} />
-        <Button shape={upSm ? undefined : 'square'} color="neutral" sx={{ ml: 'auto', gap: 0.5 }}>
-          <IconifyIcon icon="material-symbols:filter-alt-outline" sx={{ fontSize: 20 }} />
+      <Stack
+        direction="row"
+        gap={2}
+        sx={{
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          minWidth: 0,
+        }}
+      >
+        <StyledTextField
+          placeholder="Search tasks"
+          fullWidth
+          sx={{ maxWidth: 300 }}
+        />
+        <Button
+          shape={upSm ? undefined : 'square'}
+          color="neutral"
+          sx={{ ml: 'auto', gap: 0.5 }}
+        >
+          <IconifyIcon
+            icon="material-symbols:filter-alt-outline"
+            sx={{ fontSize: 20 }}
+          />
           {upSm && <Box component="span">Filter</Box>}
         </Button>
-        <Button shape={upSm ? undefined : 'square'} color="neutral" sx={{ gap: 0.5 }}>
-          <IconifyIcon icon="material-symbols:sort-rounded" sx={{ fontSize: 20 }} />
+        <Button
+          shape={upSm ? undefined : 'square'}
+          color="neutral"
+          sx={{ gap: 0.5 }}
+        >
+          <IconifyIcon
+            icon="material-symbols:sort-rounded"
+            sx={{ fontSize: 20 }}
+          />
           {upSm && <Box component="span">Sort</Box>}
         </Button>
       </Stack>

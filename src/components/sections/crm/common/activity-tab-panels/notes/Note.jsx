@@ -11,12 +11,19 @@ const Note = ({ note }) => {
   const [anchorEl, setAnchorEl] = useState(null);
 
   return (
-    <Stack gap={2} sx={{ py: 3 }}>
+    <Stack direction="row" gap={2} sx={{ py: 3, minWidth: 0 }}>
       <Avatar src={note.author.avatar} sx={{ width: 48, height: 48 }} />
       <Stack direction="column" gap={2}>
-        <Stack gap={1} sx={{ justifyContent: 'space-between' }}>
+        <Stack
+          direction="row"
+          gap={1}
+          sx={{ justifyContent: 'space-between', minWidth: 0 }}
+        >
           <Stack direction="column" gap={1}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: '18px' }}>
+            <Typography
+              variant="caption"
+              sx={{ color: 'text.secondary', lineHeight: '18px' }}
+            >
               Added by <strong>{note.author.name}</strong> at{' '}
               {dayjs(note.createdAt).format('DD MMM, YYYY h:mm a')}
             </Typography>
@@ -24,7 +31,7 @@ const Note = ({ note }) => {
               {note.title}
             </Typography>
           </Stack>
-          <Stack gap={1}>
+          <Stack direction="row" gap={1}>
             <Button
               size="small"
               shape="square"
@@ -32,7 +39,10 @@ const Note = ({ note }) => {
               variant="soft"
               sx={{ borderRadius: 1 }}
             >
-              <IconifyIcon icon="material-symbols:edit-outline" sx={{ fontSize: 18 }} />
+              <IconifyIcon
+                icon="material-symbols:edit-outline"
+                sx={{ fontSize: 18 }}
+              />
             </Button>
             <Button
               size="small"
@@ -42,7 +52,10 @@ const Note = ({ note }) => {
               onClick={(event) => setAnchorEl(event.currentTarget)}
               sx={{ borderRadius: 1 }}
             >
-              <IconifyIcon icon="material-symbols:more-vert" sx={{ fontSize: 18 }} />
+              <IconifyIcon
+                icon="material-symbols:more-vert"
+                sx={{ fontSize: 18 }}
+              />
             </Button>
             <CRMDropdownMenu
               anchorEl={anchorEl}

@@ -31,7 +31,15 @@ const FloatingBar = ({ contactInfo, handleDrawerOpen }) => {
         transform: { md: 'translate(-50%, 0)' },
       }}
     >
-      <Stack gap={2} sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+      <Stack
+        direction="row"
+        gap={2}
+        sx={{
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          minWidth: 0,
+        }}
+      >
         <Stack gap={2} sx={{ overflow: 'hidden', flexGrow: 1 }}>
           <Typography
             variant="subtitle1"
@@ -46,14 +54,21 @@ const FloatingBar = ({ contactInfo, handleDrawerOpen }) => {
             Replica Badidas Futbol
           </Typography>
           {upSm && (
-            <Stack gap={1}>
+            <Stack
+              direction="row"
+              gap={1}
+              sx={{ alignItems: 'center', minWidth: 0 }}
+            >
               <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
                 {contactInfo.type}:
               </Typography>
               <Chip
                 label={contactInfo.people[0].name}
                 avatar={
-                  <Avatar src={contactInfo.people[0].avatar} sx={{ width: 16, height: 16 }} />
+                  <Avatar
+                    src={contactInfo.people[0].avatar}
+                    sx={{ width: 16, height: 16 }}
+                  />
                 }
                 variant="soft"
                 onDelete={contactInfo.people[0].editable ? () => {} : undefined}

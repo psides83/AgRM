@@ -16,7 +16,10 @@ const ActivityTimeline = ({ timeline }) => {
       }}
     >
       {timeline.map((item, index) => (
-        <TimelineItem key={item.id} sx={{ '&:before': { flex: 0, padding: 0 } }}>
+        <TimelineItem
+          key={item.id}
+          sx={{ '&:before': { flex: 0, padding: 0 } }}
+        >
           <TimelineSeparator>
             <TimelineDot color="primary" />
             {index < timeline.length - 1 && (
@@ -25,9 +28,15 @@ const ActivityTimeline = ({ timeline }) => {
           </TimelineSeparator>
           <TimelineContent sx={{ mt: 0.25 }}>
             <Stack direction="column" gap={1}>
-              <Stack sx={{ justifyContent: 'space-between' }}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                sx={{ justifyContent: 'space-between', gap: 1, minWidth: 0 }}
+              >
                 <Typography variant="subtitle2">{item.title}</Typography>
-                <Typography variant="body2" sx={{ color: 'text.disabled', fontWeight: 500 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'text.disabled', fontWeight: 500 }}
+                >
                   {item.date}
                 </Typography>
               </Stack>

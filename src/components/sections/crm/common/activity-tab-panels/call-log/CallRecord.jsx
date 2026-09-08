@@ -23,6 +23,7 @@ const CallRecord = ({ call }) => {
       }}
     >
       <Stack
+        direction="row"
         gap={1}
         role="button"
         onClick={() => setOpen(!open)}
@@ -34,8 +35,21 @@ const CallRecord = ({ call }) => {
           minWidth: 0,
         }}
       >
-        <Stack gap={1} sx={{ flexWrap: 'wrap', justifyContent: 'space-between', flexGrow: 1 }}>
-          <Stack gap={0.5} sx={{ alignItems: 'center' }}>
+        <Stack
+          direction="row"
+          gap={1}
+          sx={{
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            flexGrow: 1,
+            minWidth: 0,
+          }}
+        >
+          <Stack
+            direction="row"
+            gap={0.5}
+            sx={{ alignItems: 'center', minWidth: 0 }}
+          >
             <Stack
               sx={{
                 justifyContent: 'center',
@@ -44,7 +58,8 @@ const CallRecord = ({ call }) => {
                 borderRadius: 2,
                 width: 32,
                 height: 32,
-                bgcolor: (theme) => cssVarRgba(theme.vars.palette.primary.mainChannel, 0.15),
+                bgcolor: (theme) =>
+                  cssVarRgba(theme.vars.palette.primary.mainChannel, 0.15),
               }}
             >
               <IconifyIcon
@@ -52,15 +67,24 @@ const CallRecord = ({ call }) => {
                 sx={{ fontSize: 24, color: 'primary.main' }}
               />
             </Stack>
-            <Typography variant="body2" sx={{ fontWeight: 500, textWrap: 'nowrap' }}>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 500, textWrap: 'nowrap' }}
+            >
               {call.caller}
             </Typography>
-            <IconifyIcon icon="material-symbols:arrow-right-alt-rounded" sx={{ fontSize: 20 }} />
-            <Typography variant="body2" sx={{ fontWeight: 500, textWrap: 'nowrap' }}>
+            <IconifyIcon
+              icon="material-symbols:arrow-right-alt-rounded"
+              sx={{ fontSize: 20 }}
+            />
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 500, textWrap: 'nowrap' }}
+            >
               {call.receiver}
             </Typography>
           </Stack>
-          <Stack gap={0.5} sx={{ alignItems: 'center' }}>
+          <Stack direction="row" gap={0.5} sx={{ alignItems: 'center' }}>
             <Chip
               size="medium"
               color="neutral"
@@ -69,7 +93,11 @@ const CallRecord = ({ call }) => {
             />
             <Typography
               variant="caption"
-              sx={{ color: 'text.secondary', minWidth: 100, textAlign: 'right' }}
+              sx={{
+                color: 'text.secondary',
+                minWidth: 100,
+                textAlign: 'right',
+              }}
             >
               Today, {dayjs(call.time).format('h:mm a')}
             </Typography>

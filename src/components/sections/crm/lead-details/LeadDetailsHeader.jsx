@@ -24,7 +24,15 @@ const LeadDetailsHeader = () => {
 
   return (
     <Paper background={1} sx={{ px: { xs: 3, md: 5 }, py: 3 }}>
-      <Stack sx={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <Stack
+        direction={{ xs: 'column', md: 'row' }}
+        sx={{
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', md: 'flex-end' },
+          gap: 2,
+          minWidth: 0,
+        }}
+      >
         <Stack direction="column" gap={2}>
           <PageBreadcrumb
             items={[
@@ -33,7 +41,11 @@ const LeadDetailsHeader = () => {
             ]}
             sx={{ mb: 2 }}
           />
-          <Stack gap={{ xs: 1, md: 2 }} sx={{ alignItems: 'center' }}>
+          <Stack
+            direction="row"
+            gap={{ xs: 1, md: 2 }}
+            sx={{ alignItems: 'center', minWidth: 0 }}
+          >
             <Avatar
               src={users[6].avatar}
               sx={{ width: { xs: 40, md: 56 }, height: { xs: 40, md: 56 } }}
@@ -51,13 +63,20 @@ const LeadDetailsHeader = () => {
               >
                 <IconifyIcon
                   icon="material-symbols:star-rate-rounded"
-                  sx={{ fontSize: 24, color: starred ? 'warning.main' : 'background.elevation4' }}
+                  sx={{
+                    fontSize: 24,
+                    color: starred ? 'warning.main' : 'background.elevation4',
+                  }}
                 />
               </Button>
             </Stack>
           </Stack>
         </Stack>
-        <Stack gap={1}>
+        <Stack
+          direction="row"
+          gap={1}
+          sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+        >
           <Button
             variant="soft"
             shape={downSm ? 'square' : undefined}
