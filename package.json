@@ -3,7 +3,7 @@
   "version": "1.12.0",
   "private": true,
   "engines": {
-    "node": ">=20.20.0 <21"
+    "node": ">=24.20.0 <25"
   },
   "scripts": {
     "dev": "NEXT_TELEMETRY_DISABLED=1 next dev -H 127.0.0.1 -p 4000 --webpack --disable-source-maps --no-server-fast-refresh",
