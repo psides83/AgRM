@@ -21,6 +21,7 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
+import { useRouter } from 'next/navigation';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
@@ -60,17 +61,18 @@ const equipmentCategories = [
 const equipmentConditions = ['new', 'used', 'either'];
 const equipmentAvailability = [
   'availability_unknown',
-  'in_stock_auburn',
-  'in_stock_transfer',
+  'in_stock',
   'pending',
   'unavailable',
 ];
 
 const ContactDetailsClient = ({ contactId }) => {
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [contact, setContact] = useState(null);
   const [leads, setLeads] = useState([]);
   const [equipmentInterests, setEquipmentInterests] = useState([]);
+  const [equipmentLocations, setEquipmentLocations] = useState([]);
   const [activities, setActivities] = useState([]);
   const [notes, setNotes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,6 +88,7 @@ const ContactDetailsClient = ({ contactId }) => {
       equipmentResult,
       activitiesResult,
       notesResult,
+      locationsResult,
     ] = await Promise.all([
       supabase
         .from('contacts')
@@ -122,7 +125,7 @@ const ContactDetailsClient = ({ contactId }) => {
         .order('created_at', { ascending: false }),
       supabase
         .from('equipment_interests')
-        .select('*')
+        .select('*, equipment_locations(id, name, city, region)')
         .eq('contact_id', contactId)
         .order('created_at', { ascending: false }),
       supabase
@@ -135,6 +138,10 @@ const ContactDetailsClient = ({ contactId }) => {
         .select('*')
         .eq('contact_id', contactId)
         .order('created_at', { ascending: false }),
+      supabase
+        .from('equipment_locations')
+        .select('id, name, city, region')
+        .order('name', { ascending: true }),
     ]);
 
     const queryError = [
@@ -143,6 +150,7 @@ const ContactDetailsClient = ({ contactId }) => {
       equipmentResult.error,
       activitiesResult.error,
       notesResult.error,
+      locationsResult.error,
     ].find(Boolean);
 
     if (queryError) {
@@ -153,6 +161,7 @@ const ContactDetailsClient = ({ contactId }) => {
       setEquipmentInterests(equipmentResult.data || []);
       setActivities(activitiesResult.data || []);
       setNotes(notesResult.data || []);
+      setEquipmentLocations(locationsResult.data || []);
     }
 
     setIsLoading(false);
@@ -403,6 +412,16 @@ const ContactDetailsClient = ({ contactId }) => {
                 </Button>
                 <Button
                   variant="soft"
+                  color="error"
+                  onClick={() => setDialog('delete-contact')}
+                  startIcon={
+                    <IconifyIcon icon="material-symbols:delete-outline-rounded" />
+                  }
+                >
+                  Delete
+                </Button>
+                <Button
+                  variant="soft"
                   color="neutral"
                   onClick={() => setDialog('activity')}
                   startIcon={
@@ -575,6 +594,7 @@ const ContactDetailsClient = ({ contactId }) => {
         open={dialog === 'equipment'}
         contact={contact}
         leads={leads}
+        locations={equipmentLocations}
         onClose={() => setDialog(null)}
         onSaved={fetchDetails}
         supabase={supabase}
@@ -585,6 +605,13 @@ const ContactDetailsClient = ({ contactId }) => {
         onClose={() => setDialog(null)}
         onSaved={fetchDetails}
         supabase={supabase}
+      />
+      <DeleteContactDialog
+        open={dialog === 'delete-contact'}
+        contact={contact}
+        supabase={supabase}
+        onClose={() => setDialog(null)}
+        onDeleted={() => router.push(paths.contacts)}
       />
     </>
   );
@@ -685,7 +712,14 @@ function EquipmentCard({ equipmentInterests }) {
               <RecordRow
                 key={interest.id}
                 title={equipmentName || formatEnum(interest.category)}
-                subtitle={`${formatEnum(interest.category)} · ${formatEnum(interest.condition)} · Budget ${budget}`}
+                subtitle={[
+                  formatEnum(interest.category),
+                  formatEnum(interest.condition),
+                  locationLabel(interest.equipment_locations),
+                  `Budget ${budget}`,
+                ]
+                  .filter((value) => value && value !== 'No Location')
+                  .join(' · ')}
                 chip={interest.trade_in ? 'Trade-in' : null}
               />
             );
@@ -705,6 +739,16 @@ function TimelineCard({ items, supabase, onSaved }) {
     const { error } = await supabase
       .from('activities')
       .update({ completed_at: new Date().toISOString() })
+      .eq('id', activityId);
+    if (!error) onSaved();
+  };
+
+  const handleDeleteActivity = async (activityId) => {
+    if (!window.confirm('Delete this activity?')) return;
+
+    const { error } = await supabase
+      .from('activities')
+      .delete()
       .eq('id', activityId);
     if (!error) onSaved();
   };
@@ -770,6 +814,16 @@ function TimelineCard({ items, supabase, onSaved }) {
                         onClick={() => handleComplete(item.activityId)}
                       >
                         Complete
+                      </Button>
+                    )}
+                    {item.activityId && (
+                      <Button
+                        size="small"
+                        variant="soft"
+                        color="error"
+                        onClick={() => handleDeleteActivity(item.activityId)}
+                      >
+                        Delete
                       </Button>
                     )}
                   </Stack>
@@ -1364,6 +1418,97 @@ function EditContactDialog({ open, contact, onClose, onSaved, supabase }) {
   );
 }
 
+function DeleteContactDialog({ open, contact, supabase, onClose, onDeleted }) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (open) setError(null);
+  }, [open]);
+
+  const handleDelete = async () => {
+    if (!contact?.id) return;
+
+    setIsDeleting(true);
+    setError(null);
+
+    const companyId = contact.company_id;
+    let shouldDeleteCompany = false;
+
+    if (companyId) {
+      const { count, error: countError } = await supabase
+        .from('contacts')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .neq('id', contact.id);
+
+      if (countError) {
+        setError(countError.message);
+        setIsDeleting(false);
+        return;
+      }
+
+      shouldDeleteCompany = count === 0;
+    }
+
+    const { error: contactError } = await supabase
+      .from('contacts')
+      .delete()
+      .eq('id', contact.id);
+
+    if (contactError) {
+      setError(contactError.message);
+      setIsDeleting(false);
+      return;
+    }
+
+    if (shouldDeleteCompany) {
+      const { error: companyError } = await supabase
+        .from('companies')
+        .delete()
+        .eq('id', companyId);
+
+      if (companyError) {
+        setError(companyError.message);
+        setIsDeleting(false);
+        return;
+      }
+    }
+
+    setIsDeleting(false);
+    onDeleted();
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Delete Contact</DialogTitle>
+      <DialogContent>
+        <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
+          {error && <Alert severity="error">{error}</Alert>}
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            This will delete the contact and their activity history. If their
+            linked company has no other contacts, the company will be deleted
+            too.
+          </Typography>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button color="neutral" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          color="error"
+          loading={isDeleting}
+          onClick={handleDelete}
+        >
+          Delete Contact
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 function AddLeadDialog({ open, contact, onClose, onSaved, supabase }) {
   const [form, setForm] = useState({
     source: '',
@@ -1755,6 +1900,7 @@ function AddEquipmentDialog({
   open,
   contact,
   leads,
+  locations,
   onClose,
   onSaved,
   supabase,
@@ -1768,6 +1914,7 @@ function AddEquipmentDialog({
     serialNumber: '',
     condition: 'either',
     availability: 'availability_unknown',
+    locationId: '',
     status: 'not_started',
     quotePrice: '',
     priceMin: '',
@@ -1790,7 +1937,8 @@ function AddEquipmentDialog({
       stock_number: cleanText(form.stockNumber),
       serial_number: cleanText(form.serialNumber),
       condition: form.condition,
-      availability: form.availability,
+      availability: normalizeAvailability(form.availability),
+      equipment_location_id: form.locationId || null,
       status: form.status,
       quote_price: form.quotePrice || null,
       price_min: form.priceMin || null,
@@ -1811,6 +1959,7 @@ function AddEquipmentDialog({
         serialNumber: '',
         condition: 'either',
         availability: 'availability_unknown',
+        locationId: '',
         status: 'not_started',
         quotePrice: '',
         priceMin: '',
@@ -1851,7 +2000,7 @@ function AddEquipmentDialog({
           >
             {equipmentCategories.map((category) => (
               <MenuItem key={category} value={category}>
-                {category}
+                {formatEnum(category)}
               </MenuItem>
             ))}
           </TextField>
@@ -1895,7 +2044,7 @@ function AddEquipmentDialog({
           >
             {equipmentConditions.map((condition) => (
               <MenuItem key={condition} value={condition}>
-                {condition}
+                {formatEnum(condition)}
               </MenuItem>
             ))}
           </TextField>
@@ -1907,7 +2056,7 @@ function AddEquipmentDialog({
             <TextField
               select
               label="Availability"
-              value={form.availability}
+              value={normalizeAvailability(form.availability)}
               onChange={handleField(setForm, 'availability')}
               fullWidth
             >
@@ -1917,6 +2066,18 @@ function AddEquipmentDialog({
                 </MenuItem>
               ))}
             </TextField>
+            <LocationSelect
+              label="Location"
+              value={form.locationId}
+              onChange={handleField(setForm, 'locationId')}
+              locations={locations}
+            />
+          </Stack>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ minWidth: 0 }}
+          >
             <TextField
               select
               label="Status"
@@ -1994,6 +2155,37 @@ function handleField(setForm, key) {
   return (event) => {
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
   };
+}
+
+function LocationSelect({ label = 'Location', value, onChange, locations }) {
+  return (
+    <TextField select label={label} value={value} onChange={onChange} fullWidth>
+      <MenuItem value="">No Location</MenuItem>
+      {locations.map((location) => (
+        <MenuItem key={location.id} value={location.id}>
+          {locationLabel(location)}
+        </MenuItem>
+      ))}
+    </TextField>
+  );
+}
+
+function locationLabel(location) {
+  if (!location) return 'No Location';
+  return [
+    location.name,
+    location.city && location.region
+      ? `${location.city}, ${location.region}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' - ');
+}
+
+function normalizeAvailability(value) {
+  if (['in_stock_auburn', 'in_stock_transfer'].includes(value))
+    return 'in_stock';
+  return value || 'availability_unknown';
 }
 
 const addressFields = [

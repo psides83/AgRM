@@ -90,7 +90,8 @@ const LeadsList = () => {
           quote_price,
           price_min,
           price_max,
-          trade_in
+          trade_in,
+          equipment_locations(id, name, city, region)
         )
       `,
       )
@@ -150,6 +151,7 @@ const LeadsList = () => {
             item.model_year,
             item.stock_number,
             item.serial_number,
+            item.equipment_locations?.name,
           ]
             .filter(Boolean)
             .join(' '),
@@ -395,9 +397,10 @@ function LeadRow({ lead }) {
                   {[
                     formatEnum(primaryEquipment.category),
                     formatEnum(primaryEquipment.condition),
+                    locationLabel(primaryEquipment.equipment_locations),
                     equipmentBudget(primaryEquipment),
                   ]
-                    .filter(Boolean)
+                    .filter((value) => value && value !== 'No Location')
                     .join(' · ')}
                 </Typography>
               </Box>
@@ -515,6 +518,18 @@ function equipmentBudget(item) {
       .filter((value) => value !== '-')
       .join(' - ') || null
   );
+}
+
+function locationLabel(location) {
+  if (!location) return 'No Location';
+  return [
+    location.name,
+    location.city && location.region
+      ? `${location.city}, ${location.region}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' - ');
 }
 
 function leadStatusColor(status) {

@@ -21,6 +21,7 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
+import { useRouter } from 'next/navigation';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
@@ -60,19 +61,20 @@ const equipmentCategories = [
 const equipmentConditions = ['new', 'used', 'either'];
 const equipmentAvailability = [
   'availability_unknown',
-  'in_stock_auburn',
-  'in_stock_transfer',
+  'in_stock',
   'pending',
   'unavailable',
 ];
 
 const CompanyDetails = ({ companyId }) => {
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [company, setCompany] = useState(null);
   const [contacts, setContacts] = useState([]);
   const [leads, setLeads] = useState([]);
   const [deals, setDeals] = useState([]);
   const [equipmentInterests, setEquipmentInterests] = useState([]);
+  const [equipmentLocations, setEquipmentLocations] = useState([]);
   const [activities, setActivities] = useState([]);
   const [notes, setNotes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,6 +97,7 @@ const CompanyDetails = ({ companyId }) => {
       dealsResult,
       activitiesResult,
       notesResult,
+      locationsResult,
     ] = await Promise.all([
       supabase.from('companies').select('*').eq('id', companyId).single(),
       supabase
@@ -124,6 +127,10 @@ const CompanyDetails = ({ companyId }) => {
         .select('*')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false }),
+      supabase
+        .from('equipment_locations')
+        .select('id, name, city, region')
+        .order('name', { ascending: true }),
     ]);
 
     const queryError = [
@@ -133,6 +140,7 @@ const CompanyDetails = ({ companyId }) => {
       dealsResult.error,
       activitiesResult.error,
       notesResult.error,
+      locationsResult.error,
     ].find(Boolean);
 
     if (queryError) {
@@ -154,7 +162,7 @@ const CompanyDetails = ({ companyId }) => {
     if (equipmentFilters.length) {
       equipmentResult = await supabase
         .from('equipment_interests')
-        .select('*')
+        .select('*, equipment_locations(id, name, city, region)')
         .or(equipmentFilters.join(','))
         .order('created_at', { ascending: false });
     }
@@ -169,6 +177,7 @@ const CompanyDetails = ({ companyId }) => {
       setActivities(activitiesResult.data || []);
       setNotes(notesResult.data || []);
       setEquipmentInterests(equipmentResult.data || []);
+      setEquipmentLocations(locationsResult.data || []);
     }
 
     setIsLoading(false);
@@ -311,6 +320,16 @@ const CompanyDetails = ({ companyId }) => {
                 }
               >
                 Edit
+              </Button>
+              <Button
+                variant="soft"
+                color="error"
+                onClick={() => setDialog('delete')}
+                startIcon={
+                  <IconifyIcon icon="material-symbols:delete-outline-rounded" />
+                }
+              >
+                Delete
               </Button>
               <Button
                 variant="soft"
@@ -559,9 +578,17 @@ const CompanyDetails = ({ companyId }) => {
         contacts={contacts}
         leads={leads}
         deals={deals}
+        locations={equipmentLocations}
         onClose={() => setDialog(null)}
         onSaved={fetchDetails}
         supabase={supabase}
+      />
+      <DeleteCompanyDialog
+        open={dialog === 'delete'}
+        company={company}
+        supabase={supabase}
+        onClose={() => setDialog(null)}
+        onDeleted={() => router.push(paths.contacts)}
       />
     </Grid>
   );
@@ -719,7 +746,14 @@ function EquipmentCard({ equipmentInterests }) {
               <RecordRow
                 key={interest.id}
                 title={equipmentName || formatEnum(interest.category)}
-                subtitle={`${formatEnum(interest.category)} · ${formatEnum(interest.condition)} · Budget ${budget}`}
+                subtitle={[
+                  formatEnum(interest.category),
+                  formatEnum(interest.condition),
+                  locationLabel(interest.equipment_locations),
+                  `Budget ${budget}`,
+                ]
+                  .filter((value) => value && value !== 'No Location')
+                  .join(' · ')}
                 chip={interest.trade_in ? 'Trade-in' : null}
               />
             );
@@ -737,6 +771,16 @@ function TimelineCard({ items, supabase, onSaved }) {
     const { error } = await supabase
       .from('activities')
       .update({ completed_at: new Date().toISOString() })
+      .eq('id', activityId);
+    if (!error) onSaved();
+  };
+
+  const handleDeleteActivity = async (activityId) => {
+    if (!window.confirm('Delete this activity?')) return;
+
+    const { error } = await supabase
+      .from('activities')
+      .delete()
       .eq('id', activityId);
     if (!error) onSaved();
   };
@@ -790,6 +834,16 @@ function TimelineCard({ items, supabase, onSaved }) {
                       onClick={() => handleComplete(item.activityId)}
                     >
                       Complete
+                    </Button>
+                  )}
+                  {item.activityId && (
+                    <Button
+                      size="small"
+                      variant="soft"
+                      color="error"
+                      onClick={() => handleDeleteActivity(item.activityId)}
+                    >
+                      Delete
                     </Button>
                   )}
                 </Stack>
@@ -1171,6 +1225,65 @@ function EditCompanyDialog({
         </Button>
         <Button variant="contained" onClick={handleSave} loading={isSaving}>
           Save Company
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+function DeleteCompanyDialog({ open, company, supabase, onClose, onDeleted }) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (open) setError(null);
+  }, [open]);
+
+  const handleDelete = async () => {
+    if (!company?.id) return;
+
+    setIsDeleting(true);
+    setError(null);
+
+    const { error: deleteError } = await supabase
+      .from('companies')
+      .delete()
+      .eq('id', company.id);
+
+    setIsDeleting(false);
+
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+
+    onDeleted();
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Delete Company</DialogTitle>
+      <DialogContent>
+        <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
+          {error && <Alert severity="error">{error}</Alert>}
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            This will delete the company and company-level activity history.
+            Contacts, leads, and deals linked to this company will remain, but
+            their company link will be removed where the database allows it.
+          </Typography>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button color="neutral" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          color="error"
+          loading={isDeleting}
+          onClick={handleDelete}
+        >
+          Delete Company
         </Button>
       </DialogActions>
     </Dialog>
@@ -1915,6 +2028,7 @@ function AddEquipmentDialog({
   contacts,
   leads,
   deals,
+  locations,
   onClose,
   onSaved,
   supabase,
@@ -1929,6 +2043,7 @@ function AddEquipmentDialog({
     serialNumber: '',
     condition: 'either',
     availability: 'availability_unknown',
+    locationId: '',
     status: 'not_started',
     quotePrice: '',
     priceMin: '',
@@ -1965,7 +2080,8 @@ function AddEquipmentDialog({
       stock_number: cleanText(form.stockNumber),
       serial_number: cleanText(form.serialNumber),
       condition: form.condition,
-      availability: form.availability,
+      availability: normalizeAvailability(form.availability),
+      equipment_location_id: form.locationId || null,
       status: form.status,
       quote_price: form.quotePrice || null,
       price_min: form.priceMin || null,
@@ -2074,7 +2190,7 @@ function AddEquipmentDialog({
             <TextField
               select
               label="Availability"
-              value={form.availability}
+              value={normalizeAvailability(form.availability)}
               onChange={handleField(setForm, 'availability')}
               fullWidth
             >
@@ -2084,6 +2200,14 @@ function AddEquipmentDialog({
                 </MenuItem>
               ))}
             </TextField>
+            <LocationSelect
+              label="Location"
+              value={form.locationId}
+              onChange={handleField(setForm, 'locationId')}
+              locations={locations}
+            />
+          </Stack>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
               select
               label="Status"
@@ -2171,6 +2295,37 @@ function EmptyState({ label }) {
 
 function handleField(setForm, key) {
   return (event) => setForm((prev) => ({ ...prev, [key]: event.target.value }));
+}
+
+function LocationSelect({ label = 'Location', value, onChange, locations }) {
+  return (
+    <TextField select label={label} value={value} onChange={onChange} fullWidth>
+      <MenuItem value="">No Location</MenuItem>
+      {locations.map((location) => (
+        <MenuItem key={location.id} value={location.id}>
+          {locationLabel(location)}
+        </MenuItem>
+      ))}
+    </TextField>
+  );
+}
+
+function locationLabel(location) {
+  if (!location) return 'No Location';
+  return [
+    location.name,
+    location.city && location.region
+      ? `${location.city}, ${location.region}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' - ');
+}
+
+function normalizeAvailability(value) {
+  if (['in_stock_auburn', 'in_stock_transfer'].includes(value))
+    return 'in_stock';
+  return value || 'availability_unknown';
 }
 
 const addressFields = [

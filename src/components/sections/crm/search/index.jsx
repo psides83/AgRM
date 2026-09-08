@@ -91,6 +91,7 @@ async function getSearchResults(rawQuery) {
         price_max,
         trade_in,
         notes,
+        equipment_locations(id, name, city, region),
         contacts(id, first_name, last_name, companies(id, name)),
         leads(id, source, status, companies(id, name)),
         deals(id, name, stage, companies(id, name))
@@ -323,10 +324,11 @@ const CRMSearch = async ({ query: rawQuery }) => {
                 subtitle={[
                   formatEnum(interest.category),
                   formatEnum(interest.condition),
+                  locationLabel(interest.equipment_locations),
                   equipmentOwner(interest),
                   `Budget ${equipmentBudget(interest)}`,
                 ]
-                  .filter(Boolean)
+                  .filter((value) => value && value !== 'No Location')
                   .join(' · ')}
                 chip={interest.trade_in ? 'Trade-in' : 'Interest'}
               />
@@ -475,6 +477,18 @@ function equipmentBudget(interest) {
       .filter((value) => value !== '-')
       .join(' - ') || '-'
   );
+}
+
+function locationLabel(location) {
+  if (!location) return 'No Location';
+  return [
+    location.name,
+    location.city && location.region
+      ? `${location.city}, ${location.region}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' - ');
 }
 
 function formatCurrency(value) {
