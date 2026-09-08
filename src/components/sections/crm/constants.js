@@ -32,5 +32,17 @@ export const equipmentStatuses = [
   'canceled',
 ];
 
-export const activityTypes = ['call', 'text', 'email', 'visit', 'demo', 'quote', 'task', 'note'];
-export const activityDirections = ['outbound', 'inbound'];
+export const activityTypes = [
+  'call',
+  'text',
+  'email',
+  'visit',
+  'demo',
+  'quote',
+  'task',
+  'note',
+  'meeting',
+  'site_visit',
+  'other',
+];
+export const activityDirections = ['outbound', 'inbound', 'internal'];

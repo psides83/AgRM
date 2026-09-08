@@ -16,6 +16,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   TextField,
   Typography,
 } from '@mui/material';
@@ -30,16 +31,18 @@ const ContactsList = () => {
   const supabase = useMemo(() => createClient(), []);
   const [contacts, setContacts] = useState([]);
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState({ key: 'createdAt', direction: 'desc' });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetchContacts = async () => {
     setError(null);
 
-    const { data, error: queryError } = await supabase
-      .from('contacts')
-      .select(
-        `
+    const [contactsResult, activitiesResult] = await Promise.all([
+      supabase
+        .from('contacts')
+        .select(
+          `
         id,
         first_name,
         last_name,
@@ -58,13 +61,29 @@ const ContactsList = () => {
           company_type
         )
       `,
-      )
-      .order('created_at', { ascending: false });
+        )
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('activities')
+        .select('id, contact_id, type, subject, occurred_at, created_at')
+        .not('contact_id', 'is', null)
+        .order('occurred_at', { ascending: false }),
+    ]);
+
+    const queryError = contactsResult.error || activitiesResult.error;
 
     if (queryError) {
       setError(queryError.message);
     } else {
-      setContacts(data || []);
+      const latestActivityByContact = latestActivitiesByContact(
+        activitiesResult.data || [],
+      );
+      setContacts(
+        (contactsResult.data || []).map((contact) => ({
+          ...contact,
+          latestActivity: latestActivityByContact.get(contact.id) || null,
+        })),
+      );
     }
 
     setIsLoading(false);
@@ -83,6 +102,11 @@ const ContactsList = () => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'companies' },
+        () => fetchContacts(),
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'activities' },
         () => fetchContacts(),
       )
       .subscribe();
@@ -112,6 +136,8 @@ const ContactsList = () => {
         contact.region,
         contact.companies?.name,
         contact.companies?.company_type,
+        contact.latestActivity?.type,
+        contact.latestActivity?.subject,
         ...(contact.tags || []),
       ];
 
@@ -122,6 +148,18 @@ const ContactsList = () => {
         .includes(normalizedSearch);
     });
   }, [contacts, search]);
+
+  const sortedContacts = useMemo(
+    () => [...filteredContacts].sort((a, b) => compareContacts(a, b, sort)),
+    [filteredContacts, sort],
+  );
+
+  const handleSort = (key) => {
+    setSort((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  };
 
   return (
     <Grid container spacing={3}>
@@ -206,19 +244,55 @@ const ContactsList = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Account</TableCell>
-                  <TableCell>Company</TableCell>
-                  <TableCell>Contact</TableCell>
-                  <TableCell>Location</TableCell>
-                  <TableCell>Tags</TableCell>
+                  <SortableHeader
+                    label="Name"
+                    sortKey="name"
+                    activeSort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortableHeader
+                    label="Account"
+                    sortKey="account"
+                    activeSort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortableHeader
+                    label="Company"
+                    sortKey="company"
+                    activeSort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortableHeader
+                    label="Contact"
+                    sortKey="contact"
+                    activeSort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortableHeader
+                    label="Location"
+                    sortKey="location"
+                    activeSort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortableHeader
+                    label="Last Activity"
+                    sortKey="lastActivity"
+                    activeSort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortableHeader
+                    label="Tags"
+                    sortKey="tags"
+                    activeSort={sort}
+                    onSort={handleSort}
+                  />
                 </TableRow>
               </TableHead>
               <TableBody>
                 {isLoading ? (
                   <EmptyRow label="Loading contacts..." />
-                ) : filteredContacts.length ? (
-                  filteredContacts.map((contact) => (
+                ) : sortedContacts.length ? (
+                  sortedContacts.map((contact) => (
                     <TableRow key={contact.id} hover>
                       <TableCell>
                         <Link
@@ -281,6 +355,27 @@ const ContactsList = () => {
                           .join(', ') || '-'}
                       </TableCell>
                       <TableCell>
+                        <Typography variant="body2">
+                          {formatDateTime(
+                            contact.latestActivity?.occurred_at ||
+                              contact.latestActivity?.created_at,
+                          )}
+                        </Typography>
+                        {contact.latestActivity && (
+                          <Typography
+                            variant="caption"
+                            sx={{ color: 'text.secondary' }}
+                          >
+                            {[
+                              formatEnum(contact.latestActivity.type),
+                              contact.latestActivity.subject,
+                            ]
+                              .filter(Boolean)
+                              .join(' - ')}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Stack
                           direction="row"
                           spacing={0.5}
@@ -325,7 +420,7 @@ const ContactsList = () => {
 function EmptyRow({ label }) {
   return (
     <TableRow>
-      <TableCell colSpan={5}>
+      <TableCell colSpan={7}>
         <Typography
           variant="body2"
           sx={{ color: 'text.secondary', textAlign: 'center', py: 5 }}
@@ -335,6 +430,99 @@ function EmptyRow({ label }) {
       </TableCell>
     </TableRow>
   );
+}
+
+function SortableHeader({ label, sortKey, activeSort, onSort }) {
+  return (
+    <TableCell
+      sortDirection={activeSort.key === sortKey ? activeSort.direction : false}
+    >
+      <TableSortLabel
+        active={activeSort.key === sortKey}
+        direction={activeSort.key === sortKey ? activeSort.direction : 'asc'}
+        onClick={() => onSort(sortKey)}
+      >
+        {label}
+      </TableSortLabel>
+    </TableCell>
+  );
+}
+
+function latestActivitiesByContact(activities) {
+  return activities.reduce((latestByContact, activity) => {
+    if (!activity.contact_id || latestByContact.has(activity.contact_id)) {
+      return latestByContact;
+    }
+
+    latestByContact.set(activity.contact_id, activity);
+    return latestByContact;
+  }, new Map());
+}
+
+function compareContacts(a, b, sort) {
+  const direction = sort.direction === 'asc' ? 1 : -1;
+  const aValue = sortValue(a, sort.key);
+  const bValue = sortValue(b, sort.key);
+
+  if (sort.key === 'lastActivity' || sort.key === 'createdAt') {
+    return (dateValue(aValue) - dateValue(bValue)) * direction;
+  }
+
+  return (
+    String(aValue || '').localeCompare(String(bValue || ''), undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    }) * direction
+  );
+}
+
+function sortValue(contact, key) {
+  if (key === 'name') {
+    return [contact.last_name, contact.first_name].filter(Boolean).join(' ');
+  }
+  if (key === 'account') return contact.account_number;
+  if (key === 'company') return contact.companies?.name;
+  if (key === 'contact') {
+    return [contact.email, formatPhone(contact.mobile_phone || contact.phone)]
+      .filter(Boolean)
+      .join(' ');
+  }
+  if (key === 'location') {
+    return [contact.city, contact.region].filter(Boolean).join(' ');
+  }
+  if (key === 'lastActivity') {
+    return (
+      contact.latestActivity?.occurred_at ||
+      contact.latestActivity?.created_at ||
+      null
+    );
+  }
+  if (key === 'tags') return (contact.tags || []).join(' ');
+  return contact.created_at;
+}
+
+function dateValue(value) {
+  if (!value) return 0;
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? time : 0;
+}
+
+function formatDateTime(value) {
+  if (!value) return '-';
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(value));
+}
+
+function formatEnum(value) {
+  if (!value) return '';
+  return String(value)
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export default ContactsList;

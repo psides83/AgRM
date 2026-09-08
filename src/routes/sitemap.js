@@ -40,6 +40,14 @@ const sitemap = [
         active: true,
       },
       {
+        name: 'Activities',
+        key: 'activities',
+        path: paths.activities,
+        pathName: 'activities',
+        icon: 'material-symbols:history-rounded',
+        active: true,
+      },
+      {
         name: 'Equipment',
         key: 'equipment',
         path: paths.equipment,

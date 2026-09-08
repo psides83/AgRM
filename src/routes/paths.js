@@ -88,7 +88,8 @@ const paths = {
 
   email: `/${rootPaths.appsRoot}`,
   emailLabel: (label) => `/${rootPaths.appsRoot}/email/list/${label}`,
-  emailDetails: (label, id) => `/${rootPaths.appsRoot}/email/details/${label}/${id}`,
+  emailDetails: (label, id) =>
+    `/${rootPaths.appsRoot}/email/details/${label}/${id}`,
 
   kanban: `/${rootPaths.appsRoot}/${rootPaths.kanbanRoot}`,
   boards: `/${rootPaths.appsRoot}/${rootPaths.kanbanRoot}/boards`,
@@ -106,9 +107,12 @@ const paths = {
   companyDetails: (companyId) =>
     `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/companies/${companyId || ''}`,
   leads: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/leads`,
-  leadDetails: (leadId) => `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/leads/${leadId || ''}`,
-  dealDetails: (dealId) => `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/deals/${dealId || ''}`,
+  leadDetails: (leadId) =>
+    `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/leads/${leadId || ''}`,
+  dealDetails: (dealId) =>
+    `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/deals/${dealId || ''}`,
   addContact: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/add-contact`,
+  activities: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/activities`,
   deals: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/deals`,
   equipment: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/equipment`,
   crmMap: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/map`,
@@ -157,8 +161,10 @@ const paths = {
   content: `/${rootPaths.appsRoot}/${rootPaths.contentRoot}`,
   contentSearch: `/${rootPaths.appsRoot}/${rootPaths.contentRoot}/search`,
   contentTopics: `/${rootPaths.appsRoot}/${rootPaths.contentRoot}/topics`,
-  blogDetails: (blogId) => `/${rootPaths.appsRoot}/${rootPaths.contentRoot}/blogs/${blogId}`,
-  videoDetails: (videosId) => `/${rootPaths.appsRoot}/${rootPaths.contentRoot}/videos/${videosId}`,
+  blogDetails: (blogId) =>
+    `/${rootPaths.appsRoot}/${rootPaths.contentRoot}/blogs/${blogId}`,
+  videoDetails: (videosId) =>
+    `/${rootPaths.appsRoot}/${rootPaths.contentRoot}/videos/${videosId}`,
   podcastDetails: (podcastId) =>
     `/${rootPaths.appsRoot}/${rootPaths.contentRoot}/podcasts/${podcastId}`,
   createBlog: `/${rootPaths.appsRoot}/${rootPaths.contentRoot}/create-blog`,
