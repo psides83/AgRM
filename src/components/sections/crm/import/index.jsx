@@ -34,6 +34,14 @@ const importTypes = [
   { value: 'contacts_and_leads', label: 'Contacts and Leads' },
 ];
 
+const googleSavedCollectionFieldMap = {
+  title: 'companyName',
+  item_content_url: 'website',
+  tags: 'tags',
+  note: 'notes',
+  comment: 'leadNotes',
+};
+
 const fieldLabels = {
   firstName: 'First Name',
   lastName: 'Last Name',
@@ -52,6 +60,7 @@ const fieldLabels = {
   addressLine1: 'Address',
   addressLine2: 'Address 2',
   city: 'City',
+  county: 'County',
   region: 'State / Region',
   postalCode: 'Postal Code',
   country: 'Country',
@@ -64,6 +73,8 @@ const fieldLabels = {
   priority: 'Priority',
   estimatedBudget: 'Estimated Budget',
   targetPurchaseDate: 'Target Purchase Date',
+  initialContactDate: 'Initial Contact Date',
+  initialContactNotes: 'Initial Contact Notes',
   lastContactedAt: 'Last Contacted',
   nextFollowUpAt: 'Next Follow-up',
   leadLatitude: 'Lead Latitude',
@@ -125,6 +136,7 @@ const fieldAliases = {
   addressLine1: ['address', 'address1', 'address_1', 'street', 'streetaddress', 'street_address', 'mailingaddress'],
   addressLine2: ['address2', 'address_2', 'suite', 'unit', 'apt', 'apartment'],
   city: ['city', 'town'],
+  county: ['county', 'parish'],
   region: ['state', 'region', 'province', 'st'],
   postalCode: ['zip', 'zipcode', 'zip_code', 'postal', 'postalcode', 'postal_code'],
   country: ['country'],
@@ -137,6 +149,8 @@ const fieldAliases = {
   priority: ['priority', 'leadpriority', 'lead_priority'],
   estimatedBudget: ['budget', 'estimatedbudget', 'estimated_budget', 'amount', 'dealamount', 'deal_amount'],
   targetPurchaseDate: ['targetpurchasedate', 'target_purchase_date', 'purchasedate', 'purchase_date'],
+  initialContactDate: ['initialcontactdate', 'initial_contact_date', 'firstcontactdate', 'first_contact_date'],
+  initialContactNotes: ['initialcontactnotes', 'initial_contact_notes', 'firstcontactnotes', 'first_contact_notes'],
   lastContactedAt: ['lastcontacted', 'last_contacted', 'lastcontactedat', 'last_contacted_at'],
   nextFollowUpAt: ['nextfollowup', 'next_follow_up', 'nextfollowupat', 'next_follow_up_at', 'followup', 'follow_up'],
   leadLatitude: ['leadlat', 'lead_lat', 'leadlatitude', 'lead_latitude'],
@@ -148,6 +162,7 @@ const CRMImport = () => {
   const supabase = useMemo(() => createClient(), []);
   const [importType, setImportType] = useState('contacts_and_leads');
   const [fileName, setFileName] = useState('');
+  const [fileTypeLabel, setFileTypeLabel] = useState('');
   const [headers, setHeaders] = useState([]);
   const [fieldMap, setFieldMap] = useState({});
   const [previewRows, setPreviewRows] = useState([]);
@@ -165,6 +180,7 @@ const CRMImport = () => {
     if (!file) return;
 
     setFileName(file.name);
+    setFileTypeLabel('');
     setResult(null);
     setError(null);
     setIsAnalyzing(true);
@@ -172,12 +188,14 @@ const CRMImport = () => {
     try {
       const text = await file.text();
       const { headers: nextHeaders, rows } = parseCsv(text);
-      const nextFieldMap = buildFieldMap(nextHeaders);
-      const nextPreviewRows = rows.slice(0, 250).map((row, index) => normalizeImportRow(row, nextHeaders, nextFieldMap, importType, index));
+      const isGoogleSavedCollection = isGoogleSavedCollectionsCsv(nextHeaders);
+      const nextFieldMap = isGoogleSavedCollection ? buildGoogleSavedCollectionFieldMap(nextHeaders) : buildFieldMap(nextHeaders);
+      const nextPreviewRows = rows.slice(0, 250).map((row, index) => normalizeImportRow(row, nextHeaders, nextFieldMap, importType, index, { isGoogleSavedCollection }));
       const rowsWithDuplicates = await markDuplicates(supabase, nextPreviewRows);
 
       setHeaders(nextHeaders);
       setFieldMap(nextFieldMap);
+      setFileTypeLabel(isGoogleSavedCollection ? 'Google saved collections' : 'CSV');
       setPreviewRows(rowsWithDuplicates);
     } catch (nextError) {
       setError(nextError.message || 'Could not read this CSV file.');
@@ -208,10 +226,13 @@ const CRMImport = () => {
           stats.contacts += 1;
         }
 
+        let leadId = null;
         if (row.shouldCreateLead) {
-          await saveLead(supabase, userResult.user.id, companyId, contactId, row);
+          leadId = await saveLead(supabase, userResult.user.id, companyId, contactId, row);
           stats.leads += 1;
         }
+
+        await saveInitialContactActivity(supabase, userResult.user.id, companyId, contactId, leadId, row);
       }
 
       setResult(stats);
@@ -252,7 +273,7 @@ const CRMImport = () => {
               sx={{ mb: 1 }}
             />
             <Typography variant="h4" sx={{ fontSize: { xs: 28, md: 36 } }}>
-              Import CSV
+              Import Records
             </Typography>
           </Box>
           <Button
@@ -271,7 +292,14 @@ const CRMImport = () => {
 
       <Box sx={{ px: { xs: 2, md: 5 }, py: { xs: 2, md: 3 } }}>
         <Stack direction="column" spacing={3} sx={{ minWidth: 0 }}>
-          <Paper sx={{ width: 1, maxWidth: 1, overflow: 'hidden', p: { xs: 2, md: 3 } }}>
+          <Paper
+            sx={{
+              width: 1,
+              maxWidth: 1,
+              overflow: 'hidden',
+              p: { xs: 2, md: 3 },
+            }}
+          >
             <Stack
               direction={{ xs: 'column', md: 'row' }}
               spacing={2}
@@ -282,9 +310,9 @@ const CRMImport = () => {
               }}
             >
               <Box sx={{ minWidth: 0 }}>
-                <Typography variant="h6">{fileName ? 'CSV loaded' : 'CSV Upload'}</Typography>
+                <Typography variant="h6">{fileName ? `${fileTypeLabel || 'CSV'} loaded` : 'Upload File'}</Typography>
                 <Typography variant="body2" noWrap={Boolean(fileName)} title={fileName || undefined} sx={{ maxWidth: { xs: 1, md: 560 }, color: 'text.secondary' }}>
-                  {fileName || 'Column headers are matched automatically before import.'}
+                  {fileName || 'Upload a CSV or Google Saved Collections export.'}
                 </Typography>
               </Box>
 
@@ -297,7 +325,7 @@ const CRMImport = () => {
                   ))}
                 </TextField>
                 <Button component="label" variant="contained" startIcon={<IconifyIcon icon="material-symbols:upload-file-rounded" />} sx={{ minHeight: 48 }}>
-                  Choose CSV
+                  Choose File
                   <Box component="input" type="file" accept=".csv,text/csv" hidden onChange={handleFile} />
                 </Button>
               </Stack>
@@ -317,7 +345,14 @@ const CRMImport = () => {
 
           {headers.length > 0 && (
             <Stack direction="column" spacing={3} sx={{ minWidth: 0 }}>
-              <Paper sx={{ width: 1, maxWidth: 1, overflow: 'hidden', p: { xs: 2, md: 3 } }}>
+              <Paper
+                sx={{
+                  width: 1,
+                  maxWidth: 1,
+                  overflow: 'hidden',
+                  p: { xs: 2, md: 3 },
+                }}
+              >
                 <Stack
                   direction={{ xs: 'column', lg: 'row' }}
                   spacing={2}
@@ -366,7 +401,14 @@ const CRMImport = () => {
                 </Stack>
               </Paper>
 
-              <Paper sx={{ width: 1, maxWidth: 1, overflow: 'hidden', p: { xs: 2, md: 3 } }}>
+              <Paper
+                sx={{
+                  width: 1,
+                  maxWidth: 1,
+                  overflow: 'hidden',
+                  p: { xs: 2, md: 3 },
+                }}
+              >
                 <Stack direction="column" spacing={1.5} sx={{ minWidth: 0 }}>
                   <SectionHeader title="Detected Fields" />
                   <Box
@@ -623,8 +665,14 @@ async function markDuplicates(supabase, rows) {
   );
 }
 
-function normalizeImportRow(rawRow, headers, fieldMap, importType, index) {
-  const row = { index, raw: rawRow, duplicates: [], errors: [] };
+function normalizeImportRow(rawRow, headers, fieldMap, importType, index, options = {}) {
+  const row = {
+    index,
+    raw: rawRow,
+    duplicates: [],
+    errors: [],
+    isGoogleSavedCollection: Boolean(options.isGoogleSavedCollection),
+  };
 
   headers.forEach((header) => {
     const field = fieldMap[header];
@@ -638,6 +686,20 @@ function normalizeImportRow(rawRow, headers, fieldMap, importType, index) {
     row.lastName = nameParts.join(' ');
   }
 
+  if (row.isGoogleSavedCollection) {
+    row.companyName = row.companyName || row.fullName || '';
+    row.notes = buildSavedCollectionNotes(row);
+    row.leadNotes = row.notes;
+    row.leadSource = 'Google saved collection';
+
+    if (importType === 'contacts') {
+      const nameParts = row.companyName.split(/\s+/).filter(Boolean);
+      row.firstName = nameParts.shift() || row.companyName;
+      row.lastName = nameParts.join(' ') || 'Saved place';
+      row.title = 'Google saved place';
+    }
+  }
+
   row.country = row.country || 'US';
   row.leadStatus = normalizeLeadStatus(row.leadStatus) || 'new';
   row.priority = normalizePriority(row.priority);
@@ -646,12 +708,17 @@ function normalizeImportRow(rawRow, headers, fieldMap, importType, index) {
   row.longitude = cleanNumber(row.longitude);
   row.leadLatitude = cleanNumber(row.leadLatitude);
   row.leadLongitude = cleanNumber(row.leadLongitude);
+  row.initialContactDate = cleanDateTime(row.initialContactDate);
 
-  row.shouldCreateContact = importType !== 'leads' || Boolean(row.firstName || row.lastName || row.accountNumber || row.email || row.phone || row.mobilePhone);
+  row.shouldCreateContact = (importType !== 'leads' && !row.isGoogleSavedCollection) || Boolean(row.firstName || row.lastName || row.accountNumber || row.email || row.phone || row.mobilePhone);
   row.shouldCreateLead = importType !== 'contacts' && (hasLeadData(row) || (importType === 'leads' && hasCustomerData(row)));
 
   if (row.shouldCreateContact && (!row.firstName || !row.lastName)) {
     row.errors.push('Contact needs first and last name');
+  }
+
+  if (row.initialContactDate === false) {
+    row.errors.push('Initial contact date is invalid');
   }
 
   if (!row.shouldCreateContact && !row.shouldCreateLead) {
@@ -698,6 +765,7 @@ async function saveCompany(supabase, ownerId, row) {
         address_line1: cleanText(row.addressLine1),
         address_line2: cleanText(row.addressLine2),
         city: cleanText(row.city),
+        county: cleanText(row.county),
         region: cleanText(row.region),
         postal_code: cleanText(row.postalCode),
         country: cleanText(row.country) || 'US',
@@ -731,6 +799,7 @@ async function saveContact(supabase, ownerId, companyId, row) {
       address_line1: cleanText(row.addressLine1),
       address_line2: cleanText(row.addressLine2),
       city: cleanText(row.city),
+      county: cleanText(row.county),
       region: cleanText(row.region),
       postal_code: cleanText(row.postalCode),
       country: cleanText(row.country) || 'US',
@@ -747,21 +816,45 @@ async function saveContact(supabase, ownerId, companyId, row) {
 }
 
 async function saveLead(supabase, ownerId, companyId, contactId, row) {
-  const { error } = await supabase.from('leads').insert({
+  const { data, error } = await supabase
+    .from('leads')
+    .insert({
+      owner_id: ownerId,
+      company_id: companyId,
+      contact_id: contactId,
+      source: cleanText(row.leadSource),
+      account_number: cleanText(row.leadAccountNumber),
+      status: row.leadStatus,
+      priority: row.priority,
+      estimated_budget: row.estimatedBudget || null,
+      target_purchase_date: row.targetPurchaseDate || null,
+      last_contacted_at: row.lastContactedAt || null,
+      next_follow_up_at: row.nextFollowUpAt || null,
+      latitude: row.leadLatitude ?? row.latitude,
+      longitude: row.leadLongitude ?? row.longitude,
+      notes: cleanText(row.leadNotes || row.notes),
+    })
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return data.id;
+}
+
+async function saveInitialContactActivity(supabase, ownerId, companyId, contactId, leadId, row) {
+  if (!row.initialContactDate && !row.initialContactNotes) return;
+  if (!contactId && !companyId && !leadId) return;
+
+  const { error } = await supabase.from('activities').insert({
     owner_id: ownerId,
     company_id: companyId,
     contact_id: contactId,
-    source: cleanText(row.leadSource),
-    account_number: cleanText(row.leadAccountNumber),
-    status: row.leadStatus,
-    priority: row.priority,
-    estimated_budget: row.estimatedBudget || null,
-    target_purchase_date: row.targetPurchaseDate || null,
-    last_contacted_at: row.lastContactedAt || null,
-    next_follow_up_at: row.nextFollowUpAt || null,
-    latitude: row.leadLatitude ?? row.latitude,
-    longitude: row.leadLongitude ?? row.longitude,
-    notes: cleanText(row.leadNotes || row.notes),
+    lead_id: leadId,
+    type: 'call',
+    direction: 'inbound',
+    subject: row.leadSource ? `Initial contact - ${row.leadSource}` : 'Initial contact',
+    body: cleanText(row.initialContactNotes),
+    occurred_at: row.initialContactDate || new Date().toISOString(),
   });
 
   if (error) throw error;
@@ -772,6 +865,19 @@ function buildFieldMap(headers) {
     const field = detectField(header);
     return field ? { ...map, [header]: field } : map;
   }, {});
+}
+
+function buildGoogleSavedCollectionFieldMap(headers) {
+  return headers.reduce((map, header) => {
+    const normalized = normalizeHeaderWithUnderscores(header);
+    const field = googleSavedCollectionFieldMap[normalized] || detectField(header);
+    return field ? { ...map, [header]: field } : map;
+  }, {});
+}
+
+function isGoogleSavedCollectionsCsv(headers) {
+  const normalizedHeaders = headers.map(normalizeHeaderWithUnderscores);
+  return normalizedHeaders.includes('title') && normalizedHeaders.includes('item_content_url');
 }
 
 function detectField(header) {
@@ -794,8 +900,9 @@ function parseCsv(text) {
   const lines = parseCsvRows(text).filter((row) => row.some((value) => cleanText(value)));
   if (lines.length < 2) throw new Error('CSV needs a header row and at least one data row.');
 
-  const headers = lines[0].map((header) => cleanText(header)).filter(Boolean);
-  const rows = lines.slice(1).map((values) =>
+  const headerIndex = findHeaderRowIndex(lines);
+  const headers = lines[headerIndex].map((header) => cleanText(header)).filter(Boolean);
+  const rows = lines.slice(headerIndex + 1).map((values) =>
     headers.reduce((row, header, index) => {
       row[header] = values[index] || '';
       return row;
@@ -803,6 +910,15 @@ function parseCsv(text) {
   );
 
   return { headers, rows };
+}
+
+function findHeaderRowIndex(lines) {
+  const index = lines.findIndex((row) => {
+    const normalizedHeaders = row.map(normalizeHeaderWithUnderscores);
+    return normalizedHeaders.includes('title') && normalizedHeaders.includes('item_content_url');
+  });
+
+  return index === -1 ? 0 : index;
 }
 
 function parseCsvRows(text) {
@@ -845,6 +961,14 @@ function normalizeHeader(value) {
     .replace(/[^a-z0-9]/g, '');
 }
 
+function normalizeHeaderWithUnderscores(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
 function cleanText(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
@@ -855,11 +979,24 @@ function cleanNumber(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function cleanDateTime(value) {
+  const text = cleanText(value);
+  if (!text) return null;
+
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) return false;
+  return date.toISOString();
+}
+
 function parseList(value) {
   return String(value || '')
     .split(/[;,]/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function buildSavedCollectionNotes(row) {
+  return [cleanText(row.notes), cleanText(row.leadNotes), cleanText(row.website) ? `Google Maps: ${cleanText(row.website)}` : null].filter(Boolean).join('\n');
 }
 
 function normalizeLeadStatus(value) {
