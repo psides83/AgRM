@@ -185,6 +185,7 @@ const CRMImport = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [rowCreateDialog, setRowCreateDialog] = useState(null);
   const [isRowSaving, setIsRowSaving] = useState(false);
+  const [fetchingDetailsRow, setFetchingDetailsRow] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
@@ -331,6 +332,31 @@ const CRMImport = () => {
       setError(nextError.message || 'Could not create this row.');
     } finally {
       setIsRowSaving(false);
+    }
+  };
+
+  const handleFetchGoogleDetails = async (row) => {
+    setError(null);
+    setFetchingDetailsRow(row.index);
+
+    try {
+      const response = await fetch('/api/google-places/details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: row.companyName || row.fullName || row.raw.Title || row.raw.title,
+          url: row.website,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || 'Could not fetch Google place details.');
+
+      setPreviewRows((rows) => rows.map((currentRow) => (currentRow.index === row.index ? applyGooglePlaceDetails(currentRow, data.place) : currentRow)));
+    } catch (nextError) {
+      setError(nextError.message || 'Could not fetch Google place details.');
+    } finally {
+      setFetchingDetailsRow(null);
     }
   };
 
@@ -562,7 +588,7 @@ const CRMImport = () => {
                         <TableCell sx={{ width: isGoogleSavedCollection ? 220 : 180 }}>{isGoogleSavedCollection ? 'Action' : 'Lead'}</TableCell>
                         {isGoogleSavedCollection && <TableCell sx={{ width: 260 }}>Target</TableCell>}
                         <TableCell sx={{ width: 190 }}>Coordinates</TableCell>
-                        <TableCell sx={{ width: 140 }}>Create</TableCell>
+                        <TableCell sx={{ width: 220 }}>Actions</TableCell>
                         <TableCell sx={{ width: 128 }}>Status</TableCell>
                       </TableRow>
                     </TableHead>
@@ -614,13 +640,20 @@ const CRMImport = () => {
                             <CoordinatesCell row={row} />
                           </TableCell>
                           <TableCell>
-                            <Button
-                              size="small"
-                              variant="soft"
-                              onClick={() => setRowCreateDialog({ row, createType: row.googleAction === 'create_contact' ? 'contacts' : 'leads', rowFieldMap: { ...fieldMap } })}
-                            >
-                              Create
-                            </Button>
+                            <Stack direction="row" spacing={1}>
+                              {isGoogleSavedCollection && (
+                                <Button size="small" variant="soft" loading={fetchingDetailsRow === row.index} onClick={() => handleFetchGoogleDetails(row)}>
+                                  Fetch
+                                </Button>
+                              )}
+                              <Button
+                                size="small"
+                                variant="soft"
+                                onClick={() => setRowCreateDialog({ row, createType: row.googleAction === 'create_contact' ? 'contacts' : 'leads', rowFieldMap: { ...fieldMap } })}
+                              >
+                                Create
+                              </Button>
+                            </Stack>
                           </TableCell>
                           <TableCell>
                             <RowStatus row={row} />
@@ -1063,6 +1096,7 @@ async function saveCompany(supabase, ownerId, row) {
         owner_id: ownerId,
         name: row.companyName,
         company_type: cleanText(row.companyType),
+        account_number: cleanText(row.accountNumber),
         website: cleanText(row.website),
         phone: cleanText(row.companyPhone || row.phone),
         email: cleanText(row.companyEmail),
@@ -1416,6 +1450,37 @@ function googleRowToContact(row) {
     lastName: row.lastName || nameParts.join(' ') || 'Saved place',
     title: row.title || 'Google saved place',
   };
+}
+
+function applyGooglePlaceDetails(row, place) {
+  const nextRow = {
+    ...row,
+    companyName: place.name || row.companyName,
+    companyPhone: place.phone || row.companyPhone,
+    website: place.websiteUri || row.website || place.googleMapsUri,
+    addressLine1: place.addressLine1 || row.addressLine1,
+    addressLine2: place.addressLine2 || row.addressLine2,
+    city: place.city || row.city,
+    county: place.county || row.county,
+    region: place.region || row.region,
+    postalCode: place.postalCode || row.postalCode,
+    country: place.country || row.country || 'US',
+    latitude: place.latitude ?? row.latitude,
+    longitude: place.longitude ?? row.longitude,
+    leadLatitude: place.latitude ?? row.leadLatitude,
+    leadLongitude: place.longitude ?? row.leadLongitude,
+  };
+  const detailNotes = [
+    place.formattedAddress ? `Address: ${place.formattedAddress}` : null,
+    place.googleMapsUri ? `Google Maps: ${place.googleMapsUri}` : null,
+    place.placeId ? `Google Place ID: ${place.placeId}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  nextRow.notes = appendText(row.notes, detailNotes);
+  nextRow.leadNotes = appendText(row.leadNotes, detailNotes);
+  return { ...nextRow, isValid: true, errors: [] };
 }
 
 function defaultGoogleAction(importType) {
