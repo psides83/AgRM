@@ -42,6 +42,14 @@ const googleSavedCollectionFieldMap = {
   comment: 'leadNotes',
 };
 
+const googleImportActions = [
+  { value: 'create_lead', label: 'Create Lead' },
+  { value: 'create_contact', label: 'Create Contact' },
+  { value: 'attach_lead', label: 'Add to Lead' },
+  { value: 'attach_contact', label: 'Add to Contact' },
+  { value: 'skip', label: 'Skip' },
+];
+
 const fieldLabels = {
   firstName: 'First Name',
   lastName: 'Last Name',
@@ -166,14 +174,16 @@ const CRMImport = () => {
   const [headers, setHeaders] = useState([]);
   const [fieldMap, setFieldMap] = useState({});
   const [previewRows, setPreviewRows] = useState([]);
+  const [crmTargets, setCrmTargets] = useState({ contacts: [], leads: [] });
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
+  const isGoogleSavedCollection = fileTypeLabel === 'Google saved collections';
   const duplicateCount = previewRows.filter((row) => row.duplicates.length).length;
-  const importableCount = previewRows.filter((row) => row.isValid && (includeDuplicates || !row.duplicates.length)).length;
+  const importableCount = previewRows.filter((row) => isImportableRow(row, includeDuplicates)).length;
 
   const handleFile = async (event) => {
     const file = event.target.files?.[0];
@@ -197,6 +207,7 @@ const CRMImport = () => {
       setFieldMap(nextFieldMap);
       setFileTypeLabel(isGoogleSavedCollection ? 'Google saved collections' : 'CSV');
       setPreviewRows(rowsWithDuplicates);
+      setCrmTargets(isGoogleSavedCollection ? await fetchCrmTargets(supabase) : { contacts: [], leads: [] });
     } catch (nextError) {
       setError(nextError.message || 'Could not read this CSV file.');
     } finally {
@@ -214,11 +225,19 @@ const CRMImport = () => {
       const { data: userResult, error: userError } = await supabase.auth.getUser();
       if (userError || !userResult.user) throw new Error('You need to be logged in to import records.');
 
-      const stats = { contacts: 0, leads: 0, skipped: 0 };
-      const rowsToImport = previewRows.filter((row) => row.isValid && (includeDuplicates || !row.duplicates.length));
+      const stats = { contacts: 0, leads: 0, mapUpdates: 0, skipped: 0 };
+      const rowsToImport = previewRows.filter((row) => isImportableRow(row, includeDuplicates));
       stats.skipped = previewRows.length - rowsToImport.length;
 
       for (const row of rowsToImport) {
+        if (row.isGoogleSavedCollection) {
+          const googleStats = await saveGoogleSavedCollectionRow(supabase, userResult.user.id, row);
+          stats.contacts += googleStats.contacts;
+          stats.leads += googleStats.leads;
+          stats.mapUpdates += googleStats.mapUpdates;
+          continue;
+        }
+
         const companyId = await saveCompany(supabase, userResult.user.id, row);
         const contactId = await saveContact(supabase, userResult.user.id, companyId, row);
 
@@ -241,6 +260,10 @@ const CRMImport = () => {
     } finally {
       setIsImporting(false);
     }
+  };
+
+  const updateGoogleImportRow = (rowIndex, changes) => {
+    setPreviewRows((rows) => rows.map((row) => (row.index === rowIndex ? { ...row, ...changes } : row)));
   };
 
   return (
@@ -338,7 +361,8 @@ const CRMImport = () => {
             <Alert severity="success">
               Imported {result.contacts} contact
               {result.contacts === 1 ? '' : 's'} and {result.leads} lead
-              {result.leads === 1 ? '' : 's'}. Skipped {result.skipped} row
+              {result.leads === 1 ? '' : 's'}
+              {result.mapUpdates ? `, and updated ${result.mapUpdates} map ${result.mapUpdates === 1 ? 'record' : 'records'}` : ''}. Skipped {result.skipped} row
               {result.skipped === 1 ? '' : 's'}.
             </Alert>
           )}
@@ -455,14 +479,15 @@ const CRMImport = () => {
                   )}
                 </Stack>
                 <TableContainer sx={{ width: 1, maxWidth: 1, overflowX: 'auto' }}>
-                  <Table sx={{ minWidth: 1060, tableLayout: 'fixed' }}>
+                  <Table sx={{ minWidth: isGoogleSavedCollection ? 1360 : 1060, tableLayout: 'fixed' }}>
                     <TableHead>
                       <TableRow>
                         <TableCell sx={{ width: 72 }}>Row</TableCell>
                         <TableCell sx={{ width: 160 }}>Account #</TableCell>
                         <TableCell sx={{ width: 260 }}>Contact</TableCell>
                         <TableCell sx={{ width: 260 }}>Company</TableCell>
-                        <TableCell sx={{ width: 180 }}>Lead</TableCell>
+                        <TableCell sx={{ width: isGoogleSavedCollection ? 220 : 180 }}>{isGoogleSavedCollection ? 'Action' : 'Lead'}</TableCell>
+                        {isGoogleSavedCollection && <TableCell sx={{ width: 260 }}>Target</TableCell>}
                         <TableCell sx={{ width: 128 }}>Status</TableCell>
                       </TableRow>
                     </TableHead>
@@ -473,7 +498,30 @@ const CRMImport = () => {
                           <PreviewTableCell value={row.accountNumber || '-'} />
                           <PreviewTableCell value={[row.firstName, row.lastName].filter(Boolean).join(' ') || '-'} secondary={row.email || row.phone || row.mobilePhone} />
                           <PreviewTableCell value={row.companyName || '-'} />
-                          <PreviewTableCell value={row.shouldCreateLead ? [row.leadAccountNumber, row.leadSource || 'Lead'].filter(Boolean).join(' · ') : '-'} />
+                          {isGoogleSavedCollection ? (
+                            <>
+                              <TableCell>
+                                <TextField
+                                  select
+                                  size="small"
+                                  value={row.googleAction || 'create_lead'}
+                                  onChange={(event) => updateGoogleImportRow(row.index, { googleAction: event.target.value, googleTargetId: '' })}
+                                  fullWidth
+                                >
+                                  {googleImportActions.map((option) => (
+                                    <MenuItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </MenuItem>
+                                  ))}
+                                </TextField>
+                              </TableCell>
+                              <TableCell>
+                                <GoogleTargetSelect row={row} crmTargets={crmTargets} onChange={(googleTargetId) => updateGoogleImportRow(row.index, { googleTargetId })} />
+                              </TableCell>
+                            </>
+                          ) : (
+                            <PreviewTableCell value={row.shouldCreateLead ? [row.leadAccountNumber, row.leadSource || 'Lead'].filter(Boolean).join(' · ') : '-'} />
+                          )}
                           <TableCell>
                             <RowStatus row={row} />
                           </TableCell>
@@ -614,10 +662,62 @@ function PreviewTableCell({ value, secondary }) {
   );
 }
 
+function GoogleTargetSelect({ row, crmTargets, onChange }) {
+  const action = row.googleAction || 'create_lead';
+  const options = action === 'attach_contact' ? crmTargets.contacts : action === 'attach_lead' ? crmTargets.leads : [];
+  const disabled = !['attach_contact', 'attach_lead'].includes(action);
+
+  return (
+    <TextField select size="small" value={disabled ? '' : row.googleTargetId || ''} onChange={(event) => onChange(event.target.value)} disabled={disabled} fullWidth>
+      <MenuItem value="">{disabled ? 'Not needed' : 'Select target'}</MenuItem>
+      {options.map((target) => (
+        <MenuItem key={target.id} value={target.id}>
+          {target.label}
+        </MenuItem>
+      ))}
+    </TextField>
+  );
+}
+
 function RowStatus({ row }) {
   if (!row.isValid) return <Chip label={row.errors.join(', ')} size="small" color="warning" variant="soft" />;
+  if (row.googleAction === 'skip') return <Chip label="Skipped" size="small" color="neutral" variant="soft" />;
+  if (['attach_contact', 'attach_lead'].includes(row.googleAction) && !row.googleTargetId) return <Chip label="Select target" size="small" color="warning" variant="soft" />;
   if (row.duplicates.length) return <Chip label="Possible duplicate" size="small" color="warning" variant="soft" />;
   return <Chip label="Ready" size="small" color="success" variant="soft" />;
+}
+
+function isImportableRow(row, includeDuplicates) {
+  if (!row.isValid) return false;
+  if (row.googleAction === 'skip') return false;
+  if (['attach_contact', 'attach_lead'].includes(row.googleAction) && !row.googleTargetId) return false;
+  return includeDuplicates || !row.duplicates.length || ['attach_contact', 'attach_lead'].includes(row.googleAction);
+}
+
+async function fetchCrmTargets(supabase) {
+  const [contactsResult, leadsResult] = await Promise.all([
+    supabase.from('contacts').select('id, first_name, last_name, account_number, email, companies(name)').order('created_at', { ascending: false }).limit(250),
+    supabase
+      .from('leads')
+      .select('id, source, account_number, status, contacts(first_name, last_name), companies(name)')
+      .neq('status', 'converted')
+      .order('created_at', { ascending: false })
+      .limit(250),
+  ]);
+
+  if (contactsResult.error) throw contactsResult.error;
+  if (leadsResult.error) throw leadsResult.error;
+
+  return {
+    contacts: (contactsResult.data || []).map((contact) => ({
+      id: contact.id,
+      label: [contactName(contact), contact.account_number, contact.companies?.name, contact.email].filter(Boolean).join(' - '),
+    })),
+    leads: (leadsResult.data || []).map((lead) => ({
+      id: lead.id,
+      label: [lead.contacts ? contactName(lead.contacts) : lead.companies?.name || lead.source || 'Lead', lead.account_number, lead.status].filter(Boolean).join(' - '),
+    })),
+  };
 }
 
 async function markDuplicates(supabase, rows) {
@@ -687,16 +787,26 @@ function normalizeImportRow(rawRow, headers, fieldMap, importType, index, option
   }
 
   if (row.isGoogleSavedCollection) {
+    const coordinates = parseGoogleMapsCoordinates(row.website);
     row.companyName = row.companyName || row.fullName || '';
     row.notes = buildSavedCollectionNotes(row);
     row.leadNotes = row.notes;
     row.leadSource = 'Google saved collection';
+    row.googleAction = defaultGoogleAction(importType);
+    row.latitude = coordinates?.latitude ?? row.latitude;
+    row.longitude = coordinates?.longitude ?? row.longitude;
+    row.leadLatitude = coordinates?.latitude ?? row.leadLatitude;
+    row.leadLongitude = coordinates?.longitude ?? row.leadLongitude;
 
     if (importType === 'contacts') {
       const nameParts = row.companyName.split(/\s+/).filter(Boolean);
       row.firstName = nameParts.shift() || row.companyName;
       row.lastName = nameParts.join(' ') || 'Saved place';
       row.title = 'Google saved place';
+    }
+
+    if (!row.companyName) {
+      row.errors.push('Saved entry needs a title');
     }
   }
 
@@ -771,6 +881,7 @@ async function saveCompany(supabase, ownerId, row) {
         country: cleanText(row.country) || 'US',
         latitude: row.latitude,
         longitude: row.longitude,
+        notes: cleanText(row.notes),
       },
       { onConflict: 'owner_id,name' },
     )
@@ -839,6 +950,96 @@ async function saveLead(supabase, ownerId, companyId, contactId, row) {
 
   if (error) throw error;
   return data.id;
+}
+
+async function saveGoogleSavedCollectionRow(supabase, ownerId, row) {
+  const action = row.googleAction || 'create_lead';
+
+  if (action === 'create_lead') {
+    const companyId = await saveCompany(supabase, ownerId, row);
+    await saveLead(supabase, ownerId, companyId, null, { ...row, shouldCreateLead: true });
+    return { contacts: 0, leads: 1, mapUpdates: 0 };
+  }
+
+  if (action === 'create_contact') {
+    const companyId = await saveCompany(supabase, ownerId, row);
+    await saveContact(supabase, ownerId, companyId, googleRowToContact(row));
+    return { contacts: 1, leads: 0, mapUpdates: 0 };
+  }
+
+  if (action === 'attach_contact') {
+    await attachGoogleMapDataToContact(supabase, ownerId, row.googleTargetId, row);
+    return { contacts: 0, leads: 0, mapUpdates: 1 };
+  }
+
+  if (action === 'attach_lead') {
+    await attachGoogleMapDataToLead(supabase, ownerId, row.googleTargetId, row);
+    return { contacts: 0, leads: 0, mapUpdates: 1 };
+  }
+
+  return { contacts: 0, leads: 0, mapUpdates: 0 };
+}
+
+async function attachGoogleMapDataToContact(supabase, ownerId, contactId, row) {
+  const { data: contact, error: contactError } = await supabase.from('contacts').select('id, company_id, notes, tags, latitude, longitude').eq('id', contactId).single();
+  if (contactError) throw contactError;
+
+  const { error: updateError } = await supabase
+    .from('contacts')
+    .update({
+      notes: appendText(contact.notes, buildSavedCollectionNotes(row)),
+      tags: mergeTags(contact.tags, row.tags),
+      latitude: row.latitude ?? contact.latitude,
+      longitude: row.longitude ?? contact.longitude,
+    })
+    .eq('id', contactId);
+
+  if (updateError) throw updateError;
+  await updateCompanyMapUrl(supabase, contact.company_id, row.website);
+  await insertGoogleMapNote(supabase, ownerId, { contactId, companyId: contact.company_id }, row);
+}
+
+async function attachGoogleMapDataToLead(supabase, ownerId, leadId, row) {
+  const { data: lead, error: leadError } = await supabase.from('leads').select('id, contact_id, company_id, notes, latitude, longitude').eq('id', leadId).single();
+  if (leadError) throw leadError;
+
+  const { error: updateError } = await supabase
+    .from('leads')
+    .update({
+      notes: appendText(lead.notes, buildSavedCollectionNotes(row)),
+      latitude: row.leadLatitude ?? row.latitude ?? lead.latitude,
+      longitude: row.leadLongitude ?? row.longitude ?? lead.longitude,
+    })
+    .eq('id', leadId);
+
+  if (updateError) throw updateError;
+  await updateCompanyMapUrl(supabase, lead.company_id, row.website);
+  await insertGoogleMapNote(supabase, ownerId, { leadId, contactId: lead.contact_id, companyId: lead.company_id }, row);
+}
+
+async function updateCompanyMapUrl(supabase, companyId, website) {
+  if (!companyId || !cleanText(website)) return;
+
+  const { error } = await supabase
+    .from('companies')
+    .update({ website: cleanText(website) })
+    .eq('id', companyId);
+  if (error) throw error;
+}
+
+async function insertGoogleMapNote(supabase, ownerId, target, row) {
+  const body = buildSavedCollectionNotes(row);
+  if (!body) return;
+
+  const { error } = await supabase.from('notes').insert({
+    owner_id: ownerId,
+    contact_id: target.contactId || null,
+    company_id: target.companyId || null,
+    lead_id: target.leadId || null,
+    body,
+  });
+
+  if (error) throw error;
 }
 
 async function saveInitialContactActivity(supabase, ownerId, companyId, contactId, leadId, row) {
@@ -996,7 +1197,71 @@ function parseList(value) {
 }
 
 function buildSavedCollectionNotes(row) {
-  return [cleanText(row.notes), cleanText(row.leadNotes), cleanText(row.website) ? `Google Maps: ${cleanText(row.website)}` : null].filter(Boolean).join('\n');
+  const parts = [...new Set([cleanText(row.notes), cleanText(row.leadNotes)].filter(Boolean))];
+  const mapLine = cleanText(row.website) ? `Google Maps: ${cleanText(row.website)}` : null;
+
+  if (mapLine && !parts.some((part) => part.includes(mapLine))) {
+    parts.push(mapLine);
+  }
+
+  return parts.join('\n');
+}
+
+function googleRowToContact(row) {
+  const nameParts = String(row.companyName || '')
+    .split(/\s+/)
+    .filter(Boolean);
+
+  return {
+    ...row,
+    shouldCreateContact: true,
+    firstName: row.firstName || nameParts.shift() || row.companyName,
+    lastName: row.lastName || nameParts.join(' ') || 'Saved place',
+    title: row.title || 'Google saved place',
+  };
+}
+
+function defaultGoogleAction(importType) {
+  return importType === 'contacts' ? 'create_contact' : 'create_lead';
+}
+
+function appendText(currentValue, nextValue) {
+  const current = cleanText(currentValue);
+  const next = cleanText(nextValue);
+
+  if (!current) return next;
+  if (!next || current.includes(next)) return current;
+  return `${current}\n\n${next}`;
+}
+
+function mergeTags(currentTags, nextTags) {
+  return [...new Set([...(Array.isArray(currentTags) ? currentTags : []), ...(Array.isArray(nextTags) ? nextTags : [])].filter(Boolean))];
+}
+
+function contactName(contact) {
+  return [contact?.first_name, contact?.last_name].filter(Boolean).join(' ') || 'Contact';
+}
+
+function parseGoogleMapsCoordinates(value) {
+  const url = cleanText(value);
+  if (!url) return null;
+
+  const atMatch = url.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+  if (atMatch) return toCoordinatePair(atMatch[1], atMatch[2]);
+
+  const dataMatch = url.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
+  if (dataMatch) return toCoordinatePair(dataMatch[1], dataMatch[2]);
+
+  return null;
+}
+
+function toCoordinatePair(latitudeValue, longitudeValue) {
+  const latitude = Number(latitudeValue);
+  const longitude = Number(longitudeValue);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
+  return { latitude, longitude };
 }
 
 function normalizeLeadStatus(value) {
