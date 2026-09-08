@@ -33,6 +33,11 @@ import {
 } from 'components/sections/crm/constants';
 import DuplicateRecordDialog from 'components/sections/crm/shared/DuplicateRecordDialog';
 import { findPotentialDuplicates } from 'components/sections/crm/shared/duplicateRecords';
+import {
+  cleanPhone,
+  formatPhone,
+  handlePhoneChange,
+} from 'components/sections/crm/shared/phoneFormat';
 
 const leadStatuses = [
   'new',
@@ -422,7 +427,11 @@ const CompanyDetails = ({ companyId }) => {
               sx={{ flexWrap: 'wrap' }}
             >
               {company.phone && (
-                <Chip label={company.phone} variant="soft" color="neutral" />
+                <Chip
+                  label={formatPhone(company.phone)}
+                  variant="soft"
+                  color="neutral"
+                />
               )}
               {company.email && (
                 <Chip label={company.email} variant="soft" color="neutral" />
@@ -455,7 +464,7 @@ const CompanyDetails = ({ companyId }) => {
             <InfoRow label="Type" value={formatEnum(company.company_type)} />
             <InfoRow label="Account Number" value={company.account_number} />
             <InfoRow label="Email" value={company.email} />
-            <InfoRow label="Phone" value={company.phone} />
+            <InfoRow label="Phone" value={formatPhone(company.phone)} />
             <InfoRow label="Website" value={company.website} />
             <InfoRow
               label="Address"
@@ -481,6 +490,7 @@ const CompanyDetails = ({ companyId }) => {
                 sx={{
                   color: 'text.secondary',
                   mt: 2,
+                  whiteSpace: 'pre-wrap',
                   overflowWrap: 'anywhere',
                 }}
               >
@@ -615,7 +625,7 @@ function ContactsCard({ contacts }) {
                 contact.account_number,
                 contact.title,
                 contact.email,
-                contact.mobile_phone || contact.phone,
+                formatPhone(contact.mobile_phone || contact.phone),
               ]
                 .filter(Boolean)
                 .join(' · ')}
@@ -790,6 +800,7 @@ function TimelineCard({ items, supabase, onSaved }) {
                   sx={{
                     color: 'text.secondary',
                     mb: 0.5,
+                    whiteSpace: 'pre-wrap',
                     overflowWrap: 'anywhere',
                   }}
                 >
@@ -891,7 +902,7 @@ function EditCompanyDialog({
         company_type: cleanText(form.companyType),
         account_number: cleanText(form.accountNumber),
         website: cleanText(form.website),
-        phone: cleanText(form.phone),
+        phone: cleanPhone(form.phone),
         email: cleanText(form.email),
         address_line1: cleanText(form.addressLine1),
         address_line2: cleanText(form.addressLine2),
@@ -1051,7 +1062,7 @@ function EditCompanyDialog({
           <TextField
             label="Phone"
             value={form.phone}
-            onChange={handleField(setForm, 'phone')}
+            onChange={handlePhoneChange(setForm, 'phone')}
             fullWidth
           />
           <FormControlLabel
@@ -1274,8 +1285,8 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
       title: cleanText(form.title),
       account_number: cleanText(form.accountNumber),
       email: cleanText(form.email),
-      phone: cleanText(form.phone),
-      mobile_phone: cleanText(form.mobilePhone),
+      phone: cleanPhone(form.phone),
+      mobile_phone: cleanPhone(form.mobilePhone),
       address_line1: cleanText(form.addressLine1),
       address_line2: cleanText(form.addressLine2),
       city: cleanText(form.city),
@@ -1381,14 +1392,14 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
               <TextField
                 label="Mobile Phone"
                 value={form.mobilePhone}
-                onChange={handleField(setForm, 'mobilePhone')}
+                onChange={handlePhoneChange(setForm, 'mobilePhone')}
                 fullWidth
               />
             </Stack>
             <TextField
               label="Phone"
               value={form.phone}
-              onChange={handleField(setForm, 'phone')}
+              onChange={handlePhoneChange(setForm, 'phone')}
               fullWidth
             />
             <FormControlLabel
@@ -1739,7 +1750,7 @@ function AddNoteDialog({ open, company, onClose, onSaved, supabase }) {
     const { error } = await supabase.from('notes').insert({
       owner_id: userResult.user.id,
       company_id: company.id,
-      body: body.trim(),
+      body,
     });
     setIsSaving(false);
     if (!error) {
@@ -1807,7 +1818,7 @@ function AddActivityDialog({ open, company, onClose, onSaved, supabase }) {
       type: form.type,
       direction: form.direction,
       subject: cleanText(form.subject) || formatEnum(form.type),
-      body: cleanText(form.body),
+      body: preserveText(form.body),
       occurred_at: form.occurredAt
         ? new Date(form.occurredAt).toISOString()
         : new Date().toISOString(),
@@ -2177,7 +2188,7 @@ function fieldsFromCompany(company, fields) {
   const values = {
     accountNumber: company?.account_number || '',
     email: company?.email || '',
-    phone: company?.phone || '',
+    phone: formatPhone(company?.phone) || '',
     addressLine1: company?.address_line1 || '',
     addressLine2: company?.address_line2 || '',
     city: company?.city || '',
@@ -2199,7 +2210,7 @@ function fieldsFromContact(contact, fields) {
   const values = {
     accountNumber: contact?.account_number || '',
     email: contact?.email || '',
-    phone: contact?.phone || contact?.mobile_phone || '',
+    phone: formatPhone(contact?.phone || contact?.mobile_phone) || '',
     addressLine1: contact?.address_line1 || '',
     addressLine2: contact?.address_line2 || '',
     city: contact?.city || '',
@@ -2252,7 +2263,7 @@ function companyToForm(company) {
     accountNumber: company?.account_number || '',
     sameAccountNumberAsContact: false,
     website: company?.website || '',
-    phone: company?.phone || '',
+    phone: formatPhone(company?.phone) || '',
     samePhoneAsContact: false,
     email: company?.email || '',
     sameEmailAsContact: false,
@@ -2273,6 +2284,10 @@ function companyToForm(company) {
 
 function cleanText(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function preserveText(value) {
+  return typeof value === 'string' && value.trim() ? value : null;
 }
 
 function cleanNumber(value) {

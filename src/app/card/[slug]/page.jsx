@@ -1,8 +1,22 @@
 import { notFound } from 'next/navigation';
-import { Box, Button, Chip, Container, Divider, Link, Paper, Stack, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Chip,
+  Container,
+  Divider,
+  Link,
+  Paper,
+  Stack,
+  Typography,
+} from '@mui/material';
 import { createClient } from 'lib/supabase/server';
 import IconifyIcon from 'components/base/IconifyIcon';
 import Image from 'components/base/Image';
+import {
+  formatPhone,
+  phoneDigits,
+} from 'components/sections/crm/shared/phoneFormat';
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
@@ -16,7 +30,9 @@ export async function generateMetadata({ params }) {
 
   return {
     title: `${card.first_name} ${card.last_name} | ${card.dealership_name || 'AgRM'}`,
-    description: card.bio || `${card.first_name} ${card.last_name}'s digital business card`,
+    description:
+      card.bio ||
+      `${card.first_name} ${card.last_name}'s digital business card`,
   };
 }
 
@@ -51,17 +67,31 @@ const Page = async ({ params }) => {
               spacing={2.5}
               sx={{ alignItems: { xs: 'flex-start', sm: 'center' } }}
             >
-              <AvatarBlock card={card} fullName={fullName} initials={initials} brandColor={brandColor} />
+              <AvatarBlock
+                card={card}
+                fullName={fullName}
+                initials={initials}
+                brandColor={brandColor}
+              />
 
               <Box sx={{ minWidth: 0 }}>
-                <Typography variant="h3" sx={{ mb: 0.5, overflowWrap: 'anywhere' }}>
+                <Typography
+                  variant="h3"
+                  sx={{ mb: 0.5, overflowWrap: 'anywhere' }}
+                >
                   {fullName}
                 </Typography>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{ fontWeight: 700, color: 'text.secondary' }}
+                >
                   {card.job_title || 'Ag Equipment Sales'}
                 </Typography>
                 {card.dealership_name && (
-                  <Typography variant="body1" sx={{ color: 'text.secondary', overflowWrap: 'anywhere' }}>
+                  <Typography
+                    variant="body1"
+                    sx={{ color: 'text.secondary', overflowWrap: 'anywhere' }}
+                  >
                     {card.dealership_name}
                   </Typography>
                 )}
@@ -70,15 +100,22 @@ const Page = async ({ params }) => {
 
             {(card.territory || card.website) && (
               <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                {card.territory && <Chip label={card.territory} variant="soft" color="primary" />}
-                {card.website && <Chip label={card.website} variant="soft" color="neutral" />}
+                {card.territory && (
+                  <Chip label={card.territory} variant="soft" color="primary" />
+                )}
+                {card.website && (
+                  <Chip label={card.website} variant="soft" color="neutral" />
+                )}
               </Stack>
             )}
 
             {card.bio && (
               <>
                 <Divider />
-                <Typography variant="body1" sx={{ color: 'text.secondary', overflowWrap: 'anywhere' }}>
+                <Typography
+                  variant="body1"
+                  sx={{ color: 'text.secondary', overflowWrap: 'anywhere' }}
+                >
                   {card.bio}
                 </Typography>
               </>
@@ -89,9 +126,9 @@ const Page = async ({ params }) => {
             <Stack direction="column" spacing={1.25}>
               {card.phone && (
                 <ContactLink
-                  href={`tel:${card.phone}`}
+                  href={`tel:${phoneDigits(card.phone)}`}
                   icon="material-symbols:call-outline-rounded"
-                  label={card.phone}
+                  label={formatPhone(card.phone)}
                 />
               )}
               {card.email && (
@@ -116,7 +153,9 @@ const Page = async ({ params }) => {
               underline="none"
               variant="contained"
               size="large"
-              startIcon={<IconifyIcon icon="material-symbols:person-add-outline-rounded" />}
+              startIcon={
+                <IconifyIcon icon="material-symbols:person-add-outline-rounded" />
+              }
               sx={{ alignSelf: 'stretch' }}
             >
               Save Contact
@@ -140,7 +179,11 @@ function ContactLink({ href, icon, label }) {
       variant="soft"
       size="large"
       startIcon={<IconifyIcon icon={icon} />}
-      sx={{ justifyContent: 'flex-start', overflowWrap: 'anywhere', textAlign: 'left' }}
+      sx={{
+        justifyContent: 'flex-start',
+        overflowWrap: 'anywhere',
+        textAlign: 'left',
+      }}
     >
       {label}
     </Button>
@@ -163,7 +206,13 @@ function AvatarBlock({ card, fullName, initials, brandColor }) {
       }}
     >
       {card.avatar_url ? (
-        <Image src={card.avatar_url} alt={fullName} width={112} height={112} sx={{ objectFit: 'cover' }} />
+        <Image
+          src={card.avatar_url}
+          alt={fullName}
+          width={112}
+          height={112}
+          sx={{ objectFit: 'cover' }}
+        />
       ) : (
         <Box
           sx={{
@@ -210,7 +259,9 @@ function buildVCardUrl(card) {
 
 function normalizeWebsiteHref(website) {
   if (!website) return '#!';
-  return website.startsWith('http://') || website.startsWith('https://') ? website : `https://${website}`;
+  return website.startsWith('http://') || website.startsWith('https://')
+    ? website
+    : `https://${website}`;
 }
 
 export default Page;

@@ -25,8 +25,15 @@ import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
+import { formatPhone } from 'components/sections/crm/shared/phoneFormat';
 
-const leadStatuses = ['new', 'working', 'qualified', 'unqualified', 'converted'];
+const leadStatuses = [
+  'new',
+  'working',
+  'qualified',
+  'unqualified',
+  'converted',
+];
 const equipmentCategoryIcons = {
   tractor: '/deere-icons/tractor-row-crop.svg',
   combine: '/deere-icons/combine.svg',
@@ -85,7 +92,7 @@ const LeadsList = () => {
           price_max,
           trade_in
         )
-      `
+      `,
       )
       .order('created_at', { ascending: false });
 
@@ -103,10 +110,26 @@ const LeadsList = () => {
 
     const channel = supabase
       .channel('agrm-leads-list')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => fetchLeads())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => fetchLeads())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, () => fetchLeads())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'equipment_interests' }, () => fetchLeads())
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'leads' },
+        () => fetchLeads(),
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'contacts' },
+        () => fetchLeads(),
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'companies' },
+        () => fetchLeads(),
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'equipment_interests' },
+        () => fetchLeads(),
+      )
       .subscribe();
 
     return () => {
@@ -119,7 +142,18 @@ const LeadsList = () => {
 
     return leads.filter((lead) => {
       const equipmentText = (lead.equipment_interests || [])
-        .map((item) => [item.category, item.make, item.model, item.model_year, item.stock_number, item.serial_number].filter(Boolean).join(' '))
+        .map((item) =>
+          [
+            item.category,
+            item.make,
+            item.model,
+            item.model_year,
+            item.stock_number,
+            item.serial_number,
+          ]
+            .filter(Boolean)
+            .join(' '),
+        )
         .join(' ');
 
       const text = [
@@ -139,7 +173,10 @@ const LeadsList = () => {
         .join(' ')
         .toLowerCase();
 
-      return (!search || text.includes(search)) && (filters.status === 'all' || lead.status === filters.status);
+      return (
+        (!search || text.includes(search)) &&
+        (filters.status === 'all' || lead.status === filters.status)
+      );
     });
   }, [leads, filters]);
 
@@ -154,10 +191,25 @@ const LeadsList = () => {
           ]}
           actionComponent={
             <Stack direction="row" spacing={1}>
-              <Button href={paths.crmImport} component={Link} underline="none" variant="soft" color="neutral" startIcon={<IconifyIcon icon="material-symbols:upload-file-outline-rounded" />}>
+              <Button
+                href={paths.crmImport}
+                component={Link}
+                underline="none"
+                variant="soft"
+                color="neutral"
+                startIcon={
+                  <IconifyIcon icon="material-symbols:upload-file-outline-rounded" />
+                }
+              >
                 Import CSV
               </Button>
-              <Button href={paths.addContact} component={Link} underline="none" variant="contained" startIcon={<IconifyIcon icon="material-symbols:add-rounded" />}>
+              <Button
+                href={paths.addContact}
+                component={Link}
+                underline="none"
+                variant="contained"
+                startIcon={<IconifyIcon icon="material-symbols:add-rounded" />}
+              >
                 Add Contact / Lead
               </Button>
             </Stack>
@@ -167,11 +219,19 @@ const LeadsList = () => {
 
       <Grid size={12}>
         <Paper sx={{ p: { xs: 3, md: 4 } }}>
-          <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', lg: 'center' } }}>
+          <Stack
+            direction={{ xs: 'column', lg: 'row' }}
+            spacing={2}
+            sx={{
+              justifyContent: 'space-between',
+              alignItems: { xs: 'stretch', lg: 'center' },
+            }}
+          >
             <Box>
               <Typography variant="h6">Lead pipeline</Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {filteredLeads.length} shown from {leads.length} total lead{leads.length === 1 ? '' : 's'}
+                {filteredLeads.length} shown from {leads.length} total lead
+                {leads.length === 1 ? '' : 's'}
               </Typography>
             </Box>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -190,14 +250,28 @@ const LeadsList = () => {
                   },
                 }}
               />
-              <TextField select label="Status" value={filters.status} onChange={handleFilter('status')} sx={{ minWidth: 180 }}>
+              <TextField
+                select
+                label="Status"
+                value={filters.status}
+                onChange={handleFilter('status')}
+                sx={{ minWidth: 180 }}
+              >
                 <MenuItem value="all">All</MenuItem>
-                {leadStatuses.map((status) => <MenuItem key={status} value={status}>{formatEnum(status)}</MenuItem>)}
+                {leadStatuses.map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {formatEnum(status)}
+                  </MenuItem>
+                ))}
               </TextField>
             </Stack>
           </Stack>
 
-          {error && <Alert severity="error" sx={{ mt: 3 }}>{error}</Alert>}
+          {error && (
+            <Alert severity="error" sx={{ mt: 3 }}>
+              {error}
+            </Alert>
+          )}
 
           <TableContainer sx={{ mt: 3 }}>
             <Table>
@@ -214,9 +288,17 @@ const LeadsList = () => {
                 {isLoading ? (
                   <EmptyRow label="Loading leads..." />
                 ) : filteredLeads.length ? (
-                  filteredLeads.map((lead) => <LeadRow key={lead.id} lead={lead} />)
+                  filteredLeads.map((lead) => (
+                    <LeadRow key={lead.id} lead={lead} />
+                  ))
                 ) : (
-                  <EmptyRow label={filters.search || filters.status !== 'all' ? 'No leads match these filters' : 'No leads yet'} />
+                  <EmptyRow
+                    label={
+                      filters.search || filters.status !== 'all'
+                        ? 'No leads match these filters'
+                        : 'No leads yet'
+                    }
+                  />
                 )}
               </TableBody>
             </Table>
@@ -227,7 +309,8 @@ const LeadsList = () => {
   );
 
   function handleFilter(key) {
-    return (event) => setFilters((prev) => ({ ...prev, [key]: event.target.value }));
+    return (event) =>
+      setFilters((prev) => ({ ...prev, [key]: event.target.value }));
   }
 };
 
@@ -238,16 +321,29 @@ function LeadRow({ lead }) {
   return (
     <TableRow hover>
       <TableCell sx={{ minWidth: 220 }}>
-        <Link href={paths.leadDetails(lead.id)} underline="hover" sx={{ color: 'text.primary', fontWeight: 700 }}>
+        <Link
+          href={paths.leadDetails(lead.id)}
+          underline="hover"
+          sx={{ color: 'text.primary', fontWeight: 700 }}
+        >
           {lead.source || 'Lead'}
         </Link>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          {[lead.account_number ? `Account ${lead.account_number}` : null, `Created ${formatDate(lead.created_at)}`].filter(Boolean).join(' · ')}
+          {[
+            lead.account_number ? `Account ${lead.account_number}` : null,
+            `Created ${formatDate(lead.created_at)}`,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         </Typography>
       </TableCell>
       <TableCell sx={{ minWidth: 220 }}>
         {lead.contacts?.id ? (
-          <Link href={paths.contactDetails(lead.contacts.id)} underline="hover" sx={{ color: 'text.primary', fontWeight: 600 }}>
+          <Link
+            href={paths.contactDetails(lead.contacts.id)}
+            underline="hover"
+            sx={{ color: 'text.primary', fontWeight: 600 }}
+          >
             {contactName(lead.contacts)}
           </Link>
         ) : (
@@ -255,17 +351,29 @@ function LeadRow({ lead }) {
         )}
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
           {lead.companies?.id ? (
-            <Link href={paths.companyDetails(lead.companies.id)} underline="hover" sx={{ color: 'text.secondary' }}>
+            <Link
+              href={paths.companyDetails(lead.companies.id)}
+              underline="hover"
+              sx={{ color: 'text.secondary' }}
+            >
               {lead.companies.name}
             </Link>
           ) : (
-            lead.contacts?.account_number || lead.contacts?.mobile_phone || lead.contacts?.phone || lead.contacts?.email || 'No company'
+            lead.contacts?.account_number ||
+            formatPhone(lead.contacts?.mobile_phone || lead.contacts?.phone) ||
+            lead.contacts?.email ||
+            'No company'
           )}
         </Typography>
       </TableCell>
       <TableCell sx={{ minWidth: 150 }}>
         <Stack spacing={0.75} alignItems="flex-start">
-          <Chip label={formatEnum(lead.status)} size="small" variant="soft" color={leadStatusColor(lead.status)} />
+          <Chip
+            label={formatEnum(lead.status)}
+            size="small"
+            variant="soft"
+            color={leadStatusColor(lead.status)}
+          />
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
             Priority {lead.priority || '-'}
           </Typography>
@@ -277,20 +385,47 @@ function LeadRow({ lead }) {
             <Stack direction="row" spacing={1.25} alignItems="center">
               <EquipmentCategoryIcon category={primaryEquipment.category} />
               <Box sx={{ minWidth: 0 }}>
-                <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ overflowWrap: 'anywhere' }}
+                >
                   {equipmentName(primaryEquipment)}
                 </Typography>
                 <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  {[formatEnum(primaryEquipment.category), formatEnum(primaryEquipment.condition), equipmentBudget(primaryEquipment)].filter(Boolean).join(' · ')}
+                  {[
+                    formatEnum(primaryEquipment.category),
+                    formatEnum(primaryEquipment.condition),
+                    equipmentBudget(primaryEquipment),
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </Typography>
               </Box>
             </Stack>
             {equipment.length > 1 && (
-              <Stack direction="row" spacing={0.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
+              <Stack
+                direction="row"
+                spacing={0.5}
+                useFlexGap
+                sx={{ flexWrap: 'wrap' }}
+              >
                 {equipment.slice(1, 4).map((item) => (
-                  <Chip key={item.id} label={equipmentName(item)} size="small" variant="soft" color="neutral" />
+                  <Chip
+                    key={item.id}
+                    label={equipmentName(item)}
+                    size="small"
+                    variant="soft"
+                    color="neutral"
+                  />
                 ))}
-                {equipment.length > 4 && <Chip label={`+${equipment.length - 4} more`} size="small" variant="soft" color="neutral" />}
+                {equipment.length > 4 && (
+                  <Chip
+                    label={`+${equipment.length - 4} more`}
+                    size="small"
+                    variant="soft"
+                    color="neutral"
+                  />
+                )}
               </Stack>
             )}
           </Stack>
@@ -301,9 +436,13 @@ function LeadRow({ lead }) {
         )}
       </TableCell>
       <TableCell sx={{ minWidth: 180 }}>
-        <Typography variant="body2">{formatCurrency(lead.estimated_budget)}</Typography>
+        <Typography variant="body2">
+          {formatCurrency(lead.estimated_budget)}
+        </Typography>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          {lead.next_follow_up_at ? `Follow up ${formatDateTime(lead.next_follow_up_at)}` : 'No follow-up set'}
+          {lead.next_follow_up_at
+            ? `Follow up ${formatDateTime(lead.next_follow_up_at)}`
+            : 'No follow-up set'}
         </Typography>
       </TableCell>
     </TableRow>
@@ -327,7 +466,13 @@ function EquipmentCategoryIcon({ category }) {
         borderColor: 'divider',
       }}
     >
-      <Box component="img" src={src} alt="" aria-hidden sx={{ width: 28, height: 28, objectFit: 'contain', display: 'block' }} />
+      <Box
+        component="img"
+        src={src}
+        alt=""
+        aria-hidden
+        sx={{ width: 28, height: 28, objectFit: 'contain', display: 'block' }}
+      />
     </Box>
   );
 }
@@ -336,7 +481,10 @@ function EmptyRow({ label }) {
   return (
     <TableRow>
       <TableCell colSpan={5}>
-        <Typography variant="body2" sx={{ color: 'text.secondary', py: 3, textAlign: 'center' }}>
+        <Typography
+          variant="body2"
+          sx={{ color: 'text.secondary', py: 3, textAlign: 'center' }}
+        >
           {label}
         </Typography>
       </TableCell>
@@ -345,16 +493,28 @@ function EmptyRow({ label }) {
 }
 
 function contactName(contact) {
-  return [contact?.first_name, contact?.last_name].filter(Boolean).join(' ') || 'Unnamed contact';
+  return (
+    [contact?.first_name, contact?.last_name].filter(Boolean).join(' ') ||
+    'Unnamed contact'
+  );
 }
 
 function equipmentName(item) {
-  return [item.model_year, item.make, item.model].filter(Boolean).join(' ') || item.stock_number || item.serial_number || formatEnum(item.category);
+  return (
+    [item.model_year, item.make, item.model].filter(Boolean).join(' ') ||
+    item.stock_number ||
+    item.serial_number ||
+    formatEnum(item.category)
+  );
 }
 
 function equipmentBudget(item) {
   if (item.quote_price) return `Quote ${formatCurrency(item.quote_price)}`;
-  return [formatCurrency(item.price_min), formatCurrency(item.price_max)].filter((value) => value !== '-').join(' - ') || null;
+  return (
+    [formatCurrency(item.price_min), formatCurrency(item.price_max)]
+      .filter((value) => value !== '-')
+      .join(' - ') || null
+  );
 }
 
 function leadStatusColor(status) {
@@ -367,23 +527,38 @@ function leadStatusColor(status) {
 
 function formatCurrency(value) {
   if (value === null || value === undefined || value === '') return '-';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(value));
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(Number(value));
 }
 
 function formatDate(value) {
   if (!value) return '-';
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value));
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(value));
 }
 
 function formatDateTime(value) {
   if (!value) return '-';
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(value));
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(value));
 }
 
 function formatEnum(value) {
   if (!value) return '-';
   if (value === 'fit_confirmed') return 'Equipment Fit Confirmed';
-  return String(value).replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return String(value)
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export default LeadsList;

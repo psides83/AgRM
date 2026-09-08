@@ -26,6 +26,7 @@ import PersonalInfoForm, {
 } from 'components/sections/crm/add-contact/steps/PersonalInfoForm';
 import DuplicateRecordDialog from 'components/sections/crm/shared/DuplicateRecordDialog';
 import { findPotentialDuplicates } from 'components/sections/crm/shared/duplicateRecords';
+import { cleanPhone } from 'components/sections/crm/shared/phoneFormat';
 
 const steps = [
   {
@@ -366,7 +367,7 @@ async function saveCompany(supabase, ownerId, companyInfo) {
     company_type: cleanText(companyInfo.companyType),
     account_number: cleanText(companyInfo.accountNumber),
     website: cleanText(companyInfo.website),
-    phone: cleanText(companyInfo.phone),
+    phone: cleanPhone(companyInfo.phone),
     email: cleanText(companyInfo.email),
     address_line1: cleanText(companyInfo.addressLine1),
     address_line2: cleanText(companyInfo.addressLine2),
@@ -404,8 +405,8 @@ async function saveContact(supabase, ownerId, companyId, personalInfo) {
       title: cleanText(personalInfo.title),
       account_number: cleanText(personalInfo.accountNumber),
       email: cleanText(personalInfo.email),
-      phone: cleanText(personalInfo.phone),
-      mobile_phone: cleanText(personalInfo.mobilePhone),
+      phone: cleanPhone(personalInfo.phone),
+      mobile_phone: cleanPhone(personalInfo.mobilePhone),
       address_line1: cleanText(personalInfo.addressLine1),
       address_line2: cleanText(personalInfo.addressLine2),
       city: cleanText(personalInfo.city),

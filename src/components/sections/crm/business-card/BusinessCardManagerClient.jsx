@@ -27,6 +27,11 @@ import IconifyIcon from 'components/base/IconifyIcon';
 import Image from 'components/base/Image';
 import AccountTabPanelSection from 'components/sections/account/common/AccountTabPanelSection';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
+import {
+  cleanPhone,
+  formatPhone,
+  handlePhoneChange,
+} from 'components/sections/crm/shared/phoneFormat';
 
 const emptyForm = {
   slug: '',
@@ -104,7 +109,11 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
 
     const [profileResult, cardResult] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', user.id).single(),
-      supabase.from('business_cards').select('*').eq('owner_id', user.id).maybeSingle(),
+      supabase
+        .from('business_cards')
+        .select('*')
+        .eq('owner_id', user.id)
+        .maybeSingle(),
     ]);
 
     if (profileResult.error) {
@@ -154,7 +163,7 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
       dealership_name: cleanText(form.dealershipName),
       territory: cleanText(form.territory),
       email: cleanText(form.email),
-      phone: cleanText(form.phone),
+      phone: cleanPhone(form.phone),
       website: cleanText(form.website),
       avatar_url: cleanText(form.avatarUrl),
       bio: cleanText(form.bio),
@@ -162,7 +171,12 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
     };
 
     const query = cardId
-      ? supabase.from('business_cards').update(payload).eq('id', cardId).select('id').single()
+      ? supabase
+          .from('business_cards')
+          .update(payload)
+          .eq('id', cardId)
+          .select('id')
+          .single()
       : supabase.from('business_cards').insert(payload).select('id').single();
 
     const { data, error: saveError } = await query;
@@ -248,7 +262,9 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
     }
 
     setForm((prev) => ({ ...prev, avatarUrl: publicUrlWithCacheBust }));
-    setProfile((prev) => (prev ? { ...prev, avatar_url: publicUrlWithCacheBust } : prev));
+    setProfile((prev) =>
+      prev ? { ...prev, avatar_url: publicUrlWithCacheBust } : prev,
+    );
     await refreshProfile(user);
     enqueueSnackbar('Avatar uploaded.', { variant: 'success' });
   };
@@ -280,7 +296,9 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
               disabled={!canOpenSavedCard}
               variant="soft"
               color="neutral"
-              startIcon={<IconifyIcon icon="material-symbols:open-in-new-rounded" />}
+              startIcon={
+                <IconifyIcon icon="material-symbols:open-in-new-rounded" />
+              }
             >
               Open Card
             </Button>
@@ -291,7 +309,12 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
               control={
                 <Switch
                   checked={form.enabled}
-                  onChange={(event) => setForm((prev) => ({ ...prev, enabled: event.target.checked }))}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      enabled: event.target.checked,
+                    }))
+                  }
                 />
               }
               label="Publish business card"
@@ -300,14 +323,18 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
               label="Public Slug"
               value={form.slug}
               onChange={(event) =>
-                setForm((prev) => ({ ...prev, slug: normalizeSlug(event.target.value) }))
+                setForm((prev) => ({
+                  ...prev,
+                  slug: normalizeSlug(event.target.value),
+                }))
               }
               helperText={
                 savedCardUrl && savedEnabled
                   ? `Current public URL: ${savedCardUrl}`
                   : savedCardUrl
                     ? 'This card is saved but not currently published.'
-                  : draftCardUrl || 'Save the card before opening the public URL.'
+                    : draftCardUrl ||
+                      'Save the card before opening the public URL.'
               }
               fullWidth
             />
@@ -317,7 +344,9 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
                 color="neutral"
                 onClick={handleCopyLink}
                 disabled={!canOpenSavedCard}
-                startIcon={<IconifyIcon icon="material-symbols:content-copy-outline-rounded" />}
+                startIcon={
+                  <IconifyIcon icon="material-symbols:content-copy-outline-rounded" />
+                }
                 sx={{ alignSelf: { sm: 'flex-start' } }}
               >
                 Copy Link
@@ -332,7 +361,11 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
           icon="material-symbols:badge-outline-rounded"
         >
           <Stack direction="column" spacing={3}>
-            <Stack direction="column" spacing={1.5} sx={{ alignItems: 'flex-start' }}>
+            <Stack
+              direction="column"
+              spacing={1.5}
+              sx={{ alignItems: 'flex-start' }}
+            >
               <AvatarDropBox
                 defaultFile={form.avatarUrl}
                 onDrop={handleAvatarDrop}
@@ -341,14 +374,19 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
                 sx={{ width: 112, height: 112 }}
               />
               <FormHelperText>
-                {isUploadingAvatar ? 'Uploading...' : 'JPG, PNG, WEBP, or GIF up to 5MB.'}
+                {isUploadingAvatar
+                  ? 'Uploading...'
+                  : 'JPG, PNG, WEBP, or GIF up to 5MB.'}
               </FormHelperText>
             </Stack>
 
             <Box
               sx={{
                 display: 'grid',
-                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, minmax(0, 1fr))',
+                },
                 gap: 2,
                 '& .MuiFormControl-root': { minWidth: 0 },
               }}
@@ -365,8 +403,18 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
                 onChange={handleField(setForm, 'lastName')}
                 fullWidth
               />
-              <TextField label="Job Title" value={form.jobTitle} onChange={handleField(setForm, 'jobTitle')} fullWidth />
-              <TextField label="Territory" value={form.territory} onChange={handleField(setForm, 'territory')} fullWidth />
+              <TextField
+                label="Job Title"
+                value={form.jobTitle}
+                onChange={handleField(setForm, 'jobTitle')}
+                fullWidth
+              />
+              <TextField
+                label="Territory"
+                value={form.territory}
+                onChange={handleField(setForm, 'territory')}
+                fullWidth
+              />
               <TextField
                 label="Dealership / Business"
                 value={form.dealershipName}
@@ -374,9 +422,24 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
                 fullWidth
                 sx={{ gridColumn: { sm: '1 / -1' } }}
               />
-              <TextField label="Email" value={form.email} onChange={handleField(setForm, 'email')} fullWidth />
-              <TextField label="Phone" value={form.phone} onChange={handleField(setForm, 'phone')} fullWidth />
-              <TextField label="Website" value={form.website} onChange={handleField(setForm, 'website')} fullWidth />
+              <TextField
+                label="Email"
+                value={form.email}
+                onChange={handleField(setForm, 'email')}
+                fullWidth
+              />
+              <TextField
+                label="Phone"
+                value={form.phone}
+                onChange={handlePhoneChange(setForm, 'phone')}
+                fullWidth
+              />
+              <TextField
+                label="Website"
+                value={form.website}
+                onChange={handleField(setForm, 'website')}
+                fullWidth
+              />
               <TextField
                 label="Brand Color"
                 value={form.brandColor}
@@ -393,8 +456,16 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
                 sx={{ gridColumn: { sm: '1 / -1' } }}
               />
             </Box>
-            <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
-              <Button variant="contained" loading={isSaving} onClick={handleSave}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ justifyContent: 'flex-end' }}
+            >
+              <Button
+                variant="contained"
+                loading={isSaving}
+                onClick={handleSave}
+              >
                 Save Business Card
               </Button>
             </Stack>
@@ -453,7 +524,9 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
                 disabled={!canOpenSavedCard}
                 variant="soft"
                 color="neutral"
-                startIcon={<IconifyIcon icon="material-symbols:open-in-new-rounded" />}
+                startIcon={
+                  <IconifyIcon icon="material-symbols:open-in-new-rounded" />
+                }
               >
                 Open Card
               </Button>
@@ -467,10 +540,14 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={2}
-            sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' } }}
+            sx={{
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', sm: 'center' },
+            }}
           >
             <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-              Manage the public card and QR code you can share with prospects and customers.
+              Manage the public card and QR code you can share with prospects
+              and customers.
             </Typography>
             <Button
               component={Link}
@@ -479,7 +556,9 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
               disabled={!canOpenSavedCard}
               variant="soft"
               color="neutral"
-              startIcon={<IconifyIcon icon="material-symbols:open-in-new-rounded" />}
+              startIcon={
+                <IconifyIcon icon="material-symbols:open-in-new-rounded" />
+              }
             >
               Open Card
             </Button>
@@ -495,7 +574,12 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
               control={
                 <Switch
                   checked={form.enabled}
-                  onChange={(event) => setForm((prev) => ({ ...prev, enabled: event.target.checked }))}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      enabled: event.target.checked,
+                    }))
+                  }
                 />
               }
               label="Publish business card"
@@ -504,34 +588,73 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
               label="Public Slug"
               value={form.slug}
               onChange={(event) =>
-                setForm((prev) => ({ ...prev, slug: normalizeSlug(event.target.value) }))
+                setForm((prev) => ({
+                  ...prev,
+                  slug: normalizeSlug(event.target.value),
+                }))
               }
               helperText={
                 savedCardUrl && savedEnabled
                   ? `Current public URL: ${savedCardUrl}`
                   : savedCardUrl
                     ? 'This card is saved but not currently published.'
-                  : draftCardUrl || 'Save the card before opening the public URL.'
+                    : draftCardUrl ||
+                      'Save the card before opening the public URL.'
               }
               fullWidth
             />
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField label="First Name" value={form.firstName} onChange={handleField(setForm, 'firstName')} fullWidth />
-              <TextField label="Last Name" value={form.lastName} onChange={handleField(setForm, 'lastName')} fullWidth />
+              <TextField
+                label="First Name"
+                value={form.firstName}
+                onChange={handleField(setForm, 'firstName')}
+                fullWidth
+              />
+              <TextField
+                label="Last Name"
+                value={form.lastName}
+                onChange={handleField(setForm, 'lastName')}
+                fullWidth
+              />
             </Stack>
-            <TextField label="Job Title" value={form.jobTitle} onChange={handleField(setForm, 'jobTitle')} fullWidth />
+            <TextField
+              label="Job Title"
+              value={form.jobTitle}
+              onChange={handleField(setForm, 'jobTitle')}
+              fullWidth
+            />
             <TextField
               label="Dealership / Business"
               value={form.dealershipName}
               onChange={handleField(setForm, 'dealershipName')}
               fullWidth
             />
-            <TextField label="Territory" value={form.territory} onChange={handleField(setForm, 'territory')} fullWidth />
+            <TextField
+              label="Territory"
+              value={form.territory}
+              onChange={handleField(setForm, 'territory')}
+              fullWidth
+            />
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField label="Email" value={form.email} onChange={handleField(setForm, 'email')} fullWidth />
-              <TextField label="Phone" value={form.phone} onChange={handleField(setForm, 'phone')} fullWidth />
+              <TextField
+                label="Email"
+                value={form.email}
+                onChange={handleField(setForm, 'email')}
+                fullWidth
+              />
+              <TextField
+                label="Phone"
+                value={form.phone}
+                onChange={handlePhoneChange(setForm, 'phone')}
+                fullWidth
+              />
             </Stack>
-            <TextField label="Website" value={form.website} onChange={handleField(setForm, 'website')} fullWidth />
+            <TextField
+              label="Website"
+              value={form.website}
+              onChange={handleField(setForm, 'website')}
+              fullWidth
+            />
             <Box>
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
                 Profile Photo
@@ -543,7 +666,9 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
                 maxSize={5 * 1024 * 1024}
               />
               <FormHelperText>
-                {isUploadingAvatar ? 'Uploading avatar...' : 'JPG, PNG, WEBP, or GIF up to 5MB.'}
+                {isUploadingAvatar
+                  ? 'Uploading avatar...'
+                  : 'JPG, PNG, WEBP, or GIF up to 5MB.'}
               </FormHelperText>
             </Box>
             <TextField
@@ -552,12 +677,32 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
               onChange={handleField(setForm, 'brandColor')}
               fullWidth
             />
-            <TextField label="Bio" value={form.bio} onChange={handleField(setForm, 'bio')} fullWidth multiline rows={4} />
-            <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
-              <Button variant="soft" color="neutral" onClick={handleCopyLink} disabled={!canOpenSavedCard}>
+            <TextField
+              label="Bio"
+              value={form.bio}
+              onChange={handleField(setForm, 'bio')}
+              fullWidth
+              multiline
+              rows={4}
+            />
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ justifyContent: 'flex-end' }}
+            >
+              <Button
+                variant="soft"
+                color="neutral"
+                onClick={handleCopyLink}
+                disabled={!canOpenSavedCard}
+              >
                 Copy Link
               </Button>
-              <Button variant="contained" loading={isSaving} onClick={handleSave}>
+              <Button
+                variant="contained"
+                loading={isSaving}
+                onClick={handleSave}
+              >
                 Save Business Card
               </Button>
             </Stack>
@@ -573,7 +718,13 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
               QR Code
             </Typography>
             {qrCodeUrl ? (
-              <Image src={qrCodeUrl} alt="Business card QR code" width={280} height={280} sx={{ mx: 'auto' }} />
+              <Image
+                src={qrCodeUrl}
+                alt="Business card QR code"
+                width={280}
+                height={280}
+                sx={{ mx: 'auto' }}
+              />
             ) : (
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 Save a slug to generate a QR code.
@@ -587,7 +738,8 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
 };
 
 function BusinessCardPreview({ form }) {
-  const fullName = [form.firstName, form.lastName].filter(Boolean).join(' ') || 'Your Name';
+  const fullName =
+    [form.firstName, form.lastName].filter(Boolean).join(' ') || 'Your Name';
   const brandColor = form.brandColor || '#367C2B';
 
   return (
@@ -601,7 +753,11 @@ function BusinessCardPreview({ form }) {
     >
       <Box sx={{ height: 10, bgcolor: brandColor }} />
       <Stack direction="column" spacing={3} sx={{ p: { xs: 3, md: 4 } }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { xs: 'flex-start', sm: 'center' } }}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+          sx={{ alignItems: { xs: 'flex-start', sm: 'center' } }}
+        >
           <Box
             sx={{
               width: 72,
@@ -624,8 +780,18 @@ function BusinessCardPreview({ form }) {
                 sx={{ objectFit: 'cover' }}
               />
             ) : (
-              <Stack sx={{ width: 1, height: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <IconifyIcon icon="material-symbols:person-rounded" sx={{ fontSize: 34, color: 'text.disabled' }} />
+              <Stack
+                sx={{
+                  width: 1,
+                  height: 1,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <IconifyIcon
+                  icon="material-symbols:person-rounded"
+                  sx={{ fontSize: 34, color: 'text.disabled' }}
+                />
               </Stack>
             )}
           </Box>
@@ -634,30 +800,62 @@ function BusinessCardPreview({ form }) {
             <Typography variant="h4" sx={{ overflowWrap: 'anywhere' }}>
               {fullName}
             </Typography>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+            <Typography
+              variant="subtitle1"
+              sx={{ fontWeight: 700, color: 'text.secondary' }}
+            >
               {form.jobTitle || 'Ag Equipment Sales'}
             </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary', overflowWrap: 'anywhere' }}>
+            <Typography
+              variant="body2"
+              sx={{ color: 'text.secondary', overflowWrap: 'anywhere' }}
+            >
               {form.dealershipName || 'Dealership / Business'}
             </Typography>
           </Box>
         </Stack>
 
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-          {form.territory && <Chip label={form.territory} size="small" variant="soft" color="primary" />}
-          {form.website && <Chip label={form.website} size="small" variant="soft" color="neutral" />}
+          {form.territory && (
+            <Chip
+              label={form.territory}
+              size="small"
+              variant="soft"
+              color="primary"
+            />
+          )}
+          {form.website && (
+            <Chip
+              label={form.website}
+              size="small"
+              variant="soft"
+              color="neutral"
+            />
+          )}
         </Stack>
 
         <Stack direction="column" spacing={1.25}>
-          <ContactLine icon="material-symbols:call-outline-rounded" value={form.phone || 'Phone number'} />
-          <ContactLine icon="material-symbols:mail-outline-rounded" value={form.email || 'Email address'} />
-          <ContactLine icon="material-symbols:location-on-outline-rounded" value={form.territory || 'Sales territory'} />
+          <ContactLine
+            icon="material-symbols:call-outline-rounded"
+            value={formatPhone(form.phone) || 'Phone number'}
+          />
+          <ContactLine
+            icon="material-symbols:mail-outline-rounded"
+            value={form.email || 'Email address'}
+          />
+          <ContactLine
+            icon="material-symbols:location-on-outline-rounded"
+            value={form.territory || 'Sales territory'}
+          />
         </Stack>
 
         {form.bio && (
           <>
             <Divider />
-            <Typography variant="body2" sx={{ color: 'text.secondary', overflowWrap: 'anywhere' }}>
+            <Typography
+              variant="body2"
+              sx={{ color: 'text.secondary', overflowWrap: 'anywhere' }}
+            >
               {form.bio}
             </Typography>
           </>
@@ -669,8 +867,15 @@ function BusinessCardPreview({ form }) {
 
 function ContactLine({ icon, value }) {
   return (
-    <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center', minWidth: 0 }}>
-      <IconifyIcon icon={icon} sx={{ color: 'text.secondary', flexShrink: 0 }} />
+    <Stack
+      direction="row"
+      spacing={1.25}
+      sx={{ alignItems: 'center', minWidth: 0 }}
+    >
+      <IconifyIcon
+        icon={icon}
+        sx={{ color: 'text.secondary', flexShrink: 0 }}
+      />
       <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
         {value}
       </Typography>
@@ -691,7 +896,7 @@ function profileToForm(profile, authEmail) {
     dealershipName: profile?.dealership_name || '',
     territory: profile?.territory || '',
     email: profile?.email || authEmail || '',
-    phone: profile?.phone || '',
+    phone: formatPhone(profile?.phone) || '',
     avatarUrl: profile?.avatar_url || '',
   };
 }
@@ -706,7 +911,7 @@ function cardToForm(card) {
     dealershipName: card.dealership_name || '',
     territory: card.territory || '',
     email: card.email || '',
-    phone: card.phone || '',
+    phone: formatPhone(card.phone) || '',
     website: card.website || '',
     avatarUrl: card.avatar_url || '',
     bio: card.bio || '',

@@ -32,6 +32,11 @@ import {
 } from 'components/sections/crm/constants';
 import DuplicateRecordDialog from 'components/sections/crm/shared/DuplicateRecordDialog';
 import { findPotentialDuplicates } from 'components/sections/crm/shared/duplicateRecords';
+import {
+  cleanPhone,
+  formatPhone,
+  handlePhoneChange,
+} from 'components/sections/crm/shared/phoneFormat';
 
 const leadStatuses = [
   'new',
@@ -399,7 +404,12 @@ const LeadDetails = ({ leadId }) => {
               {lead.notes && (
                 <Typography
                   variant="body2"
-                  sx={{ color: 'text.secondary', mt: 2 }}
+                  sx={{
+                    color: 'text.secondary',
+                    mt: 2,
+                    whiteSpace: 'pre-wrap',
+                    overflowWrap: 'anywhere',
+                  }}
                 >
                   {lead.notes}
                 </Typography>
@@ -421,7 +431,7 @@ const LeadDetails = ({ leadId }) => {
                   <InfoRow label="Email" value={contact.email} />
                   <InfoRow
                     label="Phone"
-                    value={contact.mobile_phone || contact.phone}
+                    value={formatPhone(contact.mobile_phone || contact.phone)}
                   />
                   <Button
                     component={Link}
@@ -444,7 +454,7 @@ const LeadDetails = ({ leadId }) => {
                 <>
                   <InfoRow label="Company" value={company.name} />
                   <InfoRow label="Type" value={company.company_type} />
-                  <InfoRow label="Phone" value={company.phone} />
+                  <InfoRow label="Phone" value={formatPhone(company.phone)} />
                   <InfoRow
                     label="Location"
                     value={[company.city, company.region]
@@ -720,6 +730,7 @@ function TimelineCard({ items, supabase, onSaved }) {
                     sx={{
                       color: 'text.secondary',
                       mb: 0.5,
+                      whiteSpace: 'pre-wrap',
                       overflowWrap: 'anywhere',
                     }}
                   >
@@ -775,7 +786,7 @@ function EditNoteDialog({ open, note, onClose, onSaved, supabase }) {
     setIsSaving(true);
     const { error } = await supabase
       .from('notes')
-      .update({ body: body.trim() })
+      .update({ body })
       .eq('id', note.noteId);
     setIsSaving(false);
 
@@ -841,7 +852,7 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
         type: form.type,
         direction: form.direction,
         subject: cleanText(form.subject) || formatEnum(form.type),
-        body: cleanText(form.body),
+        body: preserveText(form.body),
         occurred_at: form.occurredAt
           ? new Date(form.occurredAt).toISOString()
           : new Date().toISOString(),
@@ -1107,7 +1118,7 @@ function AddNoteDialog({ open, lead, onClose, onSaved, supabase }) {
       lead_id: lead.id,
       contact_id: lead.contact_id,
       company_id: lead.company_id,
-      body: body.trim(),
+      body,
     });
     setIsSaving(false);
     if (!error) {
@@ -1177,7 +1188,7 @@ function AddActivityDialog({ open, lead, onClose, onSaved, supabase }) {
       type: form.type,
       direction: form.direction,
       subject: cleanText(form.subject) || formatEnum(form.type),
-      body: cleanText(form.body),
+      body: preserveText(form.body),
       occurred_at: form.occurredAt
         ? new Date(form.occurredAt).toISOString()
         : new Date().toISOString(),
@@ -1356,8 +1367,8 @@ function ConvertLeadToContactDialog({
         title: cleanText(form.title),
         account_number: cleanText(form.accountNumber),
         email: cleanText(form.email),
-        phone: cleanText(form.phone),
-        mobile_phone: cleanText(form.mobilePhone),
+        phone: cleanPhone(form.phone),
+        mobile_phone: cleanPhone(form.mobilePhone),
         notes: cleanText(form.notes),
       })
       .select('id')
@@ -1461,14 +1472,14 @@ function ConvertLeadToContactDialog({
               <TextField
                 label="Phone"
                 value={form.phone}
-                onChange={handleField(setForm, 'phone')}
+                onChange={handlePhoneChange(setForm, 'phone')}
                 fullWidth
               />
             </Stack>
             <TextField
               label="Mobile Phone"
               value={form.mobilePhone}
-              onChange={handleField(setForm, 'mobilePhone')}
+              onChange={handlePhoneChange(setForm, 'mobilePhone')}
               fullWidth
             />
             <TextField
@@ -1920,6 +1931,10 @@ function leadToDealForm(lead) {
 
 function cleanText(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function preserveText(value) {
+  return typeof value === 'string' && value.trim() ? value : null;
 }
 
 function cleanNumber(value) {

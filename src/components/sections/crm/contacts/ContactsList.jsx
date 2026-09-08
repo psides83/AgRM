@@ -24,6 +24,7 @@ import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
+import { formatPhone } from 'components/sections/crm/shared/phoneFormat';
 
 const ContactsList = () => {
   const supabase = useMemo(() => createClient(), []);
@@ -56,7 +57,7 @@ const ContactsList = () => {
           name,
           company_type
         )
-      `
+      `,
       )
       .order('created_at', { ascending: false });
 
@@ -77,12 +78,12 @@ const ContactsList = () => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'contacts' },
-        () => fetchContacts()
+        () => fetchContacts(),
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'companies' },
-        () => fetchContacts()
+        () => fetchContacts(),
       )
       .subscribe();
 
@@ -114,7 +115,11 @@ const ContactsList = () => {
         ...(contact.tags || []),
       ];
 
-      return values.filter(Boolean).join(' ').toLowerCase().includes(normalizedSearch);
+      return values
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedSearch);
     });
   }, [contacts, search]);
 
@@ -136,7 +141,9 @@ const ContactsList = () => {
                 variant="soft"
                 color="neutral"
                 size="large"
-                startIcon={<IconifyIcon icon="material-symbols:upload-file-outline-rounded" />}
+                startIcon={
+                  <IconifyIcon icon="material-symbols:upload-file-outline-rounded" />
+                }
               >
                 Import CSV
               </Button>
@@ -160,12 +167,16 @@ const ContactsList = () => {
           <Stack
             direction={{ xs: 'column', md: 'row' }}
             spacing={2}
-            sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', md: 'center' } }}
+            sx={{
+              justifyContent: 'space-between',
+              alignItems: { xs: 'stretch', md: 'center' },
+            }}
           >
             <Box>
               <Typography variant="h6">Customer relationships</Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {contacts.length} total contact{contacts.length === 1 ? '' : 's'}
+                {contacts.length} total contact
+                {contacts.length === 1 ? '' : 's'}
               </Typography>
             </Box>
             <TextField
@@ -218,13 +229,18 @@ const ContactsList = () => {
                           {contact.first_name} {contact.last_name}
                         </Link>
                         {contact.title && (
-                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: 'text.secondary' }}
+                          >
                             {contact.title}
                           </Typography>
                         )}
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2">{contact.account_number || '-'}</Typography>
+                        <Typography variant="body2">
+                          {contact.account_number || '-'}
+                        </Typography>
                       </TableCell>
                       <TableCell>
                         {contact.companies?.id ? (
@@ -239,26 +255,52 @@ const ContactsList = () => {
                           <Typography variant="body2">-</Typography>
                         )}
                         {contact.companies?.company_type && (
-                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: 'text.secondary' }}
+                          >
                             {contact.companies.company_type}
                           </Typography>
                         )}
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2">{contact.email || '-'}</Typography>
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                          {contact.mobile_phone || contact.phone || 'No phone'}
+                        <Typography variant="body2">
+                          {contact.email || '-'}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: 'text.secondary' }}
+                        >
+                          {formatPhone(contact.mobile_phone || contact.phone) ||
+                            'No phone'}
                         </Typography>
                       </TableCell>
-                      <TableCell>{[contact.city, contact.region].filter(Boolean).join(', ') || '-'}</TableCell>
                       <TableCell>
-                        <Stack direction="row" spacing={0.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
+                        {[contact.city, contact.region]
+                          .filter(Boolean)
+                          .join(', ') || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          useFlexGap
+                          sx={{ flexWrap: 'wrap' }}
+                        >
                           {(contact.tags || []).length ? (
                             contact.tags.map((tag) => (
-                              <Chip key={tag} label={tag} size="small" variant="soft" />
+                              <Chip
+                                key={tag}
+                                label={tag}
+                                size="small"
+                                variant="soft"
+                              />
                             ))
                           ) : (
-                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            <Typography
+                              variant="caption"
+                              sx={{ color: 'text.secondary' }}
+                            >
                               No tags
                             </Typography>
                           )}
@@ -267,7 +309,9 @@ const ContactsList = () => {
                     </TableRow>
                   ))
                 ) : (
-                  <EmptyRow label={search ? 'No matching contacts' : 'No contacts yet'} />
+                  <EmptyRow
+                    label={search ? 'No matching contacts' : 'No contacts yet'}
+                  />
                 )}
               </TableBody>
             </Table>
@@ -282,7 +326,10 @@ function EmptyRow({ label }) {
   return (
     <TableRow>
       <TableCell colSpan={5}>
-        <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', py: 5 }}>
+        <Typography
+          variant="body2"
+          sx={{ color: 'text.secondary', textAlign: 'center', py: 5 }}
+        >
           {label}
         </Typography>
       </TableCell>

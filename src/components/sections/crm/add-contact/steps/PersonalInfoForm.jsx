@@ -13,6 +13,10 @@ import {
 import Grid from '@mui/material/Grid';
 import * as yup from 'yup';
 import ContactFormSection from 'components/sections/crm/add-contact/ContactFormSection';
+import {
+  formatPhone,
+  registerPhoneInput,
+} from 'components/sections/crm/shared/phoneFormat';
 
 export const personalInfoSchema = yup.object({
   personalInfo: yup.object({
@@ -108,7 +112,7 @@ const PersonalInfoForm = ({ label }) => {
 
   useEffect(() => {
     if (samePhoneAsCompany) {
-      setValue('personalInfo.phone', companyInfo?.phone || '', {
+      setValue('personalInfo.phone', formatPhone(companyInfo?.phone) || '', {
         shouldDirty: true,
       });
     }
@@ -228,7 +232,7 @@ const PersonalInfoForm = ({ label }) => {
                 label="Phone"
                 error={!!errors.personalInfo?.phone}
                 helperText={errors.personalInfo?.phone?.message}
-                {...register('personalInfo.phone')}
+                {...registerPhoneInput(register, 'personalInfo.phone')}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -237,7 +241,7 @@ const PersonalInfoForm = ({ label }) => {
                 label="Mobile Phone"
                 error={!!errors.personalInfo?.mobilePhone}
                 helperText={errors.personalInfo?.mobilePhone?.message}
-                {...register('personalInfo.mobilePhone')}
+                {...registerPhoneInput(register, 'personalInfo.mobilePhone')}
               />
             </Grid>
           </Grid>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
@@ -31,6 +31,10 @@ import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageBreadcrumb from 'components/sections/common/PageBreadcrumb';
 import { findPotentialDuplicates } from 'components/sections/crm/shared/duplicateRecords';
+import {
+  cleanPhone,
+  formatPhone,
+} from 'components/sections/crm/shared/phoneFormat';
 
 const importTypes = [
   { value: 'contacts', label: 'Contacts' },
@@ -97,8 +101,24 @@ const fieldLabels = {
 
 const fieldAliases = {
   firstName: ['first', 'firstname', 'first_name', 'givenname', 'given_name'],
-  lastName: ['last', 'lastname', 'last_name', 'surname', 'familyname', 'family_name'],
-  fullName: ['name', 'fullname', 'full_name', 'contact', 'contactname', 'contact_name', 'customer', 'customername'],
+  lastName: [
+    'last',
+    'lastname',
+    'last_name',
+    'surname',
+    'familyname',
+    'family_name',
+  ],
+  fullName: [
+    'name',
+    'fullname',
+    'full_name',
+    'contact',
+    'contactname',
+    'contact_name',
+    'customer',
+    'customername',
+  ],
   title: ['title', 'jobtitle', 'job_title', 'role', 'position'],
   accountNumber: [
     'account',
@@ -137,35 +157,160 @@ const fieldAliases = {
     'customernumber',
     'customer_number',
   ],
-  email: ['email', 'emailaddress', 'email_address', 'contactemail', 'contact_email'],
-  phone: ['phone', 'phonenumber', 'phone_number', 'officephone', 'office_phone', 'workphone', 'work_phone'],
-  mobilePhone: ['mobile', 'mobilephone', 'mobile_phone', 'cell', 'cellphone', 'cell_phone'],
+  email: [
+    'email',
+    'emailaddress',
+    'email_address',
+    'contactemail',
+    'contact_email',
+  ],
+  phone: [
+    'phone',
+    'phonenumber',
+    'phone_number',
+    'officephone',
+    'office_phone',
+    'workphone',
+    'work_phone',
+  ],
+  mobilePhone: [
+    'mobile',
+    'mobilephone',
+    'mobile_phone',
+    'cell',
+    'cellphone',
+    'cell_phone',
+  ],
   tags: ['tags', 'tag', 'labels', 'categories'],
-  companyName: ['company', 'companyname', 'company_name', 'business', 'businessname', 'account', 'accountname', 'organization', 'organisation'],
-  companyType: ['companytype', 'company_type', 'businesstype', 'business_type', 'accounttype', 'account_type'],
+  companyName: [
+    'company',
+    'companyname',
+    'company_name',
+    'business',
+    'businessname',
+    'account',
+    'accountname',
+    'organization',
+    'organisation',
+  ],
+  companyType: [
+    'companytype',
+    'company_type',
+    'businesstype',
+    'business_type',
+    'accounttype',
+    'account_type',
+  ],
   website: ['website', 'site', 'url', 'web'],
-  companyPhone: ['companyphone', 'company_phone', 'businessphone', 'business_phone', 'accountphone', 'account_phone'],
-  companyEmail: ['companyemail', 'company_email', 'businessemail', 'business_email', 'accountemail', 'account_email'],
-  addressLine1: ['address', 'address1', 'address_1', 'street', 'streetaddress', 'street_address', 'mailingaddress'],
+  companyPhone: [
+    'companyphone',
+    'company_phone',
+    'businessphone',
+    'business_phone',
+    'accountphone',
+    'account_phone',
+  ],
+  companyEmail: [
+    'companyemail',
+    'company_email',
+    'businessemail',
+    'business_email',
+    'accountemail',
+    'account_email',
+  ],
+  addressLine1: [
+    'address',
+    'address1',
+    'address_1',
+    'street',
+    'streetaddress',
+    'street_address',
+    'mailingaddress',
+  ],
   addressLine2: ['address2', 'address_2', 'suite', 'unit', 'apt', 'apartment'],
   city: ['city', 'town'],
   county: ['county', 'parish'],
   region: ['state', 'region', 'province', 'st'],
-  postalCode: ['zip', 'zipcode', 'zip_code', 'postal', 'postalcode', 'postal_code'],
+  postalCode: [
+    'zip',
+    'zipcode',
+    'zip_code',
+    'postal',
+    'postalcode',
+    'postal_code',
+  ],
   country: ['country'],
   latitude: ['lat', 'latitude', 'contactlat', 'contact_lat', 'contactlatitude'],
-  longitude: ['lng', 'lon', 'long', 'longitude', 'contactlng', 'contact_lng', 'contactlongitude'],
-  notes: ['notes', 'note', 'contactnotes', 'contact_notes', 'comments', 'comment'],
+  longitude: [
+    'lng',
+    'lon',
+    'long',
+    'longitude',
+    'contactlng',
+    'contact_lng',
+    'contactlongitude',
+  ],
+  notes: [
+    'notes',
+    'note',
+    'contactnotes',
+    'contact_notes',
+    'comments',
+    'comment',
+  ],
   leadSource: ['source', 'leadsource', 'lead_source', 'origin'],
-  leadAccountNumber: ['leadaccount', 'lead_account', 'leadaccountnumber', 'lead_account_number', 'leadacct', 'lead_acct', 'leadcustomernumber', 'lead_customer_number'],
+  leadAccountNumber: [
+    'leadaccount',
+    'lead_account',
+    'leadaccountnumber',
+    'lead_account_number',
+    'leadacct',
+    'lead_acct',
+    'leadcustomernumber',
+    'lead_customer_number',
+  ],
   leadStatus: ['status', 'leadstatus', 'lead_status'],
   priority: ['priority', 'leadpriority', 'lead_priority'],
-  estimatedBudget: ['budget', 'estimatedbudget', 'estimated_budget', 'amount', 'dealamount', 'deal_amount'],
-  targetPurchaseDate: ['targetpurchasedate', 'target_purchase_date', 'purchasedate', 'purchase_date'],
-  initialContactDate: ['initialcontactdate', 'initial_contact_date', 'firstcontactdate', 'first_contact_date'],
-  initialContactNotes: ['initialcontactnotes', 'initial_contact_notes', 'firstcontactnotes', 'first_contact_notes'],
-  lastContactedAt: ['lastcontacted', 'last_contacted', 'lastcontactedat', 'last_contacted_at'],
-  nextFollowUpAt: ['nextfollowup', 'next_follow_up', 'nextfollowupat', 'next_follow_up_at', 'followup', 'follow_up'],
+  estimatedBudget: [
+    'budget',
+    'estimatedbudget',
+    'estimated_budget',
+    'amount',
+    'dealamount',
+    'deal_amount',
+  ],
+  targetPurchaseDate: [
+    'targetpurchasedate',
+    'target_purchase_date',
+    'purchasedate',
+    'purchase_date',
+  ],
+  initialContactDate: [
+    'initialcontactdate',
+    'initial_contact_date',
+    'firstcontactdate',
+    'first_contact_date',
+  ],
+  initialContactNotes: [
+    'initialcontactnotes',
+    'initial_contact_notes',
+    'firstcontactnotes',
+    'first_contact_notes',
+  ],
+  lastContactedAt: [
+    'lastcontacted',
+    'last_contacted',
+    'lastcontactedat',
+    'last_contacted_at',
+  ],
+  nextFollowUpAt: [
+    'nextfollowup',
+    'next_follow_up',
+    'nextfollowupat',
+    'next_follow_up_at',
+    'followup',
+    'follow_up',
+  ],
   leadLatitude: ['leadlat', 'lead_lat', 'leadlatitude', 'lead_latitude'],
   leadLongitude: ['leadlng', 'lead_lng', 'leadlongitude', 'lead_longitude'],
   leadNotes: ['leadnotes', 'lead_notes', 'leadcomment', 'lead_comment'],
@@ -184,14 +329,20 @@ const CRMImport = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [rowCreateDialog, setRowCreateDialog] = useState(null);
+  const [mergeDialog, setMergeDialog] = useState(null);
   const [isRowSaving, setIsRowSaving] = useState(false);
+  const [isMerging, setIsMerging] = useState(false);
   const [fetchingDetailsRow, setFetchingDetailsRow] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
   const isGoogleSavedCollection = fileTypeLabel === 'Google saved collections';
-  const duplicateCount = previewRows.filter((row) => row.duplicates.length).length;
-  const importableCount = previewRows.filter((row) => isImportableRow(row, includeDuplicates)).length;
+  const duplicateCount = previewRows.filter(
+    (row) => row.duplicates.length,
+  ).length;
+  const importableCount = previewRows.filter((row) =>
+    isImportableRow(row, includeDuplicates),
+  ).length;
 
   const handleFile = async (event) => {
     const file = event.target.files?.[0];
@@ -207,15 +358,37 @@ const CRMImport = () => {
       const text = await file.text();
       const { headers: nextHeaders, rows } = parseCsv(text);
       const isGoogleSavedCollection = isGoogleSavedCollectionsCsv(nextHeaders);
-      const nextFieldMap = isGoogleSavedCollection ? buildGoogleSavedCollectionFieldMap(nextHeaders) : buildFieldMap(nextHeaders);
-      const nextPreviewRows = rows.slice(0, 250).map((row, index) => normalizeImportRow(row, nextHeaders, nextFieldMap, importType, index, { isGoogleSavedCollection }));
-      const rowsWithDuplicates = await markDuplicates(supabase, nextPreviewRows);
+      const nextFieldMap = isGoogleSavedCollection
+        ? buildGoogleSavedCollectionFieldMap(nextHeaders)
+        : buildFieldMap(nextHeaders);
+      const nextPreviewRows = rows
+        .slice(0, 250)
+        .map((row, index) =>
+          normalizeImportRow(
+            row,
+            nextHeaders,
+            nextFieldMap,
+            importType,
+            index,
+            { isGoogleSavedCollection },
+          ),
+        );
+      const rowsWithDuplicates = await markDuplicates(
+        supabase,
+        nextPreviewRows,
+      );
 
       setHeaders(nextHeaders);
       setFieldMap(nextFieldMap);
-      setFileTypeLabel(isGoogleSavedCollection ? 'Google saved collections' : 'CSV');
+      setFileTypeLabel(
+        isGoogleSavedCollection ? 'Google saved collections' : 'CSV',
+      );
       setPreviewRows(rowsWithDuplicates);
-      setCrmTargets(isGoogleSavedCollection ? await fetchCrmTargets(supabase) : { contacts: [], leads: [] });
+      setCrmTargets(
+        isGoogleSavedCollection
+          ? await fetchCrmTargets(supabase)
+          : { contacts: [], leads: [] },
+      );
     } catch (nextError) {
       setError(nextError.message || 'Could not read this CSV file.');
     } finally {
@@ -230,16 +403,24 @@ const CRMImport = () => {
     setIsImporting(true);
 
     try {
-      const { data: userResult, error: userError } = await supabase.auth.getUser();
-      if (userError || !userResult.user) throw new Error('You need to be logged in to import records.');
+      const { data: userResult, error: userError } =
+        await supabase.auth.getUser();
+      if (userError || !userResult.user)
+        throw new Error('You need to be logged in to import records.');
 
       const stats = { contacts: 0, leads: 0, mapUpdates: 0, skipped: 0 };
-      const rowsToImport = previewRows.filter((row) => isImportableRow(row, includeDuplicates));
+      const rowsToImport = previewRows.filter((row) =>
+        isImportableRow(row, includeDuplicates),
+      );
       stats.skipped = previewRows.length - rowsToImport.length;
 
       for (const row of rowsToImport) {
         if (row.isGoogleSavedCollection) {
-          const googleStats = await saveGoogleSavedCollectionRow(supabase, userResult.user.id, row);
+          const googleStats = await saveGoogleSavedCollectionRow(
+            supabase,
+            userResult.user.id,
+            row,
+          );
           stats.contacts += googleStats.contacts;
           stats.leads += googleStats.leads;
           stats.mapUpdates += googleStats.mapUpdates;
@@ -247,7 +428,12 @@ const CRMImport = () => {
         }
 
         const companyId = await saveCompany(supabase, userResult.user.id, row);
-        const contactId = await saveContact(supabase, userResult.user.id, companyId, row);
+        const contactId = await saveContact(
+          supabase,
+          userResult.user.id,
+          companyId,
+          row,
+        );
 
         if (contactId) {
           stats.contacts += 1;
@@ -255,11 +441,24 @@ const CRMImport = () => {
 
         let leadId = null;
         if (row.shouldCreateLead) {
-          leadId = await saveLead(supabase, userResult.user.id, companyId, contactId, row);
+          leadId = await saveLead(
+            supabase,
+            userResult.user.id,
+            companyId,
+            contactId,
+            row,
+          );
           stats.leads += 1;
         }
 
-        await saveInitialContactActivity(supabase, userResult.user.id, companyId, contactId, leadId, row);
+        await saveInitialContactActivity(
+          supabase,
+          userResult.user.id,
+          companyId,
+          contactId,
+          leadId,
+          row,
+        );
       }
 
       setResult(stats);
@@ -271,7 +470,11 @@ const CRMImport = () => {
   };
 
   const updateGoogleImportRow = (rowIndex, changes) => {
-    setPreviewRows((rows) => rows.map((row) => (row.index === rowIndex ? { ...row, ...changes } : row)));
+    setPreviewRows((rows) =>
+      rows.map((row) =>
+        row.index === rowIndex ? { ...row, ...changes } : row,
+      ),
+    );
   };
 
   const rebuildPreviewRows = async (nextFieldMap) => {
@@ -280,9 +483,16 @@ const CRMImport = () => {
 
     try {
       const nextRows = previewRows.map((row) =>
-        normalizeImportRow(row.raw, headers, nextFieldMap, importType, row.index, {
-          isGoogleSavedCollection,
-        }),
+        normalizeImportRow(
+          row.raw,
+          headers,
+          nextFieldMap,
+          importType,
+          row.index,
+          {
+            isGoogleSavedCollection,
+          },
+        ),
       );
       setPreviewRows(await markDuplicates(supabase, nextRows));
     } catch (nextError) {
@@ -307,23 +517,53 @@ const CRMImport = () => {
     setIsRowSaving(true);
 
     try {
-      const { data: userResult, error: userError } = await supabase.auth.getUser();
-      if (userError || !userResult.user) throw new Error('You need to be logged in to import records.');
+      const { data: userResult, error: userError } =
+        await supabase.auth.getUser();
+      if (userError || !userResult.user)
+        throw new Error('You need to be logged in to import records.');
 
-      const normalizedRow = normalizeImportRow(row.raw, headers, rowFieldMap, createType, row.index, {
-        isGoogleSavedCollection: row.isGoogleSavedCollection,
-      });
+      const normalizedRow = normalizeImportRow(
+        row.raw,
+        headers,
+        rowFieldMap,
+        createType,
+        row.index,
+        {
+          isGoogleSavedCollection: row.isGoogleSavedCollection,
+        },
+      );
       const createRow = mergeFetchedGoogleDetails(row, normalizedRow);
 
       if (createType === 'contacts') {
-        const contactRow = row.isGoogleSavedCollection ? googleRowToContact(createRow) : { ...createRow, shouldCreateContact: true, shouldCreateLead: false };
-        if (!contactRow.firstName || !contactRow.lastName) throw new Error('Choose fields for first and last name before creating a contact.');
-        const companyId = await saveCompany(supabase, userResult.user.id, contactRow);
+        const contactRow = row.isGoogleSavedCollection
+          ? googleRowToContact(createRow)
+          : {
+              ...createRow,
+              shouldCreateContact: true,
+              shouldCreateLead: false,
+            };
+        if (!contactRow.firstName || !contactRow.lastName)
+          throw new Error(
+            'Choose fields for first and last name before creating a contact.',
+          );
+        const companyId = await saveCompany(
+          supabase,
+          userResult.user.id,
+          contactRow,
+        );
         await saveContact(supabase, userResult.user.id, companyId, contactRow);
         setResult({ contacts: 1, leads: 0, mapUpdates: 0, skipped: 0 });
       } else {
-        const leadRow = { ...createRow, shouldCreateContact: false, shouldCreateLead: true };
-        const companyId = await saveCompany(supabase, userResult.user.id, leadRow);
+        const leadRow = {
+          ...createRow,
+          shouldCreateContact: false,
+          shouldCreateLead: true,
+        };
+        const companyId = await saveCompany(
+          supabase,
+          userResult.user.id,
+          leadRow,
+        );
         await saveLead(supabase, userResult.user.id, companyId, null, leadRow);
         setResult({ contacts: 0, leads: 1, mapUpdates: 0, skipped: 0 });
       }
@@ -336,6 +576,70 @@ const CRMImport = () => {
     }
   };
 
+  const handleMergeRow = async ({ row, match, values }) => {
+    setError(null);
+    setIsMerging(true);
+
+    try {
+      if (match.type === 'contact') {
+        const { error: mergeError } = await supabase
+          .from('contacts')
+          .update({
+            first_name: cleanText(values.firstName),
+            last_name: cleanText(values.lastName),
+            title: cleanText(values.title),
+            account_number: cleanText(values.accountNumber),
+            email: cleanText(values.email),
+            phone: cleanPhone(values.phone),
+            mobile_phone: cleanPhone(values.mobilePhone),
+          })
+          .eq('id', match.id);
+
+        if (mergeError) throw mergeError;
+      }
+
+      if (match.type === 'lead') {
+        const { error: mergeError } = await supabase
+          .from('leads')
+          .update({
+            source: cleanText(values.leadSource),
+            account_number: cleanText(values.leadAccountNumber),
+            status: values.leadStatus || 'new',
+            priority: normalizePriority(values.priority),
+            estimated_budget: values.estimatedBudget || null,
+            next_follow_up_at: values.nextFollowUpAt || null,
+            latitude: cleanNumber(values.leadLatitude ?? values.latitude),
+            longitude: cleanNumber(values.leadLongitude ?? values.longitude),
+            notes: cleanText(values.leadNotes || values.notes),
+          })
+          .eq('id', match.id);
+
+        if (mergeError) throw mergeError;
+      }
+
+      setPreviewRows((rows) =>
+        rows.map((currentRow) =>
+          currentRow.index === row.index
+            ? {
+                ...currentRow,
+                mergedInto: {
+                  id: match.id,
+                  type: match.type,
+                  title: match.title,
+                },
+                duplicates: [],
+              }
+            : currentRow,
+        ),
+      );
+      setMergeDialog(null);
+    } catch (nextError) {
+      setError(nextError.message || 'Could not merge this row.');
+    } finally {
+      setIsMerging(false);
+    }
+  };
+
   const handleFetchGoogleDetails = async (row) => {
     setError(null);
     setFetchingDetailsRow(row.index);
@@ -345,15 +649,23 @@ const CRMImport = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: row.companyName || row.fullName || row.raw.Title || row.raw.title,
+          title:
+            row.companyName || row.fullName || row.raw.Title || row.raw.title,
           url: row.website,
         }),
       });
       const data = await response.json();
 
-      if (!response.ok) throw new Error(data.error || 'Could not fetch Google place details.');
+      if (!response.ok)
+        throw new Error(data.error || 'Could not fetch Google place details.');
 
-      setPreviewRows((rows) => rows.map((currentRow) => (currentRow.index === row.index ? applyGooglePlaceDetails(currentRow, data.place) : currentRow)));
+      setPreviewRows((rows) =>
+        rows.map((currentRow) =>
+          currentRow.index === row.index
+            ? applyGooglePlaceDetails(currentRow, data.place)
+            : currentRow,
+        ),
+      );
     } catch (nextError) {
       setError(nextError.message || 'Could not fetch Google place details.');
     } finally {
@@ -400,7 +712,9 @@ const CRMImport = () => {
             underline="none"
             variant="soft"
             color="neutral"
-            startIcon={<IconifyIcon icon="material-symbols:person-add-outline-rounded" />}
+            startIcon={
+              <IconifyIcon icon="material-symbols:person-add-outline-rounded" />
+            }
             sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
           >
             Add Manually
@@ -428,23 +742,56 @@ const CRMImport = () => {
               }}
             >
               <Box sx={{ minWidth: 0 }}>
-                <Typography variant="h6">{fileName ? `${fileTypeLabel || 'CSV'} loaded` : 'Upload File'}</Typography>
-                <Typography variant="body2" noWrap={Boolean(fileName)} title={fileName || undefined} sx={{ maxWidth: { xs: 1, md: 560 }, color: 'text.secondary' }}>
-                  {fileName || 'Upload a CSV or Google Saved Collections export.'}
+                <Typography variant="h6">
+                  {fileName
+                    ? `${fileTypeLabel || 'CSV'} loaded`
+                    : 'Upload File'}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  noWrap={Boolean(fileName)}
+                  title={fileName || undefined}
+                  sx={{ maxWidth: { xs: 1, md: 560 }, color: 'text.secondary' }}
+                >
+                  {fileName ||
+                    'Upload a CSV or Google Saved Collections export.'}
                 </Typography>
               </Box>
 
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ flexShrink: 0 }}>
-                <TextField select label="Import Type" value={importType} onChange={(event) => setImportType(event.target.value)} sx={{ minWidth: { xs: 1, sm: 220 } }}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={2}
+                sx={{ flexShrink: 0 }}
+              >
+                <TextField
+                  select
+                  label="Import Type"
+                  value={importType}
+                  onChange={(event) => setImportType(event.target.value)}
+                  sx={{ minWidth: { xs: 1, sm: 220 } }}
+                >
                   {importTypes.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
                       {option.label}
                     </MenuItem>
                   ))}
                 </TextField>
-                <Button component="label" variant="contained" startIcon={<IconifyIcon icon="material-symbols:upload-file-rounded" />} sx={{ minHeight: 48 }}>
+                <Button
+                  component="label"
+                  variant="contained"
+                  startIcon={
+                    <IconifyIcon icon="material-symbols:upload-file-rounded" />
+                  }
+                  sx={{ minHeight: 48 }}
+                >
                   Choose File
-                  <Box component="input" type="file" accept=".csv,text/csv" hidden onChange={handleFile} />
+                  <Box
+                    component="input"
+                    type="file"
+                    accept=".csv,text/csv"
+                    hidden
+                    onChange={handleFile}
+                  />
                 </Button>
               </Stack>
             </Stack>
@@ -457,7 +804,10 @@ const CRMImport = () => {
               Imported {result.contacts} contact
               {result.contacts === 1 ? '' : 's'} and {result.leads} lead
               {result.leads === 1 ? '' : 's'}
-              {result.mapUpdates ? `, and updated ${result.mapUpdates} map ${result.mapUpdates === 1 ? 'record' : 'records'}` : ''}. Skipped {result.skipped} row
+              {result.mapUpdates
+                ? `, and updated ${result.mapUpdates} map ${result.mapUpdates === 1 ? 'record' : 'records'}`
+                : ''}
+              . Skipped {result.skipped} row
               {result.skipped === 1 ? '' : 's'}.
             </Alert>
           )}
@@ -494,9 +844,21 @@ const CRMImport = () => {
                     }}
                   >
                     <SummaryStat label="Rows" value={previewRows.length} />
-                    <SummaryStat label="Ready" value={importableCount} color="success" />
-                    <SummaryStat label="Review" value={previewRows.filter((row) => !row.isValid).length} color="warning" />
-                    <SummaryStat label="Duplicates" value={duplicateCount} color="warning" />
+                    <SummaryStat
+                      label="Ready"
+                      value={importableCount}
+                      color="success"
+                    />
+                    <SummaryStat
+                      label="Review"
+                      value={previewRows.filter((row) => !row.isValid).length}
+                      color="warning"
+                    />
+                    <SummaryStat
+                      label="Duplicates"
+                      value={duplicateCount}
+                      color="warning"
+                    />
                   </Box>
 
                   <Stack
@@ -508,11 +870,24 @@ const CRMImport = () => {
                     }}
                   >
                     <FormControlLabel
-                      control={<Checkbox checked={includeDuplicates} onChange={(event) => setIncludeDuplicates(event.target.checked)} />}
+                      control={
+                        <Checkbox
+                          checked={includeDuplicates}
+                          onChange={(event) =>
+                            setIncludeDuplicates(event.target.checked)
+                          }
+                        />
+                      }
                       label="Include possible duplicates"
                       sx={{ m: 0 }}
                     />
-                    <Button variant="contained" onClick={handleImport} loading={isImporting} disabled={!importableCount || isAnalyzing} sx={{ minHeight: 44 }}>
+                    <Button
+                      variant="contained"
+                      onClick={handleImport}
+                      loading={isImporting}
+                      disabled={!importableCount || isAnalyzing}
+                      sx={{ minHeight: 44 }}
+                    >
                       Import {importableCount} Row
                       {importableCount === 1 ? '' : 's'}
                     </Button>
@@ -547,7 +922,14 @@ const CRMImport = () => {
                     }}
                   >
                     {headers.map((header) => (
-                      <FieldMapping key={header} header={header} field={fieldMap[header]} onChange={(field) => handleFieldMapChange(header, field)} />
+                      <FieldMapping
+                        key={header}
+                        header={header}
+                        field={fieldMap[header]}
+                        onChange={(field) =>
+                          handleFieldMapChange(header, field)
+                        }
+                      />
                     ))}
                   </Box>
                 </Stack>
@@ -568,12 +950,17 @@ const CRMImport = () => {
                 >
                   <SectionHeader title="Preview Rows" />
                   {previewRows.length > 25 && (
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: 'text.secondary' }}
+                    >
                       Showing 25 of {previewRows.length} rows.
                     </Typography>
                   )}
                 </Stack>
-                <TableContainer sx={{ width: 1, maxWidth: 1, overflowX: 'auto' }}>
+                <TableContainer
+                  sx={{ width: 1, maxWidth: 1, overflowX: 'auto' }}
+                >
                   <Table
                     sx={{
                       minWidth: isGoogleSavedCollection ? 1690 : 1390,
@@ -586,10 +973,16 @@ const CRMImport = () => {
                         <TableCell sx={{ width: 160 }}>Account #</TableCell>
                         <TableCell sx={{ width: 260 }}>Contact</TableCell>
                         <TableCell sx={{ width: 260 }}>Company</TableCell>
-                        <TableCell sx={{ width: isGoogleSavedCollection ? 220 : 180 }}>{isGoogleSavedCollection ? 'Action' : 'Lead'}</TableCell>
-                        {isGoogleSavedCollection && <TableCell sx={{ width: 260 }}>Target</TableCell>}
+                        <TableCell
+                          sx={{ width: isGoogleSavedCollection ? 220 : 180 }}
+                        >
+                          {isGoogleSavedCollection ? 'Action' : 'Lead'}
+                        </TableCell>
+                        {isGoogleSavedCollection && (
+                          <TableCell sx={{ width: 260 }}>Target</TableCell>
+                        )}
                         <TableCell sx={{ width: 190 }}>Coordinates</TableCell>
-                        <TableCell sx={{ width: 220 }}>Actions</TableCell>
+                        <TableCell sx={{ width: 260 }}>Actions</TableCell>
                         <TableCell sx={{ width: 128 }}>Status</TableCell>
                       </TableRow>
                     </TableHead>
@@ -598,7 +991,16 @@ const CRMImport = () => {
                         <TableRow key={row.index}>
                           <TableCell>{row.index + 1}</TableCell>
                           <PreviewTableCell value={row.accountNumber || '-'} />
-                          <PreviewTableCell value={[row.firstName, row.lastName].filter(Boolean).join(' ') || '-'} secondary={row.email || row.phone || row.mobilePhone} />
+                          <PreviewTableCell
+                            value={
+                              [row.firstName, row.lastName]
+                                .filter(Boolean)
+                                .join(' ') || '-'
+                            }
+                            secondary={
+                              row.email || row.phone || row.mobilePhone
+                            }
+                          />
                           <PreviewTableCell value={row.companyName || '-'} />
                           {isGoogleSavedCollection ? (
                             <>
@@ -616,7 +1018,10 @@ const CRMImport = () => {
                                   fullWidth
                                 >
                                   {googleImportActions.map((option) => (
-                                    <MenuItem key={option.value} value={option.value}>
+                                    <MenuItem
+                                      key={option.value}
+                                      value={option.value}
+                                    >
                                       {option.label}
                                     </MenuItem>
                                   ))}
@@ -635,7 +1040,18 @@ const CRMImport = () => {
                               </TableCell>
                             </>
                           ) : (
-                            <PreviewTableCell value={row.shouldCreateLead ? [row.leadAccountNumber, row.leadSource || 'Lead'].filter(Boolean).join(' · ') : '-'} />
+                            <PreviewTableCell
+                              value={
+                                row.shouldCreateLead
+                                  ? [
+                                      row.leadAccountNumber,
+                                      row.leadSource || 'Lead',
+                                    ]
+                                      .filter(Boolean)
+                                      .join(' · ')
+                                  : '-'
+                              }
+                            />
                           )}
                           <TableCell>
                             <CoordinatesCell row={row} />
@@ -643,17 +1059,48 @@ const CRMImport = () => {
                           <TableCell>
                             <Stack direction="row" spacing={1}>
                               {isGoogleSavedCollection && (
-                                <Button size="small" variant="soft" loading={fetchingDetailsRow === row.index} onClick={() => handleFetchGoogleDetails(row)}>
+                                <Button
+                                  size="small"
+                                  variant="soft"
+                                  loading={fetchingDetailsRow === row.index}
+                                  onClick={() => handleFetchGoogleDetails(row)}
+                                >
                                   Fetch
                                 </Button>
                               )}
-                              <Button
-                                size="small"
-                                variant="soft"
-                                onClick={() => setRowCreateDialog({ row, createType: row.googleAction === 'create_contact' ? 'contacts' : 'leads', rowFieldMap: { ...fieldMap } })}
-                              >
-                                Create
-                              </Button>
+                              {mergeableDuplicates(row).length > 0 && (
+                                <Button
+                                  size="small"
+                                  variant="soft"
+                                  color="warning"
+                                  onClick={() =>
+                                    setMergeDialog({
+                                      row,
+                                      match: mergeableDuplicates(row)[0],
+                                    })
+                                  }
+                                >
+                                  Merge
+                                </Button>
+                              )}
+                              {!row.mergedInto && (
+                                <Button
+                                  size="small"
+                                  variant="soft"
+                                  onClick={() =>
+                                    setRowCreateDialog({
+                                      row,
+                                      createType:
+                                        row.googleAction === 'create_contact'
+                                          ? 'contacts'
+                                          : 'leads',
+                                      rowFieldMap: { ...fieldMap },
+                                    })
+                                  }
+                                >
+                                  Create
+                                </Button>
+                              )}
                             </Stack>
                           </TableCell>
                           <TableCell>
@@ -674,9 +1121,22 @@ const CRMImport = () => {
         value={rowCreateDialog}
         headers={headers}
         onClose={() => setRowCreateDialog(null)}
-        onChange={(changes) => setRowCreateDialog((current) => (current ? { ...current, ...changes } : current))}
+        onChange={(changes) =>
+          setRowCreateDialog((current) =>
+            current ? { ...current, ...changes } : current,
+          )
+        }
         onCreate={handleCreateSingleRow}
         loading={isRowSaving}
+      />
+      <MergeDuplicateDialog
+        open={Boolean(mergeDialog)}
+        row={mergeDialog?.row}
+        initialMatch={mergeDialog?.match}
+        matches={mergeableDuplicates(mergeDialog?.row)}
+        loading={isMerging}
+        onClose={() => setMergeDialog(null)}
+        onMerge={handleMergeRow}
       />
     </Box>
   );
@@ -722,7 +1182,11 @@ function SummaryStat({ label, value, color = 'primary' }) {
         bgcolor: palette.bgcolor,
       }}
     >
-      <Typography variant="caption" noWrap sx={{ display: 'block', color: 'text.secondary' }}>
+      <Typography
+        variant="caption"
+        noWrap
+        sx={{ display: 'block', color: 'text.secondary' }}
+      >
         {label}
       </Typography>
       <Typography variant="h6" sx={{ lineHeight: 1.2, color: palette.color }}>
@@ -789,7 +1253,12 @@ function FieldMapping({ header, field, onChange }) {
 function PreviewTableCell({ value, secondary }) {
   return (
     <TableCell sx={{ minWidth: 0 }}>
-      <Typography variant="subtitle2" noWrap title={value} sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      <Typography
+        variant="subtitle2"
+        noWrap
+        title={value}
+        sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+      >
         {value}
       </Typography>
       {secondary && (
@@ -815,13 +1284,26 @@ function CoordinatesCell({ row }) {
   const hasCoordinates = row.latitude !== null && row.longitude !== null;
 
   return (
-    <Typography variant="body2" noWrap title={hasCoordinates ? `${row.latitude}, ${row.longitude}` : undefined} sx={{ color: hasCoordinates ? 'text.primary' : 'text.secondary' }}>
+    <Typography
+      variant="body2"
+      noWrap
+      title={hasCoordinates ? `${row.latitude}, ${row.longitude}` : undefined}
+      sx={{ color: hasCoordinates ? 'text.primary' : 'text.secondary' }}
+    >
       {hasCoordinates ? `${row.latitude}, ${row.longitude}` : 'Not found'}
     </Typography>
   );
 }
 
-function CreateRowDialog({ open, value, headers, onClose, onChange, onCreate, loading }) {
+function CreateRowDialog({
+  open,
+  value,
+  headers,
+  onClose,
+  onChange,
+  onCreate,
+  loading,
+}) {
   const row = value?.row;
   const createType = value?.createType || 'leads';
   const rowFieldMap = value?.rowFieldMap || {};
@@ -844,19 +1326,42 @@ function CreateRowDialog({ open, value, headers, onClose, onChange, onCreate, lo
       <DialogTitle>Create From Row {row.index + 1}</DialogTitle>
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ pt: 1, minWidth: 0 }}>
-          <TextField select label="Create" value={createType} onChange={(event) => onChange({ createType: event.target.value })} fullWidth>
+          <TextField
+            select
+            label="Create"
+            value={createType}
+            onChange={(event) => onChange({ createType: event.target.value })}
+            fullWidth
+          >
             <MenuItem value="leads">Lead</MenuItem>
             <MenuItem value="contacts">Contact</MenuItem>
           </TextField>
 
           {fetchedDetails.length > 0 && (
-            <Box sx={{ border: 1, borderColor: 'dividerLight', borderRadius: 1, p: 1.5 }}>
+            <Box
+              sx={{
+                border: 1,
+                borderColor: 'dividerLight',
+                borderRadius: 1,
+                p: 1.5,
+              }}
+            >
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
                 Fetched Google Details
               </Typography>
-              <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+              <Stack
+                direction="row"
+                spacing={1}
+                useFlexGap
+                sx={{ flexWrap: 'wrap' }}
+              >
                 {fetchedDetails.map((item) => (
-                  <Chip key={item.label} label={`${item.label}: ${item.value}`} size="small" variant="soft" />
+                  <Chip
+                    key={item.label}
+                    label={`${item.label}: ${item.value}`}
+                    size="small"
+                    variant="soft"
+                  />
                 ))}
               </Stack>
             </Box>
@@ -865,22 +1370,52 @@ function CreateRowDialog({ open, value, headers, onClose, onChange, onCreate, lo
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(220px, 260px)' },
+              gridTemplateColumns: {
+                xs: '1fr',
+                md: 'minmax(0, 1fr) minmax(220px, 260px)',
+              },
               gap: 1,
               minWidth: 0,
             }}
           >
             {headers.map((header) => (
               <Box key={header} sx={{ display: 'contents' }}>
-                <Box sx={{ minWidth: 0, border: 1, borderColor: 'dividerLight', borderRadius: 1, px: 1.5, py: 1 }}>
-                  <Typography variant="caption" noWrap title={header} sx={{ display: 'block', color: 'text.secondary' }}>
+                <Box
+                  sx={{
+                    minWidth: 0,
+                    border: 1,
+                    borderColor: 'dividerLight',
+                    borderRadius: 1,
+                    px: 1.5,
+                    py: 1,
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    noWrap
+                    title={header}
+                    sx={{ display: 'block', color: 'text.secondary' }}
+                  >
                     {header}
                   </Typography>
-                  <Typography variant="body2" noWrap title={row.raw[header] || ''}>
+                  <Typography
+                    variant="body2"
+                    noWrap
+                    title={row.raw[header] || ''}
+                  >
                     {row.raw[header] || '-'}
                   </Typography>
                 </Box>
-                <TextField select size="small" label="Goes To" value={rowFieldMap[header] || ''} onChange={(event) => handleFieldChange(header, event.target.value)} fullWidth>
+                <TextField
+                  select
+                  size="small"
+                  label="Goes To"
+                  value={rowFieldMap[header] || ''}
+                  onChange={(event) =>
+                    handleFieldChange(header, event.target.value)
+                  }
+                  fullWidth
+                >
                   <MenuItem value="">Ignored</MenuItem>
                   {Object.entries(fieldLabels).map(([field, label]) => (
                     <MenuItem key={field} value={field}>
@@ -897,7 +1432,11 @@ function CreateRowDialog({ open, value, headers, onClose, onChange, onCreate, lo
         <Button color="neutral" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="contained" loading={loading} onClick={() => onCreate({ row, createType, rowFieldMap })}>
+        <Button
+          variant="contained"
+          loading={loading}
+          onClick={() => onCreate({ row, createType, rowFieldMap })}
+        >
           Create {createType === 'contacts' ? 'Contact' : 'Lead'}
         </Button>
       </DialogActions>
@@ -911,19 +1450,225 @@ function googleDetailItems(row) {
   return [
     { label: 'Company', value: row.companyName },
     { label: 'Phone', value: row.companyPhone },
-    { label: 'Address', value: [row.addressLine1, row.city, row.region, row.postalCode].filter(Boolean).join(', ') },
+    {
+      label: 'Address',
+      value: [row.addressLine1, row.city, row.region, row.postalCode]
+        .filter(Boolean)
+        .join(', '),
+    },
     { label: 'County', value: row.county },
-    { label: 'Coordinates', value: row.latitude !== null && row.longitude !== null ? `${row.latitude}, ${row.longitude}` : '' },
+    {
+      label: 'Coordinates',
+      value:
+        row.latitude !== null && row.longitude !== null
+          ? `${row.latitude}, ${row.longitude}`
+          : '',
+    },
   ].filter((item) => cleanText(item.value));
+}
+
+function MergeDuplicateDialog({
+  open,
+  row,
+  initialMatch,
+  matches,
+  loading,
+  onClose,
+  onMerge,
+}) {
+  const [matchKey, setMatchKey] = useState('');
+  const [fieldChoices, setFieldChoices] = useState({});
+
+  const selectedMatch =
+    matches.find((match) => mergeMatchKey(match) === matchKey) ||
+    initialMatch ||
+    matches[0];
+  const fields = mergeFieldsFor(selectedMatch, row);
+  const matchesSignature = matches.map(mergeMatchKey).join('|');
+
+  useEffect(() => {
+    if (!open) return;
+
+    const nextMatch = initialMatch || matches[0];
+    setMatchKey(mergeMatchKey(nextMatch));
+    setFieldChoices(defaultMergeChoices(nextMatch, row));
+  }, [initialMatch, matchesSignature, open, row]);
+
+  useEffect(() => {
+    if (!open || !selectedMatch) return;
+    setFieldChoices(defaultMergeChoices(selectedMatch, row));
+  }, [matchKey]);
+
+  if (!row || !selectedMatch) return null;
+
+  const handleChoiceChange = (field, mode) => {
+    setFieldChoices((current) => ({
+      ...current,
+      [field.key]: {
+        ...(current[field.key] || {}),
+        mode,
+        custom:
+          mode === 'custom'
+            ? current[field.key]?.custom || resolveMergeValue(field, 'import')
+            : current[field.key]?.custom || '',
+      },
+    }));
+  };
+
+  const handleCustomChange = (field, value) => {
+    setFieldChoices((current) => ({
+      ...current,
+      [field.key]: {
+        ...(current[field.key] || {}),
+        mode: 'custom',
+        custom: value,
+      },
+    }));
+  };
+
+  const handleMerge = () => {
+    const values = fields.reduce((nextValues, field) => {
+      const choice = fieldChoices[field.key] || {};
+      return {
+        ...nextValues,
+        [field.key]:
+          choice.mode === 'custom'
+            ? choice.custom
+            : resolveMergeValue(field, choice.mode || 'existing'),
+      };
+    }, {});
+
+    onMerge({ row, match: selectedMatch, values });
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+      <DialogTitle>Merge Duplicate Row {row.index + 1}</DialogTitle>
+      <DialogContent>
+        <Stack direction="column" spacing={2} sx={{ pt: 1, minWidth: 0 }}>
+          <TextField
+            select
+            label="Merge Into"
+            value={mergeMatchKey(selectedMatch)}
+            onChange={(event) => setMatchKey(event.target.value)}
+            fullWidth
+          >
+            {matches.map((match) => (
+              <MenuItem key={mergeMatchKey(match)} value={mergeMatchKey(match)}>
+                {match.title} - {formatEnum(match.type)}
+                {match.reasons.length ? ` (${match.reasons.join(', ')})` : ''}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                md: '150px minmax(0, 1fr) minmax(0, 1fr) 160px',
+              },
+              gap: 1,
+              alignItems: 'center',
+              minWidth: 0,
+            }}
+          >
+            {fields.map((field) => {
+              const choice = fieldChoices[field.key] || {};
+              return (
+                <Box key={field.key} sx={{ display: 'contents' }}>
+                  <Typography variant="subtitle2">{field.label}</Typography>
+                  <MergeValueBox label="Existing" value={field.existing} />
+                  <MergeValueBox label="Import" value={field.incoming} />
+                  <Stack direction="column" spacing={1} sx={{ minWidth: 0 }}>
+                    <TextField
+                      select
+                      size="small"
+                      label="Use"
+                      value={choice.mode || 'existing'}
+                      onChange={(event) =>
+                        handleChoiceChange(field, event.target.value)
+                      }
+                      fullWidth
+                    >
+                      <MenuItem value="existing">Existing</MenuItem>
+                      <MenuItem value="import">Import</MenuItem>
+                      <MenuItem value="custom">Custom</MenuItem>
+                    </TextField>
+                    {choice.mode === 'custom' && (
+                      <TextField
+                        size="small"
+                        label="Custom value"
+                        value={choice.custom || ''}
+                        onChange={(event) =>
+                          handleCustomChange(field, event.target.value)
+                        }
+                        fullWidth
+                      />
+                    )}
+                  </Stack>
+                </Box>
+              );
+            })}
+          </Box>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button color="neutral" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="contained" loading={loading} onClick={handleMerge}>
+          Save Merge
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+function MergeValueBox({ label, value }) {
+  return (
+    <Box
+      sx={{
+        minWidth: 0,
+        border: 1,
+        borderColor: 'dividerLight',
+        borderRadius: 1,
+        px: 1.25,
+        py: 0.75,
+      }}
+    >
+      <Typography
+        variant="caption"
+        sx={{ color: 'text.secondary', display: 'block' }}
+      >
+        {label}
+      </Typography>
+      <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
+        {value || '-'}
+      </Typography>
+    </Box>
+  );
 }
 
 function GoogleTargetSelect({ row, crmTargets, onChange }) {
   const action = row.googleAction || 'create_lead';
-  const options = action === 'attach_contact' ? crmTargets.contacts : action === 'attach_lead' ? crmTargets.leads : [];
+  const options =
+    action === 'attach_contact'
+      ? crmTargets.contacts
+      : action === 'attach_lead'
+        ? crmTargets.leads
+        : [];
   const disabled = !['attach_contact', 'attach_lead'].includes(action);
 
   return (
-    <TextField select size="small" value={disabled ? '' : row.googleTargetId || ''} onChange={(event) => onChange(event.target.value)} disabled={disabled} fullWidth>
+    <TextField
+      select
+      size="small"
+      value={disabled ? '' : row.googleTargetId || ''}
+      onChange={(event) => onChange(event.target.value)}
+      disabled={disabled}
+      fullWidth
+    >
       <MenuItem value="">{disabled ? 'Not needed' : 'Select target'}</MenuItem>
       {options.map((target) => (
         <MenuItem key={target.id} value={target.id}>
@@ -935,26 +1680,216 @@ function GoogleTargetSelect({ row, crmTargets, onChange }) {
 }
 
 function RowStatus({ row }) {
-  if (!row.isValid) return <Chip label={row.errors.join(', ')} size="small" color="warning" variant="soft" />;
-  if (row.googleAction === 'skip') return <Chip label="Skipped" size="small" color="neutral" variant="soft" />;
-  if (['attach_contact', 'attach_lead'].includes(row.googleAction) && !row.googleTargetId) return <Chip label="Select target" size="small" color="warning" variant="soft" />;
-  if (row.duplicates.length) return <Chip label="Possible duplicate" size="small" color="warning" variant="soft" />;
+  if (row.mergedInto)
+    return (
+      <Chip
+        label={`Merged ${formatEnum(row.mergedInto.type)}`}
+        size="small"
+        color="success"
+        variant="soft"
+      />
+    );
+  if (!row.isValid)
+    return (
+      <Chip
+        label={row.errors.join(', ')}
+        size="small"
+        color="warning"
+        variant="soft"
+      />
+    );
+  if (row.googleAction === 'skip')
+    return <Chip label="Skipped" size="small" color="neutral" variant="soft" />;
+  if (
+    ['attach_contact', 'attach_lead'].includes(row.googleAction) &&
+    !row.googleTargetId
+  )
+    return (
+      <Chip label="Select target" size="small" color="warning" variant="soft" />
+    );
+  if (row.duplicates.length)
+    return (
+      <Chip
+        label="Possible duplicate"
+        size="small"
+        color="warning"
+        variant="soft"
+      />
+    );
   return <Chip label="Ready" size="small" color="success" variant="soft" />;
 }
 
 function isImportableRow(row, includeDuplicates) {
+  if (row.mergedInto) return false;
   if (!row.isValid) return false;
   if (row.googleAction === 'skip') return false;
-  if (['attach_contact', 'attach_lead'].includes(row.googleAction) && !row.googleTargetId) return false;
-  return includeDuplicates || !row.duplicates.length || ['attach_contact', 'attach_lead'].includes(row.googleAction);
+  if (
+    ['attach_contact', 'attach_lead'].includes(row.googleAction) &&
+    !row.googleTargetId
+  )
+    return false;
+  return (
+    includeDuplicates ||
+    !row.duplicates.length ||
+    ['attach_contact', 'attach_lead'].includes(row.googleAction)
+  );
+}
+
+function mergeableDuplicates(row) {
+  return (row?.duplicates || []).filter((duplicate) =>
+    ['contact', 'lead'].includes(duplicate.type),
+  );
+}
+
+function mergeMatchKey(match) {
+  return match ? `${match.type}:${match.id}` : '';
+}
+
+function defaultMergeChoices(match, row) {
+  return mergeFieldsFor(match, row).reduce((choices, field) => {
+    const existing = cleanText(field.existing);
+    const incoming = cleanText(field.incoming);
+    return {
+      ...choices,
+      [field.key]: {
+        mode: !existing && incoming ? 'import' : 'existing',
+        custom: '',
+      },
+    };
+  }, {});
+}
+
+function resolveMergeValue(field, mode) {
+  return mode === 'import' ? field.incoming : field.existing;
+}
+
+function mergeFieldsFor(match, row) {
+  if (!match || !row) return [];
+  if (match.type === 'contact') return contactMergeFields(match.record, row);
+  if (match.type === 'lead') return leadMergeFields(match.record, row);
+  return [];
+}
+
+function contactMergeFields(record = {}, row) {
+  return [
+    {
+      key: 'firstName',
+      label: 'First Name',
+      existing: record.first_name,
+      incoming: row.firstName,
+    },
+    {
+      key: 'lastName',
+      label: 'Last Name',
+      existing: record.last_name,
+      incoming: row.lastName,
+    },
+    {
+      key: 'title',
+      label: 'Role',
+      existing: record.title,
+      incoming: row.title,
+    },
+    {
+      key: 'accountNumber',
+      label: 'Account #',
+      existing: record.account_number,
+      incoming: row.accountNumber,
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      existing: record.email,
+      incoming: row.email,
+    },
+    {
+      key: 'phone',
+      label: 'Phone',
+      existing: formatPhone(record.phone),
+      incoming: formatPhone(row.phone),
+    },
+    {
+      key: 'mobilePhone',
+      label: 'Mobile',
+      existing: formatPhone(record.mobile_phone),
+      incoming: formatPhone(row.mobilePhone),
+    },
+  ];
+}
+
+function leadMergeFields(record = {}, row) {
+  return [
+    {
+      key: 'leadSource',
+      label: 'Source',
+      existing: record.source,
+      incoming: row.leadSource || row.source,
+    },
+    {
+      key: 'leadAccountNumber',
+      label: 'Account #',
+      existing: record.account_number,
+      incoming: row.leadAccountNumber || row.accountNumber,
+    },
+    {
+      key: 'leadStatus',
+      label: 'Status',
+      existing: record.status,
+      incoming: row.leadStatus,
+    },
+    {
+      key: 'priority',
+      label: 'Priority',
+      existing: record.priority,
+      incoming: row.priority,
+    },
+    {
+      key: 'estimatedBudget',
+      label: 'Budget',
+      existing: record.estimated_budget,
+      incoming: row.estimatedBudget,
+    },
+    {
+      key: 'nextFollowUpAt',
+      label: 'Follow-up',
+      existing: record.next_follow_up_at,
+      incoming: row.nextFollowUpAt,
+    },
+    {
+      key: 'leadLatitude',
+      label: 'Latitude',
+      existing: record.latitude,
+      incoming: row.leadLatitude ?? row.latitude,
+    },
+    {
+      key: 'leadLongitude',
+      label: 'Longitude',
+      existing: record.longitude,
+      incoming: row.leadLongitude ?? row.longitude,
+    },
+    {
+      key: 'leadNotes',
+      label: 'Notes',
+      existing: record.notes,
+      incoming: row.leadNotes || row.notes,
+    },
+  ];
 }
 
 async function fetchCrmTargets(supabase) {
   const [contactsResult, leadsResult] = await Promise.all([
-    supabase.from('contacts').select('id, first_name, last_name, account_number, email, companies(name)').order('created_at', { ascending: false }).limit(250),
+    supabase
+      .from('contacts')
+      .select(
+        'id, first_name, last_name, account_number, email, companies(name)',
+      )
+      .order('created_at', { ascending: false })
+      .limit(250),
     supabase
       .from('leads')
-      .select('id, source, account_number, status, contacts(first_name, last_name), companies(name)')
+      .select(
+        'id, source, account_number, status, contacts(first_name, last_name), companies(name)',
+      )
       .neq('status', 'converted')
       .order('created_at', { ascending: false })
       .limit(250),
@@ -966,11 +1901,26 @@ async function fetchCrmTargets(supabase) {
   return {
     contacts: (contactsResult.data || []).map((contact) => ({
       id: contact.id,
-      label: [contactName(contact), contact.account_number, contact.companies?.name, contact.email].filter(Boolean).join(' - '),
+      label: [
+        contactName(contact),
+        contact.account_number,
+        contact.companies?.name,
+        contact.email,
+      ]
+        .filter(Boolean)
+        .join(' - '),
     })),
     leads: (leadsResult.data || []).map((lead) => ({
       id: lead.id,
-      label: [lead.contacts ? contactName(lead.contacts) : lead.companies?.name || lead.source || 'Lead', lead.account_number, lead.status].filter(Boolean).join(' - '),
+      label: [
+        lead.contacts
+          ? contactName(lead.contacts)
+          : lead.companies?.name || lead.source || 'Lead',
+        lead.account_number,
+        lead.status,
+      ]
+        .filter(Boolean)
+        .join(' - '),
     })),
   };
 }
@@ -1014,13 +1964,22 @@ async function markDuplicates(supabase, rows) {
         });
       }
 
-      const duplicates = checks.length ? await findPotentialDuplicates(supabase, checks) : [];
+      const duplicates = checks.length
+        ? await findPotentialDuplicates(supabase, checks)
+        : [];
       return { ...row, duplicates };
     }),
   );
 }
 
-function normalizeImportRow(rawRow, headers, fieldMap, importType, index, options = {}) {
+function normalizeImportRow(
+  rawRow,
+  headers,
+  fieldMap,
+  importType,
+  index,
+  options = {},
+) {
   const row = {
     index,
     raw: rawRow,
@@ -1069,14 +2028,28 @@ function normalizeImportRow(rawRow, headers, fieldMap, importType, index, option
   row.leadStatus = normalizeLeadStatus(row.leadStatus) || 'new';
   row.priority = normalizePriority(row.priority);
   row.tags = parseList(row.tags);
+  row.phone = formatPhone(row.phone);
+  row.mobilePhone = formatPhone(row.mobilePhone);
+  row.companyPhone = formatPhone(row.companyPhone);
   row.latitude = cleanNumber(row.latitude);
   row.longitude = cleanNumber(row.longitude);
   row.leadLatitude = cleanNumber(row.leadLatitude);
   row.leadLongitude = cleanNumber(row.leadLongitude);
   row.initialContactDate = cleanDateTime(row.initialContactDate);
 
-  row.shouldCreateContact = (importType !== 'leads' && !row.isGoogleSavedCollection) || Boolean(row.firstName || row.lastName || row.accountNumber || row.email || row.phone || row.mobilePhone);
-  row.shouldCreateLead = importType !== 'contacts' && (hasLeadData(row) || (importType === 'leads' && hasCustomerData(row)));
+  row.shouldCreateContact =
+    (importType !== 'leads' && !row.isGoogleSavedCollection) ||
+    Boolean(
+      row.firstName ||
+      row.lastName ||
+      row.accountNumber ||
+      row.email ||
+      row.phone ||
+      row.mobilePhone,
+    );
+  row.shouldCreateLead =
+    importType !== 'contacts' &&
+    (hasLeadData(row) || (importType === 'leads' && hasCustomerData(row)));
 
   if (row.shouldCreateContact && (!row.firstName || !row.lastName)) {
     row.errors.push('Contact needs first and last name');
@@ -1111,7 +2084,15 @@ function hasLeadData(row) {
 }
 
 function hasCustomerData(row) {
-  return Boolean(row.firstName || row.lastName || row.accountNumber || row.email || row.phone || row.mobilePhone || row.companyName);
+  return Boolean(
+    row.firstName ||
+    row.lastName ||
+    row.accountNumber ||
+    row.email ||
+    row.phone ||
+    row.mobilePhone ||
+    row.companyName,
+  );
 }
 
 async function saveCompany(supabase, ownerId, row) {
@@ -1126,7 +2107,7 @@ async function saveCompany(supabase, ownerId, row) {
         company_type: cleanText(row.companyType),
         account_number: cleanText(row.accountNumber),
         website: cleanText(row.website),
-        phone: cleanText(row.companyPhone || row.phone),
+        phone: cleanPhone(row.companyPhone || row.phone),
         email: cleanText(row.companyEmail),
         address_line1: cleanText(row.addressLine1),
         address_line2: cleanText(row.addressLine2),
@@ -1161,8 +2142,8 @@ async function saveContact(supabase, ownerId, companyId, row) {
       title: cleanText(row.title),
       account_number: cleanText(row.accountNumber),
       email: cleanText(row.email),
-      phone: cleanText(row.phone),
-      mobile_phone: cleanText(row.mobilePhone),
+      phone: cleanPhone(row.phone),
+      mobile_phone: cleanPhone(row.mobilePhone),
       address_line1: cleanText(row.addressLine1),
       address_line2: cleanText(row.addressLine2),
       city: cleanText(row.city),
@@ -1227,7 +2208,12 @@ async function saveGoogleSavedCollectionRow(supabase, ownerId, row) {
   }
 
   if (action === 'attach_contact') {
-    await attachGoogleMapDataToContact(supabase, ownerId, row.googleTargetId, row);
+    await attachGoogleMapDataToContact(
+      supabase,
+      ownerId,
+      row.googleTargetId,
+      row,
+    );
     return { contacts: 0, leads: 0, mapUpdates: 1 };
   }
 
@@ -1240,7 +2226,11 @@ async function saveGoogleSavedCollectionRow(supabase, ownerId, row) {
 }
 
 async function attachGoogleMapDataToContact(supabase, ownerId, contactId, row) {
-  const { data: contact, error: contactError } = await supabase.from('contacts').select('id, company_id, notes, tags, latitude, longitude').eq('id', contactId).single();
+  const { data: contact, error: contactError } = await supabase
+    .from('contacts')
+    .select('id, company_id, notes, tags, latitude, longitude')
+    .eq('id', contactId)
+    .single();
   if (contactError) throw contactError;
 
   const { error: updateError } = await supabase
@@ -1255,11 +2245,20 @@ async function attachGoogleMapDataToContact(supabase, ownerId, contactId, row) {
 
   if (updateError) throw updateError;
   await updateCompanyMapUrl(supabase, contact.company_id, row.website);
-  await insertGoogleMapNote(supabase, ownerId, { contactId, companyId: contact.company_id }, row);
+  await insertGoogleMapNote(
+    supabase,
+    ownerId,
+    { contactId, companyId: contact.company_id },
+    row,
+  );
 }
 
 async function attachGoogleMapDataToLead(supabase, ownerId, leadId, row) {
-  const { data: lead, error: leadError } = await supabase.from('leads').select('id, contact_id, company_id, notes, latitude, longitude').eq('id', leadId).single();
+  const { data: lead, error: leadError } = await supabase
+    .from('leads')
+    .select('id, contact_id, company_id, notes, latitude, longitude')
+    .eq('id', leadId)
+    .single();
   if (leadError) throw leadError;
 
   const { error: updateError } = await supabase
@@ -1273,7 +2272,12 @@ async function attachGoogleMapDataToLead(supabase, ownerId, leadId, row) {
 
   if (updateError) throw updateError;
   await updateCompanyMapUrl(supabase, lead.company_id, row.website);
-  await insertGoogleMapNote(supabase, ownerId, { leadId, contactId: lead.contact_id, companyId: lead.company_id }, row);
+  await insertGoogleMapNote(
+    supabase,
+    ownerId,
+    { leadId, contactId: lead.contact_id, companyId: lead.company_id },
+    row,
+  );
 }
 
 async function updateCompanyMapUrl(supabase, companyId, website) {
@@ -1301,7 +2305,14 @@ async function insertGoogleMapNote(supabase, ownerId, target, row) {
   if (error) throw error;
 }
 
-async function saveInitialContactActivity(supabase, ownerId, companyId, contactId, leadId, row) {
+async function saveInitialContactActivity(
+  supabase,
+  ownerId,
+  companyId,
+  contactId,
+  leadId,
+  row,
+) {
   if (!row.initialContactDate && !row.initialContactNotes) return;
   if (!contactId && !companyId && !leadId) return;
 
@@ -1312,7 +2323,9 @@ async function saveInitialContactActivity(supabase, ownerId, companyId, contactI
     lead_id: leadId,
     type: 'call',
     direction: 'inbound',
-    subject: row.leadSource ? `Initial contact - ${row.leadSource}` : 'Initial contact',
+    subject: row.leadSource
+      ? `Initial contact - ${row.leadSource}`
+      : 'Initial contact',
     body: cleanText(row.initialContactNotes),
     occurred_at: row.initialContactDate || new Date().toISOString(),
   });
@@ -1330,14 +2343,19 @@ function buildFieldMap(headers) {
 function buildGoogleSavedCollectionFieldMap(headers) {
   return headers.reduce((map, header) => {
     const normalized = normalizeHeaderWithUnderscores(header);
-    const field = googleSavedCollectionFieldMap[normalized] || detectField(header);
+    const field =
+      googleSavedCollectionFieldMap[normalized] || detectField(header);
     return field ? { ...map, [header]: field } : map;
   }, {});
 }
 
 function isGoogleSavedCollectionsCsv(headers) {
   const normalizedHeaders = headers.map(normalizeHeaderWithUnderscores);
-  return normalizedHeaders.includes('title') && (normalizedHeaders.includes('item_content_url') || normalizedHeaders.includes('url'));
+  return (
+    normalizedHeaders.includes('title') &&
+    (normalizedHeaders.includes('item_content_url') ||
+      normalizedHeaders.includes('url'))
+  );
 }
 
 function detectField(header) {
@@ -1346,22 +2364,38 @@ function detectField(header) {
     .toLowerCase()
     .split(/[^a-z0-9#]+/)
     .filter(Boolean);
-  const hasAccountToken = tokens.some((token) => ['account', 'acct', 'customer', 'cust'].includes(token));
-  const hasNumberToken = tokens.some((token) => ['nu', 'num', 'no', 'nbr', 'number', 'id', '#'].includes(token));
+  const hasAccountToken = tokens.some((token) =>
+    ['account', 'acct', 'customer', 'cust'].includes(token),
+  );
+  const hasNumberToken = tokens.some((token) =>
+    ['nu', 'num', 'no', 'nbr', 'number', 'id', '#'].includes(token),
+  );
 
-  if ((hasAccountToken && hasNumberToken) || /^(account|acct|cust|customer)(nu|num|no|nbr|number|id)$/.test(normalized)) {
+  if (
+    (hasAccountToken && hasNumberToken) ||
+    /^(account|acct|cust|customer)(nu|num|no|nbr|number|id)$/.test(normalized)
+  ) {
     return 'accountNumber';
   }
 
-  return Object.entries(fieldAliases).find(([, aliases]) => aliases.map(normalizeHeader).includes(normalized))?.[0] || null;
+  return (
+    Object.entries(fieldAliases).find(([, aliases]) =>
+      aliases.map(normalizeHeader).includes(normalized),
+    )?.[0] || null
+  );
 }
 
 function parseCsv(text) {
-  const lines = parseCsvRows(text).filter((row) => row.some((value) => cleanText(value)));
-  if (lines.length < 2) throw new Error('CSV needs a header row and at least one data row.');
+  const lines = parseCsvRows(text).filter((row) =>
+    row.some((value) => cleanText(value)),
+  );
+  if (lines.length < 2)
+    throw new Error('CSV needs a header row and at least one data row.');
 
   const headerIndex = findHeaderRowIndex(lines);
-  const headers = lines[headerIndex].map((header) => cleanText(header)).filter(Boolean);
+  const headers = lines[headerIndex]
+    .map((header) => cleanText(header))
+    .filter(Boolean);
   const rows = lines.slice(headerIndex + 1).map((values) =>
     headers.reduce((row, header, index) => {
       row[header] = values[index] || '';
@@ -1375,7 +2409,11 @@ function parseCsv(text) {
 function findHeaderRowIndex(lines) {
   const index = lines.findIndex((row) => {
     const normalizedHeaders = row.map(normalizeHeaderWithUnderscores);
-    return normalizedHeaders.includes('title') && (normalizedHeaders.includes('item_content_url') || normalizedHeaders.includes('url'));
+    return (
+      normalizedHeaders.includes('title') &&
+      (normalizedHeaders.includes('item_content_url') ||
+        normalizedHeaders.includes('url'))
+    );
   });
 
   return index === -1 ? 0 : index;
@@ -1434,7 +2472,8 @@ function cleanText(value) {
 }
 
 function cleanNumber(value) {
-  if (value === '' || value === null || typeof value === 'undefined') return null;
+  if (value === '' || value === null || typeof value === 'undefined')
+    return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
@@ -1456,8 +2495,14 @@ function parseList(value) {
 }
 
 function buildSavedCollectionNotes(row) {
-  const parts = [...new Set([cleanText(row.notes), cleanText(row.leadNotes)].filter(Boolean))];
-  const mapLine = cleanText(row.website) ? `Google Maps: ${cleanText(row.website)}` : null;
+  const parts = [
+    ...new Set(
+      [cleanText(row.notes), cleanText(row.leadNotes)].filter(Boolean),
+    ),
+  ];
+  const mapLine = cleanText(row.website)
+    ? `Google Maps: ${cleanText(row.website)}`
+    : null;
 
   if (mapLine && !parts.some((part) => part.includes(mapLine))) {
     parts.push(mapLine);
@@ -1484,7 +2529,7 @@ function applyGooglePlaceDetails(row, place) {
   const nextRow = {
     ...row,
     companyName: place.name || row.companyName,
-    companyPhone: place.phone || row.companyPhone,
+    companyPhone: formatPhone(place.phone || row.companyPhone),
     website: place.websiteUri || row.website || place.googleMapsUri,
     addressLine1: place.addressLine1 || row.addressLine1,
     addressLine2: place.addressLine2 || row.addressLine2,
@@ -1560,11 +2605,21 @@ function appendText(currentValue, nextValue) {
 }
 
 function mergeTags(currentTags, nextTags) {
-  return [...new Set([...(Array.isArray(currentTags) ? currentTags : []), ...(Array.isArray(nextTags) ? nextTags : [])].filter(Boolean))];
+  return [
+    ...new Set(
+      [
+        ...(Array.isArray(currentTags) ? currentTags : []),
+        ...(Array.isArray(nextTags) ? nextTags : []),
+      ].filter(Boolean),
+    ),
+  ];
 }
 
 function contactName(contact) {
-  return [contact?.first_name, contact?.last_name].filter(Boolean).join(' ') || 'Contact';
+  return (
+    [contact?.first_name, contact?.last_name].filter(Boolean).join(' ') ||
+    'Contact'
+  );
 }
 
 function parseGoogleMapsCoordinates(value) {
@@ -1580,13 +2635,22 @@ function parseGoogleMapsCoordinates(value) {
   const bangMatch = url.match(/!2d(-?\d+(?:\.\d+)?)!3d(-?\d+(?:\.\d+)?)/);
   if (bangMatch) return toCoordinatePair(bangMatch[2], bangMatch[1]);
 
-  const coordinateTextMatch = safeDecodeURIComponent(url).match(/(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)/);
-  if (coordinateTextMatch) return toCoordinatePair(coordinateTextMatch[1], coordinateTextMatch[2]);
+  const coordinateTextMatch = safeDecodeURIComponent(url).match(
+    /(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)/,
+  );
+  if (coordinateTextMatch)
+    return toCoordinatePair(coordinateTextMatch[1], coordinateTextMatch[2]);
 
   try {
     const parsedUrl = new URL(url);
-    const queryValue = parsedUrl.searchParams.get('q') || parsedUrl.searchParams.get('query') || parsedUrl.searchParams.get('ll') || parsedUrl.searchParams.get('center');
-    const queryMatch = queryValue?.match(/(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)/);
+    const queryValue =
+      parsedUrl.searchParams.get('q') ||
+      parsedUrl.searchParams.get('query') ||
+      parsedUrl.searchParams.get('ll') ||
+      parsedUrl.searchParams.get('center');
+    const queryMatch = queryValue?.match(
+      /(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)/,
+    );
     if (queryMatch) return toCoordinatePair(queryMatch[1], queryMatch[2]);
   } catch {
     return null;
@@ -1608,13 +2672,18 @@ function toCoordinatePair(latitudeValue, longitudeValue) {
   const longitude = Number(longitudeValue);
 
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
-  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180)
+    return null;
   return { latitude, longitude };
 }
 
 function normalizeLeadStatus(value) {
   const normalized = normalizeHeader(value);
-  return ['new', 'working', 'qualified', 'unqualified', 'converted'].find((status) => normalizeHeader(status) === normalized) || null;
+  return (
+    ['new', 'working', 'qualified', 'unqualified', 'converted'].find(
+      (status) => normalizeHeader(status) === normalized,
+    ) || null
+  );
 }
 
 function normalizePriority(value) {
