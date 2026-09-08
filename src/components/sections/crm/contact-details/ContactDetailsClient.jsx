@@ -486,7 +486,18 @@ const ContactDetailsClient = ({ contactId }) => {
             >
               {company ? (
                 <>
-                  <InfoRow label="Name" value={company.name} />
+                  <InfoRow
+                    label="Name"
+                    value={
+                      <Link
+                        href={paths.companyDetails(company.id)}
+                        underline="hover"
+                        sx={{ color: 'text.primary', fontWeight: 700 }}
+                      >
+                        {company.name}
+                      </Link>
+                    }
+                  />
                   <InfoRow label="Type" value={company.company_type} />
                   <InfoRow label="Email" value={company.email} />
                   <InfoRow label="Phone" value={formatPhone(company.phone)} />
