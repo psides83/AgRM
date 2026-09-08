@@ -139,7 +139,6 @@ const LeadDetails = ({ leadId }) => {
       dealsResult.error,
       activitiesResult.error,
       notesResult.error,
-      tasksResult.error,
       locationsResult.error,
     ].find(Boolean);
 
@@ -151,7 +150,7 @@ const LeadDetails = ({ leadId }) => {
       setDeals(dealsResult.data || []);
       setActivities(activitiesResult.data || []);
       setNotes(notesResult.data || []);
-      setTasks(tasksResult.data || []);
+      setTasks(tasksResult.error ? [] : tasksResult.data || []);
       setEquipmentLocations(locationsResult.data || []);
     }
 

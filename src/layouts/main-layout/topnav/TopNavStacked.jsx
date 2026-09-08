@@ -1,4 +1,4 @@
-import { Box, Divider, IconButton, paperClasses } from '@mui/material';
+import { Box, Divider, IconButton, paperClasses, Stack } from '@mui/material';
 import MuiAppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import { useBreakpoints } from 'providers/BreakpointsProvider';
@@ -39,7 +39,14 @@ const TopNavStacked = () => {
         ]}
       >
         {navColor === 'vibrant' && <VibrantBackground position="top" />}
-        <Toolbar sx={{ height: 64, gap: 5, justifyContent: 'space-between', px: { xs: 3, md: 5 } }}>
+        <Toolbar
+          sx={{
+            height: 64,
+            gap: 5,
+            justifyContent: 'space-between',
+            px: { xs: 3, md: 5 },
+          }}
+        >
           <Box
             sx={{
               display: { xs: 'flex' },
@@ -57,7 +64,10 @@ const TopNavStacked = () => {
                 display: { xs: 'flex', md: 'none' },
               }}
             >
-              <IconifyIcon icon="material-symbols:menu-rounded" sx={{ fontSize: 20 }} />
+              <IconifyIcon
+                icon="material-symbols:menu-rounded"
+                sx={{ fontSize: 20 }}
+              />
             </IconButton>
             <Logo showName={upSm} />
           </Box>
@@ -73,12 +83,18 @@ const TopNavStacked = () => {
             />
           )}
 
-          <AppbarActionItems sx={{ ml: 0 }} />
+          <Stack direction="row" sx={{ alignItems: 'center', flexShrink: 0 }}>
+            <AppbarActionItems sx={{ ml: 0 }} />
+          </Stack>
         </Toolbar>
         <Toolbar
           className="MuiToolbar-bottom"
           variant={upMd ? 'appbarSlim' : 'appbar'}
-          sx={{ justifyContent: 'center', px: 2, bgcolor: 'background.elevation1' }}
+          sx={{
+            justifyContent: 'center',
+            px: 2,
+            bgcolor: 'background.elevation1',
+          }}
         >
           {upMd ? (
             <TopnavItems type="slim" />

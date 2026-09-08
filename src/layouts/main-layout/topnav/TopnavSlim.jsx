@@ -39,7 +39,10 @@ const TopnavSlim = ({ sx }) => {
       ]}
     >
       {navColor === 'vibrant' && <VibrantBackground position="top" />}
-      <Toolbar variant="appbarSlim" sx={{ px: { xs: 3, md: 5 }, maxHeight: 38 }}>
+      <Toolbar
+        variant="appbarSlim"
+        sx={{ px: { xs: 3, md: 5 }, maxHeight: 38 }}
+      >
         <Box
           sx={{
             display: { xs: 'flex' },
@@ -62,16 +65,23 @@ const TopnavSlim = ({ sx }) => {
               },
             ]}
           >
-            <IconifyIcon icon="material-symbols:menu-rounded" sx={{ fontSize: 20 }} />
+            <IconifyIcon
+              icon="material-symbols:menu-rounded"
+              sx={{ fontSize: 20 }}
+            />
           </IconButton>
 
           <Logo showName={false} sx={{ height: 24, width: 15 }} />
         </Box>
 
         <Stack
+          direction="row"
+          spacing={1}
           sx={{
             alignItems: 'center',
+            justifyContent: 'space-between',
             flex: 1,
+            minWidth: 0,
           }}
         >
           {upLg && <TopnavItems type="slim" />}

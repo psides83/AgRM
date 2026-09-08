@@ -39,7 +39,10 @@ const Topnav = () => {
       ]}
     >
       {navColor === 'vibrant' && <VibrantBackground position="top" />}
-      <Toolbar variant="appbar" sx={{ px: { xs: 3, md: 5, position: 'relative' } }}>
+      <Toolbar
+        variant="appbar"
+        sx={{ px: { xs: 3, md: 5, position: 'relative' } }}
+      >
         <Box
           sx={{
             display: { xs: 'flex' },
@@ -58,7 +61,8 @@ const Topnav = () => {
               {
                 display: 'flex',
               },
-              (navigationMenuType === 'sidenav' || navigationMenuType === 'combo') && {
+              (navigationMenuType === 'sidenav' ||
+                navigationMenuType === 'combo') && {
                 display: { md: 'none' },
               },
               navigationMenuType === 'topnav' && {
@@ -66,21 +70,28 @@ const Topnav = () => {
               },
             ]}
           >
-            <IconifyIcon icon="material-symbols:menu-rounded" sx={{ fontSize: 20 }} />
+            <IconifyIcon
+              icon="material-symbols:menu-rounded"
+              sx={{ fontSize: 20 }}
+            />
           </IconButton>
 
           <Logo showName={upSm} />
         </Box>
         <Stack
+          direction="row"
+          spacing={1}
           sx={{
             alignItems: 'center',
+            justifyContent: 'space-between',
             flex: 1,
+            minWidth: 0,
           }}
         >
           {upLg && <TopnavItems />}
           <AppbarActionItems
             searchComponent={
-              <Box sx={{ pr: 1.5 }}>
+              <Box sx={{ pr: { xs: 0, sm: 1.5 } }}>
                 <SearchBoxButton variant="soft" color="neutral" />
               </Box>
             }

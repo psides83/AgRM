@@ -14,6 +14,7 @@ import {
   Divider,
   FormControlLabel,
   Link,
+  Menu,
   MenuItem,
   Paper,
   Stack,
@@ -81,6 +82,7 @@ const ContactDetailsClient = ({ contactId }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dialog, setDialog] = useState(null);
+  const [contactMenuAnchor, setContactMenuAnchor] = useState(null);
 
   const fetchDetails = async () => {
     setError(null);
@@ -159,7 +161,6 @@ const ContactDetailsClient = ({ contactId }) => {
       equipmentResult.error,
       activitiesResult.error,
       notesResult.error,
-      tasksResult.error,
       locationsResult.error,
     ].find(Boolean);
 
@@ -171,7 +172,7 @@ const ContactDetailsClient = ({ contactId }) => {
       setEquipmentInterests(equipmentResult.data || []);
       setActivities(activitiesResult.data || []);
       setNotes(notesResult.data || []);
-      setTasks(tasksResult.data || []);
+      setTasks(tasksResult.error ? [] : tasksResult.data || []);
       setEquipmentLocations(locationsResult.data || []);
     }
 
@@ -294,6 +295,21 @@ const ContactDetailsClient = ({ contactId }) => {
     .filter(Boolean)
     .join(' ');
   const primaryPhone = formatPhone(contact.mobile_phone || contact.phone);
+  const contactPhone = cleanPhone(contact.mobile_phone || contact.phone);
+  const canCall = Boolean(contactPhone);
+  const canEmail = Boolean(contact.email);
+
+  const handleContactAction = (action) => {
+    setContactMenuAnchor(null);
+
+    if (action === 'call' && canCall) {
+      window.location.href = `tel:${contactPhone}`;
+    }
+
+    if (action === 'email' && canEmail) {
+      window.location.href = `mailto:${contact.email}`;
+    }
+  };
 
   return (
     <>
@@ -431,6 +447,50 @@ const ContactDetailsClient = ({ contactId }) => {
                 >
                   Edit
                 </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={(event) => setContactMenuAnchor(event.currentTarget)}
+                  startIcon={
+                    <IconifyIcon icon="material-symbols:contact-phone-outline-rounded" />
+                  }
+                  disabled={!canCall && !canEmail}
+                >
+                  Contact
+                </Button>
+                <Menu
+                  anchorEl={contactMenuAnchor}
+                  open={Boolean(contactMenuAnchor)}
+                  onClose={() => setContactMenuAnchor(null)}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                >
+                  <MenuItem
+                    disabled={!canCall}
+                    onClick={() => handleContactAction('call')}
+                  >
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ alignItems: 'center' }}
+                    >
+                      <IconifyIcon icon="material-symbols:call-outline-rounded" />
+                      <span>Call</span>
+                    </Stack>
+                  </MenuItem>
+                  <MenuItem
+                    disabled={!canEmail}
+                    onClick={() => handleContactAction('email')}
+                  >
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ alignItems: 'center' }}
+                    >
+                      <IconifyIcon icon="material-symbols:mail-outline-rounded" />
+                      <span>Email</span>
+                    </Stack>
+                  </MenuItem>
+                </Menu>
                 <Button
                   variant="soft"
                   color="neutral"

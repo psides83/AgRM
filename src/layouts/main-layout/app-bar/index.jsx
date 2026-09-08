@@ -69,7 +69,10 @@ const AppBar = () => {
             aria-label="open drawer"
             onClick={handleDrawerToggle}
           >
-            <IconifyIcon icon="material-symbols:menu-rounded" sx={{ fontSize: 20 }} />
+            <IconifyIcon
+              icon="material-symbols:menu-rounded"
+              sx={{ fontSize: 20 }}
+            />
           </Button>
 
           <Box>
@@ -78,9 +81,13 @@ const AppBar = () => {
         </Box>
 
         <Stack
+          direction="row"
+          spacing={1}
           sx={{
             alignItems: 'center',
+            justifyContent: 'space-between',
             flex: 1,
+            minWidth: 0,
           }}
         >
           {upMd ? (
