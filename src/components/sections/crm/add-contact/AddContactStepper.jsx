@@ -118,7 +118,6 @@ const AddContactStepper = () => {
       },
       leadInfo: {
         accountNumber: '',
-        initialContactMethod: 'call',
         status: '',
         priority: '',
       },
@@ -203,7 +202,7 @@ const AddContactStepper = () => {
         contact.id,
         data.leadInfo,
       );
-      await saveInitialContactLog(
+      await saveInitialNotes(
         supabase,
         user.id,
         companyId,
@@ -527,7 +526,7 @@ async function saveLead(supabase, ownerId, companyId, contactId, leadInfo) {
   return data;
 }
 
-async function saveInitialContactLog(
+async function saveInitialNotes(
   supabase,
   ownerId,
   companyId,
@@ -537,24 +536,6 @@ async function saveInitialContactLog(
 ) {
   const contactNotes = cleanText(data.personalInfo?.notes);
   const leadNotes = cleanText(data.leadInfo?.notes);
-  const firstContactAt =
-    data.leadInfo?.lastContactedAt || new Date().toISOString();
-  const activityPayload = {
-    owner_id: ownerId,
-    contact_id: contactId,
-    company_id: companyId,
-    type: cleanText(data.leadInfo?.initialContactMethod) || 'call',
-    direction: 'inbound',
-    subject: cleanText(data.leadInfo?.source)
-      ? `Initial contact - ${cleanText(data.leadInfo.source)}`
-      : 'Initial contact',
-    body: leadNotes || contactNotes,
-    occurred_at: new Date(firstContactAt).toISOString(),
-  };
-
-  if (leadId) {
-    activityPayload.lead_id = leadId;
-  }
 
   const noteRows = [
     contactNotes && {
@@ -571,14 +552,6 @@ async function saveInitialContactLog(
       body: leadNotes,
     },
   ].filter(Boolean);
-
-  const { error: activityError } = await supabase
-    .from('activities')
-    .insert(activityPayload);
-
-  if (activityError) {
-    throw activityError;
-  }
 
   if (noteRows.length) {
     const { error: notesError } = await supabase.from('notes').insert(noteRows);

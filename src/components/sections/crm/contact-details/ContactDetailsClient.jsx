@@ -27,6 +27,8 @@ import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import CrmFilesPanel from 'components/sections/crm/shared/CrmFilesPanel';
+import AddTaskDialog from 'components/sections/crm/shared/AddTaskDialog';
+import TasksCard from 'components/sections/crm/shared/TasksCard';
 import {
   activityDirections,
   activityTypes,
@@ -75,6 +77,7 @@ const ContactDetailsClient = ({ contactId }) => {
   const [equipmentLocations, setEquipmentLocations] = useState([]);
   const [activities, setActivities] = useState([]);
   const [notes, setNotes] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dialog, setDialog] = useState(null);
@@ -88,6 +91,7 @@ const ContactDetailsClient = ({ contactId }) => {
       equipmentResult,
       activitiesResult,
       notesResult,
+      tasksResult,
       locationsResult,
     ] = await Promise.all([
       supabase
@@ -139,6 +143,11 @@ const ContactDetailsClient = ({ contactId }) => {
         .eq('contact_id', contactId)
         .order('created_at', { ascending: false }),
       supabase
+        .from('tasks')
+        .select('*')
+        .eq('contact_id', contactId)
+        .order('created_at', { ascending: false }),
+      supabase
         .from('equipment_locations')
         .select('id, name, city, region')
         .order('name', { ascending: true }),
@@ -150,6 +159,7 @@ const ContactDetailsClient = ({ contactId }) => {
       equipmentResult.error,
       activitiesResult.error,
       notesResult.error,
+      tasksResult.error,
       locationsResult.error,
     ].find(Boolean);
 
@@ -161,6 +171,7 @@ const ContactDetailsClient = ({ contactId }) => {
       setEquipmentInterests(equipmentResult.data || []);
       setActivities(activitiesResult.data || []);
       setNotes(notesResult.data || []);
+      setTasks(tasksResult.data || []);
       setEquipmentLocations(locationsResult.data || []);
     }
 
@@ -218,6 +229,16 @@ const ContactDetailsClient = ({ contactId }) => {
           event: '*',
           schema: 'public',
           table: 'notes',
+          filter: `contact_id=eq.${contactId}`,
+        },
+        () => fetchDetails(),
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
           filter: `contact_id=eq.${contactId}`,
         },
         () => fetchDetails(),
@@ -423,6 +444,16 @@ const ContactDetailsClient = ({ contactId }) => {
                 <Button
                   variant="soft"
                   color="neutral"
+                  onClick={() => setDialog('task')}
+                  startIcon={
+                    <IconifyIcon icon="material-symbols:add-task-outline-rounded" />
+                  }
+                >
+                  Add Task
+                </Button>
+                <Button
+                  variant="soft"
+                  color="neutral"
                   onClick={() => setDialog('lead')}
                   startIcon={
                     <IconifyIcon icon="material-symbols:add-notes-outline-rounded" />
@@ -549,12 +580,13 @@ const ContactDetailsClient = ({ contactId }) => {
           <Stack direction="column" spacing={3}>
             <LeadsCard leads={leads} />
             <EquipmentCard equipmentInterests={equipmentInterests} />
-            <CrmFilesPanel recordType="contact" recordId={contact.id} />
-            <TimelineCard
-              items={timelineItems}
+            <TasksCard
+              tasks={tasks}
               supabase={supabase}
               onSaved={fetchDetails}
             />
+            <CrmFilesPanel recordType="contact" recordId={contact.id} />
+            <TimelineCard items={timelineItems} />
           </Stack>
         </Grid>
       </Grid>
@@ -576,6 +608,14 @@ const ContactDetailsClient = ({ contactId }) => {
       <AddActivityDialog
         open={dialog === 'activity'}
         contact={contact}
+        onClose={() => setDialog(null)}
+        onSaved={fetchDetails}
+        supabase={supabase}
+      />
+      <AddTaskDialog
+        open={dialog === 'task'}
+        record={contact}
+        recordType="contact"
         onClose={() => setDialog(null)}
         onSaved={fetchDetails}
         supabase={supabase}
@@ -723,16 +763,8 @@ function EquipmentCard({ equipmentInterests }) {
   );
 }
 
-function TimelineCard({ items, supabase, onSaved }) {
+function TimelineCard({ items }) {
   const [editingItem, setEditingItem] = useState(null);
-
-  const handleComplete = async (activityId) => {
-    const { error } = await supabase
-      .from('activities')
-      .update({ completed_at: new Date().toISOString() })
-      .eq('id', activityId);
-    if (!error) onSaved();
-  };
 
   return (
     <>
@@ -757,14 +789,6 @@ function TimelineCard({ items, supabase, onSaved }) {
                     sx={{ flexWrap: 'wrap', alignItems: 'center' }}
                   >
                     <Typography variant="subtitle2">{item.title}</Typography>
-                    {item.completedAt && (
-                      <Chip
-                        label="Complete"
-                        size="small"
-                        variant="soft"
-                        color="success"
-                      />
-                    )}
                   </Stack>
                   <Stack
                     direction="row"
@@ -787,16 +811,6 @@ function TimelineCard({ items, supabase, onSaved }) {
                     >
                       Edit
                     </Button>
-                    {item.activityId && !item.completedAt && (
-                      <Button
-                        size="small"
-                        variant="soft"
-                        color="success"
-                        onClick={() => handleComplete(item.activityId)}
-                      >
-                        Complete
-                      </Button>
-                    )}
                   </Stack>
                 </Stack>
                 {item.body && (
@@ -1244,28 +1258,11 @@ function EditContactDialog({
       return;
     }
 
-    const relatedTables = [
-      'leads',
-      'activities',
-      'notes',
-      'equipment_interests',
-      'deals',
-    ];
-    const associationErrors = await Promise.all(
-      relatedTables.map((table) =>
-        supabase
-          .from(table)
-          .update({ company_id: companyId })
-          .eq('contact_id', contact.id),
-      ),
+    await fillMissingContactCompanyAssociations(
+      supabase,
+      contact.id,
+      companyId,
     );
-    const associationError = associationErrors.find((result) => result.error);
-
-    if (associationError?.error) {
-      setError(associationError.error.message);
-      setIsSaving(false);
-      return;
-    }
 
     setIsSaving(false);
     onSaved();
@@ -2471,6 +2468,42 @@ async function saveCompanyFromContactEdit(supabase, form) {
 
   if (error) throw error;
   return data.id;
+}
+
+async function fillMissingContactCompanyAssociations(
+  supabase,
+  contactId,
+  companyId,
+) {
+  if (!contactId || !companyId) return;
+
+  await Promise.all([
+    supabase
+      .from('leads')
+      .update({ company_id: companyId })
+      .eq('contact_id', contactId)
+      .is('company_id', null),
+    supabase
+      .from('activities')
+      .update({ company_id: companyId })
+      .eq('contact_id', contactId)
+      .is('company_id', null),
+    supabase
+      .from('notes')
+      .update({ company_id: companyId })
+      .eq('contact_id', contactId)
+      .is('company_id', null),
+    supabase
+      .from('tasks')
+      .update({ company_id: companyId })
+      .eq('contact_id', contactId)
+      .is('company_id', null),
+    supabase
+      .from('deals')
+      .update({ company_id: companyId })
+      .eq('contact_id', contactId)
+      .is('company_id', null),
+  ]);
 }
 
 function parseTags(value) {

@@ -39,7 +39,6 @@ export const activityTypes = [
   'visit',
   'demo',
   'quote',
-  'task',
   'note',
   'meeting',
   'site_visit',

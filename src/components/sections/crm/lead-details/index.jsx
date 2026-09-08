@@ -24,6 +24,8 @@ import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import CrmFilesPanel from 'components/sections/crm/shared/CrmFilesPanel';
+import AddTaskDialog from 'components/sections/crm/shared/AddTaskDialog';
+import TasksCard from 'components/sections/crm/shared/TasksCard';
 import {
   activityDirections,
   activityTypes,
@@ -72,6 +74,7 @@ const LeadDetails = ({ leadId }) => {
   const [deals, setDeals] = useState([]);
   const [activities, setActivities] = useState([]);
   const [notes, setNotes] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dialog, setDialog] = useState(null);
@@ -85,6 +88,7 @@ const LeadDetails = ({ leadId }) => {
       dealsResult,
       activitiesResult,
       notesResult,
+      tasksResult,
       locationsResult,
     ] = await Promise.all([
       supabase
@@ -119,6 +123,11 @@ const LeadDetails = ({ leadId }) => {
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false }),
       supabase
+        .from('tasks')
+        .select('*')
+        .eq('lead_id', leadId)
+        .order('created_at', { ascending: false }),
+      supabase
         .from('equipment_locations')
         .select('id, name, city, region')
         .order('name', { ascending: true }),
@@ -130,6 +139,7 @@ const LeadDetails = ({ leadId }) => {
       dealsResult.error,
       activitiesResult.error,
       notesResult.error,
+      tasksResult.error,
       locationsResult.error,
     ].find(Boolean);
 
@@ -141,6 +151,7 @@ const LeadDetails = ({ leadId }) => {
       setDeals(dealsResult.data || []);
       setActivities(activitiesResult.data || []);
       setNotes(notesResult.data || []);
+      setTasks(tasksResult.data || []);
       setEquipmentLocations(locationsResult.data || []);
     }
 
@@ -198,6 +209,16 @@ const LeadDetails = ({ leadId }) => {
           event: '*',
           schema: 'public',
           table: 'notes',
+          filter: `lead_id=eq.${leadId}`,
+        },
+        () => fetchDetails(),
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
           filter: `lead_id=eq.${leadId}`,
         },
         () => fetchDetails(),
@@ -364,6 +385,16 @@ const LeadDetails = ({ leadId }) => {
                 <Button
                   variant="soft"
                   color="neutral"
+                  onClick={() => setDialog('task')}
+                  startIcon={
+                    <IconifyIcon icon="material-symbols:add-task-outline-rounded" />
+                  }
+                >
+                  Add Task
+                </Button>
+                <Button
+                  variant="soft"
+                  color="neutral"
                   onClick={() => setDialog('deal')}
                   disabled={lead.status === 'converted'}
                   startIcon={
@@ -492,12 +523,13 @@ const LeadDetails = ({ leadId }) => {
           <Stack direction="column" spacing={3}>
             <DealsCard deals={deals} />
             <EquipmentCard equipmentInterests={equipmentInterests} />
-            <CrmFilesPanel recordType="lead" recordId={lead.id} />
-            <TimelineCard
-              items={timelineItems}
+            <TasksCard
+              tasks={tasks}
               supabase={supabase}
               onSaved={fetchDetails}
             />
+            <CrmFilesPanel recordType="lead" recordId={lead.id} />
+            <TimelineCard items={timelineItems} />
           </Stack>
         </Grid>
       </Grid>
@@ -519,6 +551,14 @@ const LeadDetails = ({ leadId }) => {
       <AddActivityDialog
         open={dialog === 'activity'}
         lead={lead}
+        onClose={() => setDialog(null)}
+        onSaved={fetchDetails}
+        supabase={supabase}
+      />
+      <AddTaskDialog
+        open={dialog === 'task'}
+        record={lead}
+        recordType="lead"
         onClose={() => setDialog(null)}
         onSaved={fetchDetails}
         supabase={supabase}
@@ -663,16 +703,8 @@ function EquipmentCard({ equipmentInterests }) {
   );
 }
 
-function TimelineCard({ items, supabase, onSaved }) {
+function TimelineCard({ items }) {
   const [editingItem, setEditingItem] = useState(null);
-
-  const handleComplete = async (activityId) => {
-    const { error } = await supabase
-      .from('activities')
-      .update({ completed_at: new Date().toISOString() })
-      .eq('id', activityId);
-    if (!error) onSaved();
-  };
 
   return (
     <>
@@ -697,14 +729,6 @@ function TimelineCard({ items, supabase, onSaved }) {
                     sx={{ flexWrap: 'wrap', alignItems: 'center' }}
                   >
                     <Typography variant="subtitle2">{item.title}</Typography>
-                    {item.completedAt && (
-                      <Chip
-                        label="Complete"
-                        size="small"
-                        variant="soft"
-                        color="success"
-                      />
-                    )}
                   </Stack>
                   <Stack
                     direction="row"
@@ -727,16 +751,6 @@ function TimelineCard({ items, supabase, onSaved }) {
                     >
                       Edit
                     </Button>
-                    {item.activityId && !item.completedAt && (
-                      <Button
-                        size="small"
-                        variant="soft"
-                        color="success"
-                        onClick={() => handleComplete(item.activityId)}
-                      >
-                        Complete
-                      </Button>
-                    )}
                   </Stack>
                 </Stack>
                 {item.body && (

@@ -21,6 +21,7 @@ import { createClient } from 'lib/supabase/server';
 import paths from 'routes/paths';
 import IconifyIcon from 'components/base/IconifyIcon';
 import { dealStages } from 'components/sections/crm/constants';
+import OpenTasksPanel from 'components/sections/dashboards/crm/OpenTasksPanel';
 
 const metricCards = [
   {
@@ -106,7 +107,7 @@ async function getDashboardData() {
         created_at,
         contacts(id, first_name, last_name),
         companies(id, name)
-      `
+      `,
       )
       .neq('status', 'converted')
       .order('created_at', { ascending: false })
@@ -120,7 +121,7 @@ async function getDashboardData() {
         next_follow_up_at,
         contacts(id, first_name, last_name),
         companies(id, name)
-      `
+      `,
       )
       .neq('status', 'converted')
       .not('next_follow_up_at', 'is', null)
@@ -141,7 +142,7 @@ async function getDashboardData() {
         contacts(id, first_name, last_name),
         companies(id, name),
         deals(id, name)
-      `
+      `,
       )
       .is('completed_at', null)
       .not('due_at', 'is', null)
@@ -159,7 +160,7 @@ async function getDashboardData() {
         expected_close_date,
         contacts(id, first_name, last_name),
         companies(id, name)
-      `
+      `,
       )
       .order('updated_at', { ascending: false })
       .limit(12),
@@ -175,7 +176,7 @@ async function getDashboardData() {
         contacts(id, first_name, last_name),
         companies(id, name),
         deals(id, name)
-      `
+      `,
       )
       .order('occurred_at', { ascending: false })
       .limit(6),
@@ -190,7 +191,7 @@ async function getDashboardData() {
         contacts(id, first_name, last_name),
         companies(id, name),
         deals(id, name)
-      `
+      `,
       )
       .order('created_at', { ascending: false })
       .limit(6),
@@ -274,7 +275,11 @@ const CRM = async () => {
   try {
     data = await getDashboardData();
   } catch (error) {
-    return <Alert severity="error">Could not load CRM dashboard data. {error.message}</Alert>;
+    return (
+      <Alert severity="error">
+        Could not load CRM dashboard data. {error.message}
+      </Alert>
+    );
   }
 
   if (!data.user) {
@@ -288,7 +293,10 @@ const CRM = async () => {
           <Stack
             direction={{ xs: 'column', lg: 'row' }}
             spacing={3}
-            sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', lg: 'center' } }}
+            sx={{
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', lg: 'center' },
+            }}
           >
             <Box>
               <Typography variant="h4" sx={{ mb: 1 }}>
@@ -298,7 +306,11 @@ const CRM = async () => {
                 Leads, follow-ups, deals, and recent relationship activity.
               </Typography>
             </Box>
-            <Stack direction="column" spacing={2} sx={{ width: { xs: 1, lg: 460 } }}>
+            <Stack
+              direction="column"
+              spacing={2}
+              sx={{ width: { xs: 1, lg: 460 } }}
+            >
               <CRMSearchForm />
               <QuickActions />
             </Stack>
@@ -315,12 +327,18 @@ const CRM = async () => {
             sx={{ p: 3, height: 1, display: 'block', color: 'text.primary' }}
           >
             <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-              <IconifyIcon icon={metric.icon} sx={{ fontSize: 34, color: metric.color }} />
+              <IconifyIcon
+                icon={metric.icon}
+                sx={{ fontSize: 34, color: metric.color }}
+              />
               <Box>
                 <Typography variant="h4" sx={{ fontWeight: 700 }}>
                   {data.counts[metric.key]}
                 </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'text.secondary', fontWeight: 600 }}
+                >
                   {metric.label}
                 </Typography>
               </Box>
@@ -328,6 +346,10 @@ const CRM = async () => {
           </Paper>
         </Grid>
       ))}
+
+      <Grid size={12}>
+        <OpenTasksPanel />
+      </Grid>
 
       <Grid size={{ xs: 12, xl: 7 }}>
         <OpenLeads leads={data.leads} />
@@ -350,7 +372,13 @@ const CRM = async () => {
 
 function CRMSearchForm() {
   return (
-    <Stack component="form" action={paths.crmSearch} method="get" direction="row" spacing={1}>
+    <Stack
+      component="form"
+      action={paths.crmSearch}
+      method="get"
+      direction="row"
+      spacing={1}
+    >
       <TextField
         name="q"
         size="small"
@@ -358,7 +386,12 @@ function CRMSearchForm() {
         placeholder="Contacts, companies, deals..."
         fullWidth
       />
-      <Button type="submit" variant="soft" color="neutral" startIcon={<IconifyIcon icon="material-symbols:search-rounded" />}>
+      <Button
+        type="submit"
+        variant="soft"
+        color="neutral"
+        startIcon={<IconifyIcon icon="material-symbols:search-rounded" />}
+      >
         Search
       </Button>
     </Stack>
@@ -373,7 +406,9 @@ function QuickActions() {
         component={Link}
         underline="none"
         variant="contained"
-        startIcon={<IconifyIcon icon="material-symbols:person-add-outline-rounded" />}
+        startIcon={
+          <IconifyIcon icon="material-symbols:person-add-outline-rounded" />
+        }
       >
         Add Contact
       </Button>
@@ -383,7 +418,9 @@ function QuickActions() {
         underline="none"
         variant="soft"
         color="neutral"
-        startIcon={<IconifyIcon icon="material-symbols:add-task-outline-rounded" />}
+        startIcon={
+          <IconifyIcon icon="material-symbols:add-task-outline-rounded" />
+        }
       >
         Add Lead
       </Button>
@@ -393,7 +430,9 @@ function QuickActions() {
         underline="none"
         variant="soft"
         color="neutral"
-        startIcon={<IconifyIcon icon="material-symbols:edit-note-outline-rounded" />}
+        startIcon={
+          <IconifyIcon icon="material-symbols:edit-note-outline-rounded" />
+        }
       >
         Add Note
       </Button>
@@ -404,7 +443,10 @@ function QuickActions() {
 function OpenLeads({ leads }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 }, height: 1 }}>
-      <SectionTitle title="Recent open leads" icon="material-symbols:filter-alt-outline-rounded" />
+      <SectionTitle
+        title="Recent open leads"
+        icon="material-symbols:filter-alt-outline-rounded"
+      />
       <TableContainer>
         <Table size="small">
           <TableHead>
@@ -428,16 +470,26 @@ function OpenLeads({ leads }) {
                     >
                       {entityName(lead)}
                     </Link>
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: 'text.secondary' }}
+                    >
                       {lead.source || 'No source'}
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Chip size="small" label={formatEnum(lead.status)} color="primary" variant="soft" />
+                    <Chip
+                      size="small"
+                      label={formatEnum(lead.status)}
+                      color="primary"
+                      variant="soft"
+                    />
                   </TableCell>
                   <TableCell>{lead.priority || '-'}</TableCell>
                   <TableCell>{formatCurrency(lead.estimated_budget)}</TableCell>
-                  <TableCell>{formatDateTime(lead.next_follow_up_at)}</TableCell>
+                  <TableCell>
+                    {formatDateTime(lead.next_follow_up_at)}
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
@@ -453,7 +505,10 @@ function OpenLeads({ leads }) {
 function FollowUps({ followUps }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 }, height: 1 }}>
-      <SectionTitle title="Upcoming follow-ups" icon="material-symbols:event-upcoming-outline-rounded" />
+      <SectionTitle
+        title="Upcoming follow-ups"
+        icon="material-symbols:event-upcoming-outline-rounded"
+      />
       <Stack direction="column" spacing={1.5}>
         {followUps.length ? (
           followUps.map((item) => (
@@ -466,13 +521,22 @@ function FollowUps({ followUps }) {
                 borderRadius: 2,
               }}
             >
-              <Stack direction="row" spacing={1} sx={{ justifyContent: 'space-between', mb: 0.75 }}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ justifyContent: 'space-between', mb: 0.75 }}
+              >
                 <Typography variant="subtitle2">
                   <Link href={item.href} underline="hover" color="text.primary">
                     {item.label}
                   </Link>
                 </Typography>
-                <Chip size="small" label={formatEnum(item.status)} color="primary" variant="soft" />
+                <Chip
+                  size="small"
+                  label={formatEnum(item.status)}
+                  color="primary"
+                  variant="soft"
+                />
               </Stack>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 {item.subject}
@@ -495,7 +559,10 @@ function FollowUps({ followUps }) {
 function DealsByStage({ deals }) {
   const stageSummary = dealStages.map((stage) => {
     const stageDeals = deals.filter((deal) => deal.stage === stage);
-    const amount = stageDeals.reduce((sum, deal) => sum + Number(deal.amount || 0), 0);
+    const amount = stageDeals.reduce(
+      (sum, deal) => sum + Number(deal.amount || 0),
+      0,
+    );
 
     return {
       stage,
@@ -506,22 +573,39 @@ function DealsByStage({ deals }) {
 
   return (
     <Paper sx={{ p: { xs: 3, md: 4 }, height: 1 }}>
-      <SectionTitle title="Deals by stage" icon="material-symbols:view-kanban-outline-rounded" />
+      <SectionTitle
+        title="Deals by stage"
+        icon="material-symbols:view-kanban-outline-rounded"
+      />
       <Stack direction="column" spacing={1.5}>
         {stageSummary.map((stage) => (
           <Box key={stage.stage}>
-            <Stack direction="row" spacing={1} sx={{ justifyContent: 'space-between', mb: 0.75 }}>
-              <Typography variant="subtitle2">{formatEnum(stage.stage)}</Typography>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ justifyContent: 'space-between', mb: 0.75 }}
+            >
+              <Typography variant="subtitle2">
+                {formatEnum(stage.stage)}
+              </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 {stage.count} / {formatCurrency(stage.amount)}
               </Typography>
             </Stack>
-            <Box sx={{ height: 8, borderRadius: 1, bgcolor: 'background.elevation2', overflow: 'hidden' }}>
+            <Box
+              sx={{
+                height: 8,
+                borderRadius: 1,
+                bgcolor: 'background.elevation2',
+                overflow: 'hidden',
+              }}
+            >
               <Box
                 sx={{
                   width: `${stage.count ? Math.min(100, stage.count * 18) : 2}%`,
                   height: 1,
-                  bgcolor: stage.stage === 'closed' ? 'success.main' : 'primary.main',
+                  bgcolor:
+                    stage.stage === 'closed' ? 'success.main' : 'primary.main',
                 }}
               />
             </Box>
@@ -535,18 +619,42 @@ function DealsByStage({ deals }) {
 function RecentTimeline({ items }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 }, height: 1 }}>
-      <SectionTitle title="Recent activities and notes" icon="material-symbols:history-rounded" />
+      <SectionTitle
+        title="Recent activities and notes"
+        icon="material-symbols:history-rounded"
+      />
       <Stack direction="column" divider={<Divider />} spacing={2}>
         {items.length ? (
           items.map((item) => (
-            <Stack key={item.id} direction="row" spacing={2} sx={{ alignItems: 'flex-start' }}>
-              <IconifyIcon icon={item.icon} sx={{ color: 'text.secondary', fontSize: 22, mt: 0.25 }} />
+            <Stack
+              key={item.id}
+              direction="row"
+              spacing={2}
+              sx={{ alignItems: 'flex-start' }}
+            >
+              <IconifyIcon
+                icon={item.icon}
+                sx={{ color: 'text.secondary', fontSize: 22, mt: 0.25 }}
+              />
               <Box sx={{ minWidth: 0 }}>
-                <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  useFlexGap
+                  sx={{ flexWrap: 'wrap', alignItems: 'center' }}
+                >
                   <Typography variant="subtitle2">{item.title}</Typography>
-                  <Chip size="small" label={formatEnum(item.kind)} variant="soft" color="neutral" />
+                  <Chip
+                    size="small"
+                    label={formatEnum(item.kind)}
+                    variant="soft"
+                    color="neutral"
+                  />
                 </Stack>
-                <Typography variant="body2" sx={{ color: 'text.secondary', overflowWrap: 'anywhere' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'text.secondary', overflowWrap: 'anywhere' }}
+                >
                   {item.entity}
                   {item.body ? ` - ${truncate(item.body, 120)}` : ''}
                 </Typography>
@@ -579,7 +687,10 @@ function EmptyRow({ colSpan, label }) {
   return (
     <TableRow>
       <TableCell colSpan={colSpan}>
-        <Typography variant="body2" sx={{ color: 'text.secondary', py: 2, textAlign: 'center' }}>
+        <Typography
+          variant="body2"
+          sx={{ color: 'text.secondary', py: 2, textAlign: 'center' }}
+        >
           {label}
         </Typography>
       </TableCell>
@@ -589,10 +700,18 @@ function EmptyRow({ colSpan, label }) {
 
 function entityName(record) {
   const contactName = record.contacts
-    ? [record.contacts.first_name, record.contacts.last_name].filter(Boolean).join(' ')
+    ? [record.contacts.first_name, record.contacts.last_name]
+        .filter(Boolean)
+        .join(' ')
     : '';
 
-  return contactName || record.companies?.name || record.deals?.name || record.name || 'CRM record';
+  return (
+    contactName ||
+    record.companies?.name ||
+    record.deals?.name ||
+    record.name ||
+    'CRM record'
+  );
 }
 
 function formatDateTime(value) {
@@ -618,7 +737,9 @@ function formatCurrency(value) {
 
 function formatEnum(value) {
   if (!value) return '-';
-  return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return value
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function truncate(value, maxLength) {
@@ -646,7 +767,7 @@ function activityHref(activity) {
   if (activity.lead_id) return paths.leadDetails(activity.lead_id);
   if (activity.contact_id) return paths.contactDetails(activity.contact_id);
   if (activity.company_id) return paths.companyDetails(activity.company_id);
-  return paths.crm;
+  return paths.crmRoot;
 }
 
 export default CRM;

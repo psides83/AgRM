@@ -11,10 +11,6 @@ export const leadInfoSchema = yup.object({
   leadInfo: yup.object({
     source: yup.string().optional(),
     accountNumber: yup.string().optional(),
-    initialContactMethod: yup
-      .string()
-      .oneOf(['call', 'text', 'email', 'visit', 'demo', 'quote', 'task', 'note'])
-      .default('call'),
     status: yup
       .string()
       .transform((value) => (value === '' ? undefined : value))
@@ -22,7 +18,9 @@ export const leadInfoSchema = yup.object({
       .optional(),
     priority: yup
       .number()
-      .transform((value, originalValue) => (originalValue === '' ? undefined : value))
+      .transform((value, originalValue) =>
+        originalValue === '' ? undefined : value,
+      )
       .min(1)
       .max(5)
       .optional(),
@@ -30,7 +28,9 @@ export const leadInfoSchema = yup.object({
       .number()
       .typeError('Estimated budget must be a number')
       .nullable()
-      .transform((value, originalValue) => (originalValue === '' ? null : value)),
+      .transform((value, originalValue) =>
+        originalValue === '' ? null : value,
+      ),
     targetPurchaseDate: yup.string().nullable().optional(),
     lastContactedAt: yup.string().nullable().optional(),
     nextFollowUpAt: yup.string().nullable().optional(),
@@ -40,14 +40,18 @@ export const leadInfoSchema = yup.object({
       .min(-90)
       .max(90)
       .nullable()
-      .transform((value, originalValue) => (originalValue === '' ? null : value)),
+      .transform((value, originalValue) =>
+        originalValue === '' ? null : value,
+      ),
     longitude: yup
       .number()
       .typeError('Longitude must be a number')
       .min(-180)
       .max(180)
       .nullable()
-      .transform((value, originalValue) => (originalValue === '' ? null : value)),
+      .transform((value, originalValue) =>
+        originalValue === '' ? null : value,
+      ),
     notes: yup.string().optional(),
   }),
 });
@@ -66,17 +70,6 @@ const priorityOptions = [
   { value: 3, label: '3 - Normal' },
   { value: 4, label: '4 - Low' },
   { value: 5, label: '5 - Lowest' },
-];
-
-const contactMethodOptions = [
-  { value: 'call', label: 'Call' },
-  { value: 'text', label: 'Text' },
-  { value: 'email', label: 'Email' },
-  { value: 'visit', label: 'Visit' },
-  { value: 'demo', label: 'Demo' },
-  { value: 'quote', label: 'Quote' },
-  { value: 'task', label: 'Task' },
-  { value: 'note', label: 'Note' },
 ];
 
 const LeadInfoForm = ({ label }) => {
@@ -126,15 +119,6 @@ const LeadInfoForm = ({ label }) => {
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <ControlledSelect
-                name="leadInfo.initialContactMethod"
-                label="Initial Contact Method"
-                options={contactMethodOptions}
-                control={control}
-                error={errors.leadInfo?.initialContactMethod?.message}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <ControlledSelect
                 name="leadInfo.priority"
                 label="Priority"
                 options={priorityOptions}
@@ -165,7 +149,9 @@ const LeadInfoForm = ({ label }) => {
                   <DatePicker
                     label="Target Purchase Date"
                     value={field.value ? dayjs(field.value) : null}
-                    onChange={(date) => field.onChange(date ? date.format('YYYY-MM-DD') : null)}
+                    onChange={(date) =>
+                      field.onChange(date ? date.format('YYYY-MM-DD') : null)
+                    }
                     slotProps={{ textField: { fullWidth: true } }}
                   />
                 )}
@@ -179,7 +165,9 @@ const LeadInfoForm = ({ label }) => {
                   <DateTimePicker
                     label="Last Contacted"
                     value={field.value ? dayjs(field.value) : null}
-                    onChange={(date) => field.onChange(date ? date.toISOString() : null)}
+                    onChange={(date) =>
+                      field.onChange(date ? date.toISOString() : null)
+                    }
                     slotProps={{ textField: { fullWidth: true } }}
                   />
                 )}
@@ -193,7 +181,9 @@ const LeadInfoForm = ({ label }) => {
                   <DateTimePicker
                     label="Next Follow-up"
                     value={field.value ? dayjs(field.value) : null}
-                    onChange={(date) => field.onChange(date ? date.toISOString() : null)}
+                    onChange={(date) =>
+                      field.onChange(date ? date.toISOString() : null)
+                    }
                     slotProps={{ textField: { fullWidth: true } }}
                   />
                 )}
@@ -228,7 +218,13 @@ const LeadInfoForm = ({ label }) => {
         </ContactFormSection>
 
         <ContactFormSection title="Lead Notes">
-          <TextField fullWidth label="Lead Notes" multiline rows={3} {...register('leadInfo.notes')} />
+          <TextField
+            fullWidth
+            label="Lead Notes"
+            multiline
+            rows={3}
+            {...register('leadInfo.notes')}
+          />
         </ContactFormSection>
       </Stack>
     </div>

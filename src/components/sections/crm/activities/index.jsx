@@ -38,10 +38,16 @@ const emptyFilters = {
   status: 'open',
 };
 
+const emptyExportRange = {
+  startDate: '',
+  endDate: '',
+};
+
 const ActivitiesPage = () => {
   const supabase = useMemo(() => createClient(), []);
   const [activities, setActivities] = useState([]);
   const [filters, setFilters] = useState(emptyFilters);
+  const [exportRange, setExportRange] = useState(emptyExportRange);
   const [sort, setSort] = useState({ key: 'date', direction: 'desc' });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -66,10 +72,10 @@ const ActivitiesPage = () => {
         due_at,
         completed_at,
         created_at,
-        contacts(id, first_name, last_name, companies(id, name)),
-        companies(id, name),
-        leads(id, source, status, contacts(id, first_name, last_name), companies(id, name)),
-        deals(id, name, stage, contacts(id, first_name, last_name), companies(id, name))
+        contacts(id, first_name, last_name, city, region, companies(id, name)),
+        companies(id, name, city, region),
+        leads(id, source, status, contacts(id, first_name, last_name, city, region), companies(id, name, city, region)),
+        deals(id, name, stage, contacts(id, first_name, last_name, city, region), companies(id, name, city, region))
       `,
       )
       .order('occurred_at', { ascending: false });
@@ -141,6 +147,10 @@ const ActivitiesPage = () => {
     setFilters((prev) => ({ ...prev, [key]: event.target.value }));
   };
 
+  const handleExportRange = (key) => (event) => {
+    setExportRange((prev) => ({ ...prev, [key]: event.target.value }));
+  };
+
   const handleSort = (key) => {
     setSort((prev) => ({
       key,
@@ -159,6 +169,22 @@ const ActivitiesPage = () => {
     } else {
       fetchActivities();
     }
+  };
+
+  const handleExport = () => {
+    const exportRows = activities
+      .filter((activity) => activityInExportRange(activity, exportRange))
+      .sort((a, b) => dateValue(activityDate(a)) - dateValue(activityDate(b)));
+
+    if (!exportRows.length) {
+      setError('No activities found for that export date range.');
+      return;
+    }
+
+    downloadCsv(
+      `activities-${exportRange.startDate || 'all'}-${exportRange.endDate || 'all'}.csv`,
+      activityExportCsv(exportRows),
+    );
   };
 
   return (
@@ -235,6 +261,46 @@ const ActivitiesPage = () => {
               {error}
             </Alert>
           )}
+
+          <Paper variant="outlined" sx={{ mt: 3, p: 2 }}>
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              sx={{ alignItems: { md: 'center' } }}
+            >
+              <Box sx={{ minWidth: { md: 220 }, flexGrow: 1 }}>
+                <Typography variant="subtitle2">Export CSV</Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  Date, Company, Contact, Location, Notes
+                </Typography>
+              </Box>
+              <TextField
+                label="Start Date"
+                type="date"
+                value={exportRange.startDate}
+                onChange={handleExportRange('startDate')}
+                slotProps={{ inputLabel: { shrink: true } }}
+                sx={{ minWidth: 160 }}
+              />
+              <TextField
+                label="End Date"
+                type="date"
+                value={exportRange.endDate}
+                onChange={handleExportRange('endDate')}
+                slotProps={{ inputLabel: { shrink: true } }}
+                sx={{ minWidth: 160 }}
+              />
+              <Button
+                variant="contained"
+                onClick={handleExport}
+                startIcon={
+                  <IconifyIcon icon="material-symbols:download-rounded" />
+                }
+              >
+                Export CSV
+              </Button>
+            </Stack>
+          </Paper>
 
           <TableContainer sx={{ mt: 3 }}>
             <Table>
@@ -467,9 +533,9 @@ function activitySortValue(activity, key) {
       .join(' ');
   }
   if (key === 'direction') return activity.direction;
-  if (key === 'date') return activity.occurred_at || activity.created_at;
+  if (key === 'date') return activityDate(activity);
   if (key === 'status') return activityStatusRank(activity);
-  return activity.occurred_at || activity.created_at;
+  return activityDate(activity);
 }
 
 function activityStatusRank(activity) {
@@ -482,6 +548,101 @@ function dateValue(value) {
   if (!value) return 0;
   const time = new Date(value).getTime();
   return Number.isFinite(time) ? time : 0;
+}
+
+function activityInExportRange(activity, range) {
+  const date = activityDate(activity);
+  if (!date) return false;
+
+  const activityDay = new Date(date);
+  const start = range.startDate ? startOfDay(range.startDate) : null;
+  const end = range.endDate ? endOfDay(range.endDate) : null;
+
+  return (!start || activityDay >= start) && (!end || activityDay <= end);
+}
+
+function activityDate(activity) {
+  return activity.occurred_at || activity.created_at;
+}
+
+function startOfDay(value) {
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function endOfDay(value) {
+  const date = new Date(`${value}T23:59:59.999`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function activityExportCsv(activities) {
+  const headers = ['Date', 'Company', 'Contact', 'Location', 'Notes'];
+  const rows = activities.map((activity) => [
+    formatExportDate(activityDate(activity)),
+    companyLabel(activity),
+    exportContactName(activity),
+    exportLocation(activity),
+    exportNotes(activity),
+  ]);
+
+  return [headers, ...rows].map((row) => row.map(csvCell).join(',')).join('\n');
+}
+
+function csvCell(value) {
+  const text = String(value || '');
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function downloadCsv(filename, csv) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function formatExportDate(value) {
+  if (!value) return '';
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(value));
+}
+
+function exportContactName(activity) {
+  return (
+    contactName(activity.contacts) ||
+    contactName(activity.leads?.contacts) ||
+    contactName(activity.deals?.contacts) ||
+    ''
+  );
+}
+
+function exportLocation(activity) {
+  const contactLocation =
+    locationText(activity.contacts) ||
+    locationText(activity.leads?.contacts) ||
+    locationText(activity.deals?.contacts);
+  const companyLocation =
+    locationText(activity.companies) ||
+    locationText(activity.leads?.companies) ||
+    locationText(activity.deals?.companies) ||
+    locationText(activity.contacts?.companies);
+
+  return contactLocation || companyLocation || '';
+}
+
+function locationText(record) {
+  return [record?.city, record?.region].filter(Boolean).join(', ');
+}
+
+function exportNotes(activity) {
+  return [activity.subject, activity.body].filter(Boolean).join('\n\n');
 }
 
 function recordHref(activity) {
