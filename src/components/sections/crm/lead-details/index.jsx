@@ -539,7 +539,11 @@ const LeadDetails = ({ leadId }) => {
               onSaved={fetchDetails}
             />
             <CrmFilesPanel recordType="lead" recordId={lead.id} />
-            <TimelineCard items={timelineItems} />
+            <TimelineCard
+              items={timelineItems}
+              supabase={supabase}
+              onSaved={fetchDetails}
+            />
           </Stack>
         </Grid>
       </Grid>
@@ -713,7 +717,7 @@ function EquipmentCard({ equipmentInterests }) {
   );
 }
 
-function TimelineCard({ items }) {
+function TimelineCard({ items, supabase, onSaved }) {
   const [editingItem, setEditingItem] = useState(null);
 
   return (

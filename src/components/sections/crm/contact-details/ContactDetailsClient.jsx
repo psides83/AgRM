@@ -631,7 +631,11 @@ const ContactDetailsClient = ({ contactId }) => {
               onSaved={fetchDetails}
             />
             <CrmFilesPanel recordType="contact" recordId={contact.id} />
-            <TimelineCard items={timelineItems} />
+            <TimelineCard
+              items={timelineItems}
+              supabase={supabase}
+              onSaved={fetchDetails}
+            />
           </Stack>
         </Grid>
       </Grid>
@@ -808,7 +812,7 @@ function EquipmentCard({ equipmentInterests }) {
   );
 }
 
-function TimelineCard({ items }) {
+function TimelineCard({ items, supabase, onSaved }) {
   const [editingItem, setEditingItem] = useState(null);
 
   return (
