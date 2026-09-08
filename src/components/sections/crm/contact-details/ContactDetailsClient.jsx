@@ -87,8 +87,20 @@ const ContactDetailsClient = ({ contactId }) => {
   const fetchDetails = async () => {
     setError(null);
 
+    const contactResult = await supabase
+      .from('contacts')
+      .select('*')
+      .eq('id', contactId)
+      .single();
+
+    if (contactResult.error) {
+      setError(contactResult.error.message);
+      setIsLoading(false);
+      return;
+    }
+
     const [
-      contactResult,
+      companyResult,
       leadsResult,
       equipmentResult,
       activitiesResult,
@@ -96,34 +108,13 @@ const ContactDetailsClient = ({ contactId }) => {
       tasksResult,
       locationsResult,
     ] = await Promise.all([
-      supabase
-        .from('contacts')
-        .select(
-          `
-            *,
-            companies (
-              id,
-              name,
-              company_type,
-              account_number,
-              website,
-              phone,
-              email,
-              address_line1,
-              address_line2,
-              city,
-              county,
-              region,
-              postal_code,
-              country,
-              latitude,
-              longitude,
-              notes
-            )
-          `,
-        )
-        .eq('id', contactId)
-        .single(),
+      contactResult.data.company_id
+        ? supabase
+            .from('companies')
+            .select('*')
+            .eq('id', contactResult.data.company_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
       supabase
         .from('leads')
         .select('*')
@@ -155,26 +146,20 @@ const ContactDetailsClient = ({ contactId }) => {
         .order('name', { ascending: true }),
     ]);
 
-    const queryError = [
-      contactResult.error,
-      leadsResult.error,
-      equipmentResult.error,
-      activitiesResult.error,
-      notesResult.error,
-      locationsResult.error,
-    ].find(Boolean);
-
-    if (queryError) {
-      setError(queryError.message);
-    } else {
-      setContact(contactResult.data);
-      setLeads(leadsResult.data || []);
-      setEquipmentInterests(equipmentResult.data || []);
-      setActivities(activitiesResult.data || []);
-      setNotes(notesResult.data || []);
-      setTasks(tasksResult.error ? [] : tasksResult.data || []);
-      setEquipmentLocations(locationsResult.data || []);
-    }
+    setContact({
+      ...contactResult.data,
+      companies: companyResult.error ? null : companyResult.data,
+    });
+    setLeads(leadsResult.error ? [] : leadsResult.data || []);
+    setEquipmentInterests(
+      equipmentResult.error ? [] : equipmentResult.data || [],
+    );
+    setActivities(activitiesResult.error ? [] : activitiesResult.data || []);
+    setNotes(notesResult.error ? [] : notesResult.data || []);
+    setTasks(tasksResult.error ? [] : tasksResult.data || []);
+    setEquipmentLocations(
+      locationsResult.error ? [] : locationsResult.data || [],
+    );
 
     setIsLoading(false);
   };

@@ -82,8 +82,21 @@ const LeadDetails = ({ leadId }) => {
   const fetchDetails = async () => {
     setError(null);
 
+    const leadResult = await supabase
+      .from('leads')
+      .select('*')
+      .eq('id', leadId)
+      .single();
+
+    if (leadResult.error) {
+      setError(leadResult.error.message);
+      setIsLoading(false);
+      return;
+    }
+
     const [
-      leadResult,
+      contactResult,
+      companyResult,
       equipmentResult,
       dealsResult,
       activitiesResult,
@@ -91,17 +104,20 @@ const LeadDetails = ({ leadId }) => {
       tasksResult,
       locationsResult,
     ] = await Promise.all([
-      supabase
-        .from('leads')
-        .select(
-          `
-          *,
-          contacts(id, first_name, last_name, title, account_number, email, phone, mobile_phone),
-          companies(id, name, company_type, website, phone, email, city, region)
-        `,
-        )
-        .eq('id', leadId)
-        .single(),
+      leadResult.data.contact_id
+        ? supabase
+            .from('contacts')
+            .select('*')
+            .eq('id', leadResult.data.contact_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+      leadResult.data.company_id
+        ? supabase
+            .from('companies')
+            .select('*')
+            .eq('id', leadResult.data.company_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
       supabase
         .from('equipment_interests')
         .select('*, equipment_locations(id, name, city, region)')
@@ -133,26 +149,21 @@ const LeadDetails = ({ leadId }) => {
         .order('name', { ascending: true }),
     ]);
 
-    const queryError = [
-      leadResult.error,
-      equipmentResult.error,
-      dealsResult.error,
-      activitiesResult.error,
-      notesResult.error,
-      locationsResult.error,
-    ].find(Boolean);
-
-    if (queryError) {
-      setError(queryError.message);
-    } else {
-      setLead(leadResult.data);
-      setEquipmentInterests(equipmentResult.data || []);
-      setDeals(dealsResult.data || []);
-      setActivities(activitiesResult.data || []);
-      setNotes(notesResult.data || []);
-      setTasks(tasksResult.error ? [] : tasksResult.data || []);
-      setEquipmentLocations(locationsResult.data || []);
-    }
+    setLead({
+      ...leadResult.data,
+      contacts: contactResult.error ? null : contactResult.data,
+      companies: companyResult.error ? null : companyResult.data,
+    });
+    setEquipmentInterests(
+      equipmentResult.error ? [] : equipmentResult.data || [],
+    );
+    setDeals(dealsResult.error ? [] : dealsResult.data || []);
+    setActivities(activitiesResult.error ? [] : activitiesResult.data || []);
+    setNotes(notesResult.error ? [] : notesResult.data || []);
+    setTasks(tasksResult.error ? [] : tasksResult.data || []);
+    setEquipmentLocations(
+      locationsResult.error ? [] : locationsResult.data || [],
+    );
 
     setIsLoading(false);
   };
