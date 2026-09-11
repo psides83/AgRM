@@ -20,6 +20,7 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
+import { useRouter } from 'next/navigation';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
@@ -63,6 +64,7 @@ const equipmentAvailability = [
 ];
 
 const LeadDetails = ({ leadId }) => {
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [lead, setLead] = useState(null);
   const [equipmentInterests, setEquipmentInterests] = useState([]);
@@ -578,6 +580,14 @@ const LeadDetails = ({ leadId }) => {
         lead={lead}
         onClose={() => setDialog(null)}
         onSaved={fetchDetails}
+        onDelete={() => setDialog('delete')}
+        supabase={supabase}
+      />
+      <DeleteLeadDialog
+        open={dialog === 'delete'}
+        lead={lead}
+        onClose={() => setDialog(null)}
+        onDeleted={() => router.push(paths.leads)}
         supabase={supabase}
       />
       <AddNoteDialog
@@ -1099,7 +1109,7 @@ function RecordRow({ title, subtitle, chip, href }) {
   );
 }
 
-function UpdateLeadDialog({ open, lead, onClose, onSaved, supabase }) {
+function UpdateLeadDialog({ open, lead, onClose, onSaved, onDelete, supabase }) {
   const [form, setForm] = useState({
     accountNumber: lead?.account_number || '',
     status: lead?.status || 'new',
@@ -1110,9 +1120,11 @@ function UpdateLeadDialog({ open, lead, onClose, onSaved, supabase }) {
     notes: lead?.notes || '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (open)
+    if (open) {
+      setError(null);
       setForm({
         accountNumber: lead?.account_number || '',
         status: lead?.status || 'new',
@@ -1122,10 +1134,14 @@ function UpdateLeadDialog({ open, lead, onClose, onSaved, supabase }) {
         longitude: lead?.longitude ?? '',
         notes: lead?.notes || '',
       });
+    }
   }, [lead, open]);
 
   const handleSave = async () => {
+    if (!lead?.id) return;
+
     setIsSaving(true);
+    setError(null);
     const { error } = await supabase
       .from('leads')
       .update({
@@ -1139,10 +1155,14 @@ function UpdateLeadDialog({ open, lead, onClose, onSaved, supabase }) {
       })
       .eq('id', lead.id);
     setIsSaving(false);
-    if (!error) {
-      onSaved();
-      onClose();
+
+    if (error) {
+      setError(error.message);
+      return;
     }
+
+    onSaved();
+    onClose();
   };
 
   return (
@@ -1150,6 +1170,7 @@ function UpdateLeadDialog({ open, lead, onClose, onSaved, supabase }) {
       <DialogTitle>Update Lead</DialogTitle>
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
+          {error && <Alert severity="error">{error}</Alert>}
           <TextField
             label="Account Number"
             value={form.accountNumber}
@@ -1210,12 +1231,85 @@ function UpdateLeadDialog({ open, lead, onClose, onSaved, supabase }) {
           />
         </Stack>
       </DialogContent>
+      <DialogActions
+        sx={{ justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}
+      >
+        <Button
+          color="error"
+          onClick={onDelete}
+          startIcon={
+            <IconifyIcon icon="material-symbols:delete-outline-rounded" />
+          }
+        >
+          Delete Lead
+        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button color="neutral" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleSave} loading={isSaving}>
+            Save Changes
+          </Button>
+        </Stack>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+function DeleteLeadDialog({ open, lead, onClose, onDeleted, supabase }) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (open) setError(null);
+  }, [open]);
+
+  const handleDelete = async () => {
+    if (!lead?.id) return;
+
+    setIsDeleting(true);
+    setError(null);
+
+    const { error: deleteError } = await supabase
+      .from('leads')
+      .delete()
+      .eq('id', lead.id);
+
+    setIsDeleting(false);
+
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+
+    onDeleted();
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Delete Lead</DialogTitle>
+      <DialogContent>
+        <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
+          {error && <Alert severity="error">{error}</Alert>}
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            This will delete the lead and lead-level history, including linked
+            activities, notes, tasks, files, and equipment interests. Deals
+            created from this lead will remain, but their lead link will be
+            removed where the database allows it.
+          </Typography>
+        </Stack>
+      </DialogContent>
       <DialogActions>
         <Button color="neutral" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="contained" onClick={handleSave} loading={isSaving}>
-          Save Changes
+        <Button
+          variant="contained"
+          color="error"
+          loading={isDeleting}
+          onClick={handleDelete}
+        >
+          Delete Lead
         </Button>
       </DialogActions>
     </Dialog>
