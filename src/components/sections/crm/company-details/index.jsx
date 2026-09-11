@@ -14,6 +14,7 @@ import {
   Divider,
   FormControlLabel,
   Link,
+  Menu,
   MenuItem,
   Paper,
   Stack,
@@ -80,6 +81,7 @@ const CompanyDetails = ({ companyId }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dialog, setDialog] = useState(null);
+  const [actionMenuAnchor, setActionMenuAnchor] = useState(null);
 
   const fetchDetails = async () => {
     if (!companyId) {
@@ -289,6 +291,15 @@ const CompanyDetails = ({ companyId }) => {
     (sum, deal) => sum + Number(deal.amount || 0),
     0,
   );
+  const companyInitial = (company?.name || 'Company')
+    .trim()
+    .charAt(0)
+    .toUpperCase();
+
+  const handleMoreAction = (nextDialog) => {
+    setActionMenuAnchor(null);
+    setDialog(nextDialog);
+  };
 
   if (isLoading)
     return <Typography sx={{ p: 3 }}>Loading company...</Typography>;
@@ -299,90 +310,12 @@ const CompanyDetails = ({ companyId }) => {
     <Grid container spacing={3}>
       <Grid size={12}>
         <PageHeader
-          title={company.name}
+          title={null}
           breadcrumb={[
             { label: 'Home', url: paths.crm },
             { label: 'Contacts', url: paths.contacts },
             { label: 'Company detail', active: true },
           ]}
-          actionComponent={
-            <Stack
-              direction="row"
-              spacing={1}
-              useFlexGap
-              sx={{ flexWrap: 'wrap' }}
-            >
-              <Button
-                variant="soft"
-                color="neutral"
-                onClick={() => setDialog('edit')}
-                startIcon={
-                  <IconifyIcon icon="material-symbols:edit-outline-rounded" />
-                }
-              >
-                Edit
-              </Button>
-              <Button
-                variant="soft"
-                color="error"
-                onClick={() => setDialog('delete')}
-                startIcon={
-                  <IconifyIcon icon="material-symbols:delete-outline-rounded" />
-                }
-              >
-                Delete
-              </Button>
-              <Button
-                variant="soft"
-                color="neutral"
-                onClick={() => setDialog('contact')}
-                startIcon={
-                  <IconifyIcon icon="material-symbols:person-add-outline-rounded" />
-                }
-              >
-                Add Contact
-              </Button>
-              <Button
-                variant="soft"
-                color="neutral"
-                onClick={() => setDialog('lead')}
-                startIcon={
-                  <IconifyIcon icon="material-symbols:add-notes-outline-rounded" />
-                }
-              >
-                Add Lead
-              </Button>
-              <Button
-                variant="soft"
-                color="neutral"
-                onClick={() => setDialog('note')}
-                startIcon={
-                  <IconifyIcon icon="material-symbols:note-add-outline-rounded" />
-                }
-              >
-                Add Note
-              </Button>
-              <Button
-                variant="soft"
-                color="neutral"
-                onClick={() => setDialog('activity')}
-                startIcon={
-                  <IconifyIcon icon="material-symbols:add-call-outline-rounded" />
-                }
-              >
-                Add Activity
-              </Button>
-              <Button
-                variant="contained"
-                onClick={() => setDialog('equipment')}
-                startIcon={
-                  <IconifyIcon icon="material-symbols:agriculture-outline-rounded" />
-                }
-              >
-                Add Interest
-              </Button>
-            </Stack>
-          }
         />
       </Grid>
 
@@ -396,66 +329,114 @@ const CompanyDetails = ({ companyId }) => {
               alignItems: { xs: 'flex-start', lg: 'center' },
             }}
           >
-            <Box sx={{ minWidth: 0 }}>
+            <Stack direction="column" spacing={2} sx={{ minWidth: 0 }}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={2}
+                sx={{ alignItems: { sm: 'center' } }}
+              >
+                <Box
+                  sx={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: '50%',
+                    bgcolor: 'primary.lighter',
+                    color: 'primary.main',
+                    display: 'grid',
+                    placeItems: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Typography variant="h5">{companyInitial}</Typography>
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="h4" sx={{ overflowWrap: 'anywhere' }}>
+                    {company.name}
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                    {[
+                      company.city,
+                      company.county,
+                      company.region,
+                      company.postal_code,
+                    ]
+                      .filter(Boolean)
+                      .join(', ') || 'Company account'}
+                  </Typography>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    useFlexGap
+                    sx={{ flexWrap: 'wrap', mt: 1 }}
+                  >
+                    {company.company_type && (
+                      <Chip
+                        label={formatEnum(company.company_type)}
+                        size="small"
+                        variant="soft"
+                        color="primary"
+                      />
+                    )}
+                    {company.account_number && (
+                      <Chip
+                        label={`Account ${company.account_number}`}
+                        size="small"
+                        variant="soft"
+                        color="primary"
+                      />
+                    )}
+                    {company.email && (
+                      <Chip
+                        label={company.email}
+                        size="small"
+                        variant="soft"
+                        color="neutral"
+                      />
+                    )}
+                    {company.phone && (
+                      <Chip
+                        label={formatPhone(company.phone)}
+                        size="small"
+                        variant="soft"
+                        color="neutral"
+                      />
+                    )}
+                  </Stack>
+                </Box>
+              </Stack>
               <Stack
                 direction="row"
-                spacing={1}
+                spacing={0.75}
                 useFlexGap
-                sx={{ flexWrap: 'wrap', mb: 1 }}
+                sx={{ flexWrap: 'wrap' }}
               >
-                {company.company_type && (
-                  <Chip
-                    label={formatEnum(company.company_type)}
-                    variant="soft"
-                    color="primary"
-                  />
-                )}
                 <Chip
                   label={`${contacts.length} contact${contacts.length === 1 ? '' : 's'}`}
+                  size="small"
                   variant="soft"
                   color="neutral"
                 />
                 <Chip
                   label={`${openDeals.length} open deal${openDeals.length === 1 ? '' : 's'}`}
+                  size="small"
                   variant="soft"
                   color="neutral"
                 />
                 <Chip
-                  label={formatCurrency(pipelineValue)}
+                  label={`${formatCurrency(pipelineValue)} pipeline`}
+                  size="small"
                   variant="soft"
                   color="neutral"
                 />
               </Stack>
-              <Typography variant="h3" sx={{ overflowWrap: 'anywhere' }}>
-                {company.name}
-              </Typography>
-              <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                {[
-                  company.city,
-                  company.county,
-                  company.region,
-                  company.postal_code,
-                ]
-                  .filter(Boolean)
-                  .join(', ') || 'Company account'}
-              </Typography>
-            </Box>
+            </Stack>
+
             <Stack
               direction="row"
               spacing={1}
               useFlexGap
               sx={{ flexWrap: 'wrap' }}
             >
-              {company.phone && (
-                <Chip
-                  label={formatPhone(company.phone)}
-                  variant="soft"
-                  color="neutral"
-                />
-              )}
-              {company.email && (
-                <Chip label={company.email} variant="soft" color="neutral" />
-              )}
               {company.website && (
                 <Button
                   href={company.website}
@@ -470,6 +451,98 @@ const CompanyDetails = ({ companyId }) => {
                   Website
                 </Button>
               )}
+              <Button
+                variant="contained"
+                onClick={() => setDialog('equipment')}
+                startIcon={
+                  <IconifyIcon icon="material-symbols:agriculture-outline-rounded" />
+                }
+              >
+                Add Interest
+              </Button>
+              <Button
+                variant="soft"
+                color="neutral"
+                onClick={() => setDialog('activity')}
+                startIcon={
+                  <IconifyIcon icon="material-symbols:add-call-outline-rounded" />
+                }
+              >
+                Activity
+              </Button>
+              <Button
+                variant="soft"
+                color="neutral"
+                onClick={(event) => setActionMenuAnchor(event.currentTarget)}
+                startIcon={
+                  <IconifyIcon icon="material-symbols:more-horiz-rounded" />
+                }
+              >
+                More
+              </Button>
+              <Menu
+                anchorEl={actionMenuAnchor}
+                open={Boolean(actionMenuAnchor)}
+                onClose={() => setActionMenuAnchor(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              >
+                <MenuItem onClick={() => handleMoreAction('contact')}>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignItems: 'center' }}
+                  >
+                    <IconifyIcon icon="material-symbols:person-add-outline-rounded" />
+                    <span>Add Contact</span>
+                  </Stack>
+                </MenuItem>
+                <MenuItem onClick={() => handleMoreAction('lead')}>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignItems: 'center' }}
+                  >
+                    <IconifyIcon icon="material-symbols:add-notes-outline-rounded" />
+                    <span>Add Lead</span>
+                  </Stack>
+                </MenuItem>
+                <MenuItem onClick={() => handleMoreAction('note')}>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignItems: 'center' }}
+                  >
+                    <IconifyIcon icon="material-symbols:note-add-outline-rounded" />
+                    <span>Add Note</span>
+                  </Stack>
+                </MenuItem>
+                <MenuItem onClick={() => handleMoreAction('edit')}>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignItems: 'center' }}
+                  >
+                    <IconifyIcon icon="material-symbols:edit-outline-rounded" />
+                    <span>Edit</span>
+                  </Stack>
+                </MenuItem>
+                <MenuItem onClick={() => handleMoreAction('delete')}>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignItems: 'center' }}
+                  >
+                    <IconifyIcon
+                      icon="material-symbols:delete-outline-rounded"
+                      sx={{ color: 'error.main' }}
+                    />
+                    <Box component="span" sx={{ color: 'error.main' }}>
+                      Delete
+                    </Box>
+                  </Stack>
+                </MenuItem>
+              </Menu>
             </Stack>
           </Stack>
         </Paper>
