@@ -6,13 +6,14 @@ import TabList from '@mui/lab/TabList';
 import { Breadcrumbs, Button, Link, Stack, Typography } from '@mui/material';
 import Box from '@mui/material/Box';
 import Tab, { tabClasses } from '@mui/material/Tab';
-import { notifications } from 'data/notifications';
 import { useBreakpoints } from 'providers/BreakpointsProvider';
 import IconifyIcon from 'components/base/IconifyIcon';
+import { useCrmNotifications } from 'components/sections/crm/shared/useCrmNotifications';
 import NotificationTabPanel from 'components/sections/notification/NotificationTabPanel';
 
 const Notifications = () => {
   const [currentTab, setCurrentTab] = useState('all');
+  const { notifications } = useCrmNotifications();
 
   const { up } = useBreakpoints();
 
@@ -69,10 +70,10 @@ const Notifications = () => {
               }}
             />
             <Tab
-              label={upSm ? 'Friend requests' : undefined}
-              value="friend_requests"
+              label={upSm ? 'Equipment' : undefined}
+              value="equipment"
               icon={
-                <IconifyIcon icon="material-symbols:person-add-outline-rounded" fontSize={20} />
+                <IconifyIcon icon="material-symbols:warning-outline-rounded" fontSize={20} />
               }
               iconPosition="start"
             />
@@ -88,9 +89,9 @@ const Notifications = () => {
         </Stack>
         <NotificationTabPanel value="all" notificationsData={notifications} />
         <NotificationTabPanel
-          value="friend_requests"
+          value="equipment"
           notificationsData={notifications.filter(
-            (notification) => notification.type === 'friend_request',
+            (notification) => notification.type === 'crm_equipment',
           )}
         />
       </TabContext>

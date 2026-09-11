@@ -13,7 +13,8 @@ const NotificationListItemAvatar = ({ notification, variant }) => {
             {
               height: 24,
               width: 24,
-              bgcolor: notificationBadge[notification.type].color,
+              bgcolor:
+                notificationBadge[notification.type]?.color || 'primary.main',
             },
             variant === 'small' && {
               height: 16,
@@ -22,7 +23,10 @@ const NotificationListItemAvatar = ({ notification, variant }) => {
           ]}
         >
           <IconifyIcon
-            icon={notificationBadge[notification.type].icon}
+            icon={
+              notificationBadge[notification.type]?.icon ||
+              'material-symbols:notifications-outline-rounded'
+            }
             sx={[
               { fontSize: notification.type === 'reaction_smile' ? 22 : 16 },
               variant === 'small' && { fontSize: notification.type === 'reaction_smile' ? 16 : 10 },

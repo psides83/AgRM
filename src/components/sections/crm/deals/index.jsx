@@ -47,6 +47,7 @@ const Deals = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingDeal, setEditingDeal] = useState(null);
 
   const fetchDeals = async () => {
     setError(null);
@@ -65,7 +66,7 @@ const Deals = () => {
         updated_at,
         contacts(id, first_name, last_name),
         companies(id, name),
-        leads(id, status, source)
+        leads(id, status, source, contact_id, company_id)
       `
       )
       .order('updated_at', { ascending: false });
@@ -186,6 +187,7 @@ const Deals = () => {
               deals={column.deals}
               isLoading={isLoading}
               onStageChange={handleStageChange}
+              onEdit={setEditingDeal}
             />
           ))}
         </Box>
@@ -202,11 +204,21 @@ const Deals = () => {
         }}
         supabase={supabase}
       />
+      <EditDealDialog
+        open={Boolean(editingDeal)}
+        deal={editingDeal}
+        onClose={() => setEditingDeal(null)}
+        onSaved={() => {
+          setEditingDeal(null);
+          fetchDeals();
+        }}
+        supabase={supabase}
+      />
     </Grid>
   );
 };
 
-function StageColumn({ stage, deals, isLoading, onStageChange }) {
+function StageColumn({ stage, deals, isLoading, onStageChange, onEdit }) {
   const total = deals.reduce((sum, deal) => sum + Number(deal.amount || 0), 0);
 
   return (
@@ -226,7 +238,12 @@ function StageColumn({ stage, deals, isLoading, onStageChange }) {
           <EmptyState label="Loading deals..." />
         ) : deals.length ? (
           deals.map((deal) => (
-            <DealCard key={deal.id} deal={deal} onStageChange={onStageChange} />
+            <DealCard
+              key={deal.id}
+              deal={deal}
+              onStageChange={onStageChange}
+              onEdit={onEdit}
+            />
           ))
         ) : (
           <EmptyState label="No deals" />
@@ -236,7 +253,7 @@ function StageColumn({ stage, deals, isLoading, onStageChange }) {
   );
 }
 
-function DealCard({ deal, onStageChange }) {
+function DealCard({ deal, onStageChange, onEdit }) {
   const stageIndex = dealStages.indexOf(deal.stage);
   const nextStage = stageIndex >= 0 ? dealStages[stageIndex + 1] : null;
   const canAdvance = Boolean(nextStage);
@@ -285,12 +302,145 @@ function DealCard({ deal, onStageChange }) {
           ))}
         </TextField>
         {canAdvance && (
-          <Button size="small" variant="soft" onClick={() => onStageChange(deal.id, nextStage)}>
-            Complete {formatEnum(deal.stage)}
+          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+            <Button size="small" variant="soft" onClick={() => onStageChange(deal.id, nextStage)}>
+              Complete {formatEnum(deal.stage)}
+            </Button>
+            <Button
+              size="small"
+              variant="soft"
+              color="neutral"
+              onClick={() => onEdit(deal)}
+              startIcon={<IconifyIcon icon="material-symbols:edit-outline-rounded" />}
+            >
+              Edit
+            </Button>
+          </Stack>
+        )}
+        {!canAdvance && (
+          <Button
+            size="small"
+            variant="soft"
+            color="neutral"
+            onClick={() => onEdit(deal)}
+            startIcon={<IconifyIcon icon="material-symbols:edit-outline-rounded" />}
+          >
+            Edit
           </Button>
         )}
       </Stack>
     </Paper>
+  );
+}
+
+function EditDealDialog({ open, deal, onClose, onSaved, supabase }) {
+  const [form, setForm] = useState(emptyDealForm);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (open) {
+      setForm({
+        name: deal?.name || '',
+        stage: deal?.stage || 'needs_discovery',
+        amount: deal?.amount || '',
+        probability: deal?.probability || 0,
+        expectedCloseDate: deal?.expected_close_date || '',
+        contactId: '',
+        leadId: '',
+        notes: deal?.notes || '',
+      });
+      setError(null);
+    }
+  }, [deal, open]);
+
+  const handleSave = async () => {
+    if (!form.name.trim()) {
+      setError('Deal name is required.');
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    const { error: updateError } = await supabase
+      .from('deals')
+      .update({
+        name: form.name.trim(),
+        stage: form.stage,
+        amount: form.amount || null,
+        probability: Number(form.probability) || 0,
+        expected_close_date: form.expectedCloseDate || null,
+        closed_at:
+          form.stage === 'closed'
+            ? deal.closed_at || new Date().toISOString()
+            : null,
+        lost_reason: null,
+        notes: cleanText(form.notes),
+      })
+      .eq('id', deal.id);
+
+    setIsSaving(false);
+
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+
+    onSaved();
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Edit Deal</DialogTitle>
+      <DialogContent>
+        <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
+          {error && <Alert severity="error">{error}</Alert>}
+          <TextField
+            label="Deal Name"
+            value={form.name}
+            onChange={handleField(setForm, 'name')}
+            fullWidth
+            required
+          />
+          <TextField select label="Stage" value={form.stage} onChange={handleField(setForm, 'stage')} fullWidth>
+            {dealStages.map((stage) => (
+              <MenuItem key={stage} value={stage}>
+                {formatEnum(stage)}
+              </MenuItem>
+            ))}
+          </TextField>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField label="Amount" type="number" value={form.amount} onChange={handleField(setForm, 'amount')} fullWidth />
+            <TextField
+              label="Probability"
+              type="number"
+              value={form.probability}
+              onChange={handleField(setForm, 'probability')}
+              slotProps={{ htmlInput: { min: 0, max: 100 } }}
+              fullWidth
+            />
+          </Stack>
+          <TextField
+            label="Expected Close Date"
+            type="date"
+            value={form.expectedCloseDate}
+            onChange={handleField(setForm, 'expectedCloseDate')}
+            slotProps={{ inputLabel: { shrink: true } }}
+            fullWidth
+          />
+          <TextField label="Notes" value={form.notes} onChange={handleField(setForm, 'notes')} fullWidth multiline rows={3} />
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button color="neutral" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="contained" onClick={handleSave} loading={isSaving}>
+          Save Changes
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 

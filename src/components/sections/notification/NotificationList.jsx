@@ -42,7 +42,7 @@ const NotificationList = ({ title, notifications, sx, variant = 'default', onIte
           <ListItem
             key={notification.id}
             disablePadding
-            secondaryAction={<NotificationActionMenu />}
+            secondaryAction={variant === 'small' ? null : <NotificationActionMenu />}
             sx={{
               '& .MuiListItemSecondaryAction-root': {
                 top: 16,
@@ -51,7 +51,7 @@ const NotificationList = ({ title, notifications, sx, variant = 'default', onIte
             }}
           >
             <ListItemButton
-              href="#!"
+              href={notification.href || '#!'}
               disableRipple
               onClick={onItemClick}
               sx={[

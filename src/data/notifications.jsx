@@ -13,6 +13,10 @@ export const notificationBadge = {
   photos: { color: 'primary.main', icon: 'material-symbols:imagesmode-rounded' },
   group_invitation: { color: 'primary.main', icon: 'material-symbols:group-rounded' },
   tagged: { color: 'primary.main', icon: 'material-symbols:sell' },
+  crm_task: { color: 'error.main', icon: 'material-symbols:assignment-outline' },
+  crm_activity: { color: 'warning.main', icon: 'material-symbols:schedule-outline-rounded' },
+  crm_equipment: { color: 'success.main', icon: 'material-symbols:warning-outline-rounded' },
+  crm_deal: { color: 'primary.main', icon: 'material-symbols:handshake-outline-rounded' },
 };
 
 export const notifications = [

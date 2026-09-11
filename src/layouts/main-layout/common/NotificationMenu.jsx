@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { badgeClasses, Box, Button, Link, paperClasses, Popover, Stack } from '@mui/material';
-import { notifications as notificationsData } from 'data/notifications';
-import dayjs from 'dayjs';
 import { useSettingsContext } from 'providers/SettingsProvider';
 import paths from 'routes/paths';
 import IconifyIcon from 'components/base/IconifyIcon';
 import SimpleBar from 'components/base/SimpleBar';
+import {
+  groupNotificationsByDate,
+  useCrmNotifications,
+} from 'components/sections/crm/shared/useCrmNotifications';
 import NotificationList from 'components/sections/notification/NotificationList';
 import OutlinedBadge from 'components/styled/OutlinedBadge';
 
@@ -17,6 +19,7 @@ const NotificationMenu = ({ type = 'default' }) => {
     older: [],
   });
   const [anchorEl, setAnchorEl] = useState(null);
+  const { notifications: notificationsData } = useCrmNotifications();
 
   const {
     config: { textDirection },
@@ -31,24 +34,10 @@ const NotificationMenu = ({ type = 'default' }) => {
   };
 
   useEffect(() => {
-    const datewiseNotification = notificationsData.reduce(
-      (acc, val) => {
-        if (dayjs().diff(dayjs(val.createdAt), 'days') === 0) {
-          acc.today.push(val);
-        } else {
-          acc.older.push(val);
-        }
-
-        return acc;
-      },
-      {
-        today: [],
-        older: [],
-      },
-    );
-
-    setNotifications(datewiseNotification);
+    setNotifications(groupNotificationsByDate(notificationsData));
   }, [notificationsData]);
+
+  const unreadCount = notificationsData.length;
 
   return (
     <>
@@ -60,7 +49,7 @@ const NotificationMenu = ({ type = 'default' }) => {
         onClick={handleClick}
       >
         <OutlinedBadge
-          variant="dot"
+          variant={unreadCount ? 'dot' : 'standard'}
           color="error"
           sx={{
             [`& .${badgeClasses.badge}`]: {

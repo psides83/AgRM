@@ -59,6 +59,7 @@ const ContactDetailsClient = ({ contactId }) => {
   const supabase = useMemo(() => createClient(), []);
   const [contact, setContact] = useState(null);
   const [leads, setLeads] = useState([]);
+  const [deals, setDeals] = useState([]);
   const [equipmentInterests, setEquipmentInterests] = useState([]);
   const [equipmentLocations, setEquipmentLocations] = useState([]);
   const [activities, setActivities] = useState([]);
@@ -89,6 +90,7 @@ const ContactDetailsClient = ({ contactId }) => {
     const [
       companyResult,
       leadsResult,
+      dealsResult,
       equipmentResult,
       activitiesResult,
       notesResult,
@@ -107,6 +109,11 @@ const ContactDetailsClient = ({ contactId }) => {
         .select('*')
         .eq('contact_id', contactId)
         .order('created_at', { ascending: false }),
+      supabase
+        .from('deals')
+        .select('*, companies(id, name), leads(id, status, source)')
+        .eq('contact_id', contactId)
+        .order('updated_at', { ascending: false }),
       supabase
         .from('equipment_interests')
         .select('*, equipment_locations(id, name, city, region)')
@@ -138,6 +145,7 @@ const ContactDetailsClient = ({ contactId }) => {
       companies: companyResult.error ? null : companyResult.data,
     });
     setLeads(leadsResult.error ? [] : leadsResult.data || []);
+    setDeals(dealsResult.error ? [] : dealsResult.data || []);
     setEquipmentInterests(
       equipmentResult.error ? [] : equipmentResult.data || [],
     );
@@ -172,6 +180,16 @@ const ContactDetailsClient = ({ contactId }) => {
           event: '*',
           schema: 'public',
           table: 'leads',
+          filter: `contact_id=eq.${contactId}`,
+        },
+        () => fetchDetails(),
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'deals',
           filter: `contact_id=eq.${contactId}`,
         },
         () => fetchDetails(),
@@ -652,6 +670,7 @@ const ContactDetailsClient = ({ contactId }) => {
               }}
             />
             <LeadsCard leads={leads} />
+            <DealsCard deals={deals} />
             <CrmFilesPanel recordType="contact" recordId={contact.id} />
           </Stack>
         </Grid>
@@ -781,6 +800,32 @@ function LeadsCard({ leads }) {
           ))
         ) : (
           <EmptyState label="No leads yet" />
+        )}
+      </Stack>
+    </Paper>
+  );
+}
+
+function DealsCard({ deals }) {
+  return (
+    <Paper sx={{ p: { xs: 3, md: 4 } }}>
+      <SectionTitle
+        title="Related Deals"
+        icon="material-symbols:handshake-outline-rounded"
+      />
+      <Stack direction="column" spacing={1.5}>
+        {deals.length ? (
+          deals.map((deal) => (
+            <RecordRow
+              key={deal.id}
+              href={paths.dealDetails(deal.id)}
+              title={deal.name}
+              subtitle={`${deal.companies?.name || 'No company'} · ${formatCurrency(deal.amount)} · Close ${formatDate(deal.expected_close_date)}`}
+              chip={formatEnum(deal.stage)}
+            />
+          ))
+        ) : (
+          <EmptyState label="No deals yet" />
         )}
       </Stack>
     </Paper>
