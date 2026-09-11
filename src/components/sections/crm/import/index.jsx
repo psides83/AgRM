@@ -35,6 +35,7 @@ import {
   cleanPhone,
   formatPhone,
 } from 'components/sections/crm/shared/phoneFormat';
+import { formatLeadStatus } from 'components/sections/crm/constants';
 
 const importTypes = [
   { value: 'contacts', label: 'Contacts' },
@@ -1913,11 +1914,13 @@ async function fetchCrmTargets(supabase) {
     leads: (leadsResult.data || []).map((lead) => ({
       id: lead.id,
       label: [
-        lead.contacts
-          ? contactName(lead.contacts)
-          : lead.companies?.name || lead.source || 'Lead',
+        lead.companies?.name ||
+          (lead.contacts ? contactName(lead.contacts) : '') ||
+          (lead.account_number ? `Account ${lead.account_number}` : '') ||
+          lead.source ||
+          'Lead',
         lead.account_number,
-        lead.status,
+        formatLeadStatus(lead.status),
       ]
         .filter(Boolean)
         .join(' - '),

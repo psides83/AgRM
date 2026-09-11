@@ -29,6 +29,7 @@ import {
   activityTypes,
   dealStages,
   equipmentStatuses,
+  formatLeadStatus,
 } from 'components/sections/crm/constants';
 import { formatPhone } from 'components/sections/crm/shared/phoneFormat';
 
@@ -507,8 +508,8 @@ function LinkedRecordsCard({ deal }) {
         <RecordRow
           title={
             deal.leads
-              ? `Lead: ${formatEnum(deal.leads.status)}`
-              : 'No linked lead'
+              ? `Originating Lead: ${formatLeadStatus(deal.leads.status)}`
+              : 'No originating lead'
           }
           subtitle={
             deal.leads
@@ -519,7 +520,7 @@ function LinkedRecordsCard({ deal }) {
                 ]
                   .filter(Boolean)
                   .join(' · ')
-              : 'Deals can stand alone without a lead.'
+              : 'Deals can be created without a lead.'
           }
           href={deal.lead_id ? paths.leadDetails(deal.lead_id) : null}
         />

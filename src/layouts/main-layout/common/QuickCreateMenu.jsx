@@ -20,15 +20,18 @@ import {
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
+import {
+  formatLeadStatus,
+  leadStatuses,
+} from 'components/sections/crm/constants';
 
-const leadStatuses = ['new', 'working', 'qualified', 'unqualified', 'converted'];
 const dealStages = ['lead', 'quoted', 'negotiation', 'won', 'lost'];
 const activityTypes = ['call', 'email', 'meeting', 'text', 'task', 'site_visit', 'demo', 'other'];
 const activityDirections = ['outbound', 'inbound', 'internal'];
 
 const createItems = [
   { key: 'contact', label: 'Contact', description: 'Create a person and optional company', icon: 'material-symbols:person-add-outline-rounded' },
-  { key: 'lead', label: 'Lead', description: 'Create a lead linked to a contact or company', icon: 'material-symbols:add-notes-outline-rounded' },
+  { key: 'lead', label: 'Lead', description: 'Track a possible customer or account', icon: 'material-symbols:add-notes-outline-rounded' },
   { key: 'deal', label: 'Deal', description: 'Create a deal in the pipeline', icon: 'material-symbols:handshake-outline-rounded' },
   { key: 'activity', label: 'Activity', description: 'Create a call, meeting, task, or follow-up', icon: 'material-symbols:edit-note-outline-rounded' },
 ];
@@ -54,7 +57,7 @@ const QuickCreateMenu = ({ type = 'default' }) => {
     const [contactsResult, companiesResult, leadsResult, dealsResult] = await Promise.all([
       supabase.from('contacts').select('id, first_name, last_name, company_id, companies(id, name)').order('last_name', { ascending: true }).limit(200),
       supabase.from('companies').select('id, name').order('name', { ascending: true }).limit(200),
-      supabase.from('leads').select('id, source, status, contact_id, company_id, contacts(id, first_name, last_name), companies(id, name)').neq('status', 'converted').order('created_at', { ascending: false }).limit(200),
+      supabase.from('leads').select('id, source, account_number, status, contact_id, company_id, contacts(id, first_name, last_name), companies(id, name)').neq('status', 'converted').order('created_at', { ascending: false }).limit(200),
       supabase.from('deals').select('id, name, stage, contact_id, company_id, lead_id, contacts(id, first_name, last_name), companies(id, name)').order('updated_at', { ascending: false }).limit(200),
     ]);
 
@@ -245,9 +248,9 @@ function CreateLeadDialog({ open, onClose, supabase, contacts, companies, onCrea
           {error && <Alert severity="error">{error}</Alert>}
           <Autocomplete options={contacts} value={contact} onChange={(_event, value) => setContact(value)} getOptionLabel={contactOptionLabel} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <TextField {...params} label="Contact" placeholder="Search contacts" />} />
           <Autocomplete options={companies} value={company} onChange={(_event, value) => setCompany(value)} getOptionLabel={(option) => option?.name || ''} isOptionEqualToValue={(option, value) => option.id === value.id} disabled={Boolean(contact?.company_id)} renderInput={(params) => <TextField {...params} label="Company" placeholder="Search companies" helperText={contact?.company_id ? 'Company is set by the selected contact.' : undefined} />} />
-          <TextField label="Source" value={form.source} onChange={handleField(setForm, 'source')} fullWidth />
+          <TextField label="Lead Source" value={form.source} onChange={handleField(setForm, 'source')} fullWidth />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField select label="Status" value={form.status} onChange={handleField(setForm, 'status')} fullWidth>{leadStatuses.map((status) => <MenuItem key={status} value={status}>{formatEnum(status)}</MenuItem>)}</TextField>
+            <TextField select label="Lead Status" value={form.status} onChange={handleField(setForm, 'status')} fullWidth>{leadStatuses.map((status) => <MenuItem key={status} value={status}>{formatLeadStatus(status)}</MenuItem>)}</TextField>
             <TextField label="Priority" type="number" value={form.priority} onChange={handleField(setForm, 'priority')} fullWidth />
           </Stack>
           <TextField label="Estimated Budget" type="number" value={form.estimatedBudget} onChange={handleField(setForm, 'estimatedBudget')} fullWidth />
@@ -329,7 +332,7 @@ function CreateDealDialog({ open, onClose, supabase, contacts, companies, leads,
         <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
           <TextField label="Deal Name" value={form.name} onChange={handleField(setForm, 'name')} fullWidth required />
-          <Autocomplete options={leads} value={lead} onChange={handleLeadChange} getOptionLabel={leadOptionLabel} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <TextField {...params} label="Related Lead" placeholder="Search leads" />} />
+          <Autocomplete options={leads} value={lead} onChange={handleLeadChange} getOptionLabel={leadOptionLabel} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <TextField {...params} label="Originating Lead" placeholder="Search leads" />} />
           <Autocomplete options={contacts} value={contact} onChange={(_event, value) => setContact(value)} getOptionLabel={contactOptionLabel} isOptionEqualToValue={(option, value) => option.id === value.id} disabled={Boolean(lead?.contact_id)} renderInput={(params) => <TextField {...params} label="Contact" placeholder="Search contacts" />} />
           <Autocomplete options={companies} value={company} onChange={(_event, value) => setCompany(value)} getOptionLabel={(option) => option?.name || ''} isOptionEqualToValue={(option, value) => option.id === value.id} disabled={Boolean(lead?.company_id || contact?.company_id)} renderInput={(params) => <TextField {...params} label="Company" placeholder="Search companies" />} />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -456,11 +459,18 @@ function contactOptionLabel(contact) {
 }
 
 function entityName(record) {
-  return contactName(record?.contacts) || record?.companies?.name || record?.name || 'CRM record';
+  return (
+    record?.companies?.name ||
+    contactName(record?.contacts) ||
+    (record?.account_number ? `Account ${record.account_number}` : '') ||
+    record?.source ||
+    record?.name ||
+    'Lead'
+  );
 }
 
 function leadOptionLabel(lead) {
-  return [entityName(lead), lead?.source || formatEnum(lead?.status)].filter(Boolean).join(' - ');
+  return [entityName(lead), lead?.source, formatLeadStatus(lead?.status)].filter(Boolean).join(' - ');
 }
 
 function relatedOptionLabel(option, type) {

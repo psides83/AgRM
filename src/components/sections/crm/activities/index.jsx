@@ -6,6 +6,10 @@ import {
   Box,
   Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   InputAdornment,
   Link,
   MenuItem,
@@ -49,6 +53,7 @@ const ActivitiesPage = () => {
   const [filters, setFilters] = useState(emptyFilters);
   const [exportRange, setExportRange] = useState(emptyExportRange);
   const [sort, setSort] = useState({ key: 'date', direction: 'desc' });
+  const [editingActivity, setEditingActivity] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -169,6 +174,11 @@ const ActivitiesPage = () => {
     } else {
       fetchActivities();
     }
+  };
+
+  const handleActivitySaved = () => {
+    setEditingActivity(null);
+    fetchActivities();
   };
 
   const handleExport = () => {
@@ -336,6 +346,7 @@ const ActivitiesPage = () => {
                     activeSort={sort}
                     onSort={handleSort}
                   />
+                  <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -347,6 +358,7 @@ const ActivitiesPage = () => {
                       key={activity.id}
                       activity={activity}
                       onComplete={handleComplete}
+                      onEdit={setEditingActivity}
                     />
                   ))
                 ) : (
@@ -357,11 +369,18 @@ const ActivitiesPage = () => {
           </TableContainer>
         </Paper>
       </Grid>
+      <EditActivityDialog
+        open={Boolean(editingActivity)}
+        activity={editingActivity}
+        onClose={() => setEditingActivity(null)}
+        onSaved={handleActivitySaved}
+        supabase={supabase}
+      />
     </Grid>
   );
 };
 
-function ActivityRow({ activity, onComplete }) {
+function ActivityRow({ activity, onComplete, onEdit }) {
   const href = recordHref(activity);
   const isComplete = Boolean(activity.completed_at);
   const isOverdue =
@@ -448,7 +467,155 @@ function ActivityRow({ activity, onComplete }) {
           )}
         </Stack>
       </TableCell>
+      <TableCell align="right" sx={{ minWidth: 120 }}>
+        <Button
+          size="small"
+          variant="soft"
+          startIcon={<IconifyIcon icon="material-symbols:edit-outline" />}
+          onClick={() => onEdit(activity)}
+        >
+          Edit
+        </Button>
+      </TableCell>
     </TableRow>
+  );
+}
+
+function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
+  const [form, setForm] = useState({
+    type: 'call',
+    direction: 'outbound',
+    subject: '',
+    body: '',
+    occurredAt: '',
+    dueAt: '',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    setError(null);
+    setForm({
+      type: activity?.type || 'call',
+      direction: activity?.direction || 'outbound',
+      subject: activity?.subject || '',
+      body: activity?.body || '',
+      occurredAt: toDateTimeLocal(
+        activity?.occurred_at || activity?.created_at,
+      ),
+      dueAt: toDateTimeLocal(activity?.due_at),
+    });
+  }, [activity, open]);
+
+  const handleSave = async () => {
+    if (!activity?.id) return;
+
+    setIsSaving(true);
+    setError(null);
+
+    const { error: updateError } = await supabase
+      .from('activities')
+      .update({
+        type: form.type,
+        direction: form.direction,
+        subject: cleanText(form.subject) || formatEnum(form.type),
+        body: preserveText(form.body),
+        occurred_at: form.occurredAt
+          ? new Date(form.occurredAt).toISOString()
+          : new Date().toISOString(),
+        due_at: form.dueAt ? new Date(form.dueAt).toISOString() : null,
+      })
+      .eq('id', activity.id);
+
+    setIsSaving(false);
+
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+
+    onSaved();
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Edit Activity</DialogTitle>
+      <DialogContent>
+        <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
+          {error && <Alert severity="error">{error}</Alert>}
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField
+              select
+              label="Type"
+              value={form.type}
+              onChange={handleField(setForm, 'type')}
+              fullWidth
+            >
+              {activityTypes.map((type) => (
+                <MenuItem key={type} value={type}>
+                  {formatEnum(type)}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Direction"
+              value={form.direction}
+              onChange={handleField(setForm, 'direction')}
+              fullWidth
+            >
+              {activityDirections.map((direction) => (
+                <MenuItem key={direction} value={direction}>
+                  {formatEnum(direction)}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Stack>
+          <TextField
+            label="Subject"
+            value={form.subject}
+            onChange={handleField(setForm, 'subject')}
+            fullWidth
+          />
+          <TextField
+            label="Details"
+            value={form.body}
+            onChange={handleField(setForm, 'body')}
+            fullWidth
+            multiline
+            rows={3}
+          />
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField
+              label="Occurred At"
+              type="datetime-local"
+              value={form.occurredAt}
+              onChange={handleField(setForm, 'occurredAt')}
+              slotProps={{ inputLabel: { shrink: true } }}
+              fullWidth
+            />
+            <TextField
+              label="Due At"
+              type="datetime-local"
+              value={form.dueAt}
+              onChange={handleField(setForm, 'dueAt')}
+              slotProps={{ inputLabel: { shrink: true } }}
+              fullWidth
+            />
+          </Stack>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button color="neutral" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="contained" onClick={handleSave} loading={isSaving}>
+          Save Activity
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
@@ -474,7 +641,7 @@ function FilterSelect({ label, value, onChange, options }) {
 function EmptyRow({ label }) {
   return (
     <TableRow>
-      <TableCell colSpan={5}>
+      <TableCell colSpan={6}>
         <Typography
           variant="body2"
           sx={{ color: 'text.secondary', py: 3, textAlign: 'center' }}
@@ -484,6 +651,30 @@ function EmptyRow({ label }) {
       </TableCell>
     </TableRow>
   );
+}
+
+function handleField(setForm, key) {
+  return (event) => {
+    setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  };
+}
+
+function cleanText(value) {
+  return String(value || '').trim();
+}
+
+function preserveText(value) {
+  const text = String(value || '').trim();
+  return text || null;
+}
+
+function toDateTimeLocal(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const offsetMs = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
 function SortableHeader({ label, sortKey, activeSort, onSort }) {

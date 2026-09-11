@@ -16,6 +16,7 @@ import { createClient } from 'lib/supabase/server';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import { formatPhone } from 'components/sections/crm/shared/phoneFormat';
+import { formatLeadStatus } from 'components/sections/crm/constants';
 
 async function getSearchResults(rawQuery) {
   const query = cleanQuery(rawQuery);
@@ -272,7 +273,7 @@ const CRMSearch = async ({ query: rawQuery }) => {
                 ]
                   .filter(Boolean)
                   .join(' · ')}
-                chip={formatEnum(lead.status)}
+                chip={formatLeadStatus(lead.status)}
               />
             ))
           ) : (
@@ -440,9 +441,16 @@ function contactName(contact) {
 }
 
 function entityName(record) {
-  return contactName(record.contacts) !== 'Unnamed contact'
-    ? contactName(record.contacts)
-    : record.companies?.name || record.name || 'CRM record';
+  const contact = contactName(record.contacts);
+
+  return (
+    record.companies?.name ||
+    (record.account_number ? `Account ${record.account_number}` : '') ||
+    (contact !== 'Unnamed contact' ? contact : '') ||
+    record.source ||
+    record.name ||
+    'CRM record'
+  );
 }
 
 function equipmentName(interest) {

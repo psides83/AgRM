@@ -34,6 +34,8 @@ import {
   activityDirections,
   activityTypes,
   equipmentStatuses,
+  formatLeadStatus,
+  leadStatuses,
 } from 'components/sections/crm/constants';
 import DuplicateRecordDialog from 'components/sections/crm/shared/DuplicateRecordDialog';
 import { findPotentialDuplicates } from 'components/sections/crm/shared/duplicateRecords';
@@ -43,13 +45,6 @@ import {
   handlePhoneChange,
 } from 'components/sections/crm/shared/phoneFormat';
 
-const leadStatuses = [
-  'new',
-  'working',
-  'qualified',
-  'unqualified',
-  'converted',
-];
 const equipmentCategories = [
   'tractor',
   'combine',
@@ -775,9 +770,9 @@ function LeadsCard({ leads }) {
             <RecordRow
               key={lead.id}
               href={paths.leadDetails(lead.id)}
-              title={lead.source || 'Lead'}
-              subtitle={`Budget ${formatCurrency(lead.estimated_budget)} · Follow-up ${formatDateTime(lead.next_follow_up_at)}`}
-              chip={formatEnum(lead.status)}
+              title={leadDisplayName(lead)}
+              subtitle={`${lead.source || 'No source'} · Budget ${formatCurrency(lead.estimated_budget)} · Follow-up ${formatDateTime(lead.next_follow_up_at)}`}
+              chip={formatLeadStatus(lead.status)}
             />
           ))
         ) : (
@@ -785,6 +780,14 @@ function LeadsCard({ leads }) {
         )}
       </Stack>
     </Paper>
+  );
+}
+
+function leadDisplayName(lead) {
+  return (
+    (lead.account_number ? `Account ${lead.account_number}` : '') ||
+    lead.source ||
+    'Lead'
   );
 }
 
@@ -1874,7 +1877,7 @@ function AddLeadDialog({ open, contact, onClose, onSaved, supabase }) {
             >
               {leadStatuses.map((status) => (
                 <MenuItem key={status} value={status}>
-                  {status}
+                  {formatLeadStatus(status)}
                 </MenuItem>
               ))}
             </TextField>

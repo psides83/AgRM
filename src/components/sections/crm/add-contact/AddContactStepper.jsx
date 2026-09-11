@@ -69,9 +69,9 @@ const steps = [
           '& br': { display: { xs: 'none', sm: 'inline' } },
         }}
       >
-        Lead Info
+        Lead
         <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-          rmation
+          Details
         </Box>
       </Typography>
     ),
@@ -276,7 +276,9 @@ const AddContactStepper = () => {
                 companies={companies}
               />
             )}
-            {activeStep === 2 && <LeadInfoForm label="Lead Information" />}
+            {activeStep === 2 && (
+              <LeadInfoForm label="Lead Information" />
+            )}
           </Box>
 
           <Stack gap={2} justifyContent="flex-end">

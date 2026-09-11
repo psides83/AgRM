@@ -28,6 +28,10 @@ import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
+import {
+  formatLeadStatus,
+  leadStatuses,
+} from 'components/sections/crm/constants';
 
 const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
 mapboxgl.accessToken = mapboxToken;
@@ -544,8 +548,8 @@ function leadToMapRecord(lead) {
   return {
     id: `lead-${lead.id}`,
     kind: 'lead',
-    title: lead.contacts ? contactName(lead.contacts) : lead.companies?.name || lead.source || 'Lead',
-    subtitle: [formatEnum(lead.status), lead.account_number, lead.source, formatCurrency(lead.estimated_budget)].filter((value) => value && value !== '-').join(' · '),
+    title: lead.companies?.name || (lead.contacts ? contactName(lead.contacts) : '') || (lead.account_number ? `Account ${lead.account_number}` : '') || lead.source || 'Lead',
+    subtitle: [formatLeadStatus(lead.status), lead.account_number, lead.source, formatCurrency(lead.estimated_budget)].filter((value) => value && value !== '-').join(' · '),
     address,
     coordinates,
     href: paths.leadDetails(lead.id),
@@ -702,9 +706,9 @@ function CreateLeadFromPinDialog({ open, pin, supabase, onClose, onSaved }) {
           <TextField label="Account Number" value={form.accountNumber} onChange={handleField(setForm, 'accountNumber')} fullWidth />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ minWidth: 0 }}>
             <TextField select label="Status" value={form.status} onChange={handleField(setForm, 'status')} fullWidth>
-              {['new', 'working', 'qualified', 'unqualified'].map((status) => (
+              {leadStatuses.filter((status) => status !== 'converted').map((status) => (
                 <MenuItem key={status} value={status}>
-                  {formatEnum(status)}
+                  {formatLeadStatus(status)}
                 </MenuItem>
               ))}
             </TextField>

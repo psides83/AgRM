@@ -305,7 +305,7 @@ const ContactsList = () => {
                         {contact.title && (
                           <Typography
                             variant="caption"
-                            sx={{ color: 'text.secondary' }}
+                            sx={{ color: 'text.secondary', display: 'block' }}
                           >
                             {contact.title}
                           </Typography>
@@ -331,7 +331,7 @@ const ContactsList = () => {
                         {contact.companies?.company_type && (
                           <Typography
                             variant="caption"
-                            sx={{ color: 'text.secondary' }}
+                            sx={{ color: 'text.secondary', display: 'block' }}
                           >
                             {contact.companies.company_type}
                           </Typography>

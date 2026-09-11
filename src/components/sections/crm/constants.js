@@ -45,3 +45,30 @@ export const activityTypes = [
   'other',
 ];
 export const activityDirections = ['outbound', 'inbound', 'internal'];
+
+export const leadStatuses = [
+  'new',
+  'working',
+  'qualified',
+  'unqualified',
+  'converted',
+];
+
+export const leadStatusLabels = {
+  new: 'Not Contacted',
+  working: 'Working',
+  qualified: 'Contacted',
+  unqualified: 'Not a Fit',
+  converted: 'Reliable Customer',
+};
+
+export function formatLeadStatus(status) {
+  return leadStatusLabels[status] || formatEnum(status);
+}
+
+export function formatEnum(value) {
+  if (!value) return '';
+  return String(value)
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}

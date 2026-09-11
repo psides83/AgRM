@@ -23,7 +23,10 @@ import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
-import { dealStages } from 'components/sections/crm/constants';
+import {
+  dealStages,
+  formatLeadStatus,
+} from 'components/sections/crm/constants';
 
 const emptyDealForm = {
   name: '',
@@ -84,7 +87,7 @@ const Deals = () => {
         .order('last_name', { ascending: true }),
       supabase
         .from('leads')
-        .select('id, status, source, contact_id, company_id, contacts(id, first_name, last_name), companies(id, name)')
+        .select('id, status, source, account_number, contact_id, company_id, contacts(id, first_name, last_name), companies(id, name)')
         .neq('status', 'converted')
         .order('created_at', { ascending: false }),
     ]);
@@ -411,7 +414,7 @@ function CreateDealDialog({ open, contacts, leads, onClose, onSaved, supabase })
             isOptionEqualToValue={(option, value) => option.id === value.id}
             noOptionsText="No leads found"
             renderInput={(params) => (
-              <TextField {...params} label="Related Lead" placeholder="Search leads" fullWidth />
+              <TextField {...params} label="Originating Lead" placeholder="Search leads" fullWidth />
             )}
           />
           <Autocomplete
@@ -485,7 +488,14 @@ function handleField(setForm, key) {
 function entityName(record) {
   const contact = record.contacts;
   const name = contact ? contactName(contact) : '';
-  return name || record.companies?.name || record.name || 'No linked contact';
+  return (
+    record.companies?.name ||
+    name ||
+    (record.account_number ? `Account ${record.account_number}` : '') ||
+    record.source ||
+    record.name ||
+    'Lead'
+  );
 }
 
 function contactName(contact) {
@@ -495,7 +505,7 @@ function contactName(contact) {
 function leadOptionLabel(lead) {
   if (!lead) return '';
 
-  return [entityName(lead), lead.source || formatEnum(lead.status), lead.companies?.name]
+  return [entityName(lead), lead.source, formatLeadStatus(lead.status)]
     .filter(Boolean)
     .join(' · ');
 }

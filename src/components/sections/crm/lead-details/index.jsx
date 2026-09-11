@@ -12,6 +12,7 @@ import {
   DialogTitle,
   Divider,
   Link,
+  Menu,
   MenuItem,
   Paper,
   Stack,
@@ -31,6 +32,8 @@ import {
   activityTypes,
   dealStages,
   equipmentStatuses,
+  formatLeadStatus,
+  leadStatuses,
 } from 'components/sections/crm/constants';
 import DuplicateRecordDialog from 'components/sections/crm/shared/DuplicateRecordDialog';
 import { findPotentialDuplicates } from 'components/sections/crm/shared/duplicateRecords';
@@ -40,13 +43,6 @@ import {
   handlePhoneChange,
 } from 'components/sections/crm/shared/phoneFormat';
 
-const leadStatuses = [
-  'new',
-  'working',
-  'qualified',
-  'unqualified',
-  'converted',
-];
 const equipmentCategories = [
   'tractor',
   'combine',
@@ -78,6 +74,7 @@ const LeadDetails = ({ leadId }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dialog, setDialog] = useState(null);
+  const [actionAnchorEl, setActionAnchorEl] = useState(null);
 
   const fetchDetails = async () => {
     setError(null);
@@ -274,6 +271,20 @@ const LeadDetails = ({ leadId }) => {
   const contact = lead.contacts;
   const company = lead.companies;
   const title = entityName(lead);
+  const actionsOpen = Boolean(actionAnchorEl);
+
+  const handleActionMenuOpen = (event) => {
+    setActionAnchorEl(event.currentTarget);
+  };
+
+  const handleActionMenuClose = () => {
+    setActionAnchorEl(null);
+  };
+
+  const openDialog = (key) => {
+    handleActionMenuClose();
+    setDialog(key);
+  };
 
   return (
     <>
@@ -283,8 +294,8 @@ const LeadDetails = ({ leadId }) => {
             title={title}
             breadcrumb={[
               { label: 'Home', url: paths.crm },
-              { label: 'Contacts', url: paths.contacts },
-              { label: 'Lead detail', active: true },
+              { label: 'Leads', url: paths.leads },
+              { label: 'Lead Details', active: true },
             ]}
           />
         </Grid>
@@ -293,10 +304,10 @@ const LeadDetails = ({ leadId }) => {
           <Paper sx={{ p: { xs: 3, md: 4 } }}>
             <Stack
               direction={{ xs: 'column', lg: 'row' }}
-              spacing={3}
+              spacing={2.5}
               sx={{
                 justifyContent: 'space-between',
-                alignItems: { xs: 'flex-start', lg: 'center' },
+                alignItems: { xs: 'stretch', lg: 'flex-start' },
               }}
             >
               <Box sx={{ minWidth: 0 }}>
@@ -307,7 +318,7 @@ const LeadDetails = ({ leadId }) => {
                   sx={{ flexWrap: 'wrap', mb: 1 }}
                 >
                   <Chip
-                    label={formatEnum(lead.status)}
+                    label={formatLeadStatus(lead.status)}
                     color="primary"
                     variant="soft"
                   />
@@ -316,18 +327,19 @@ const LeadDetails = ({ leadId }) => {
                     color="neutral"
                     variant="soft"
                   />
-                  <Chip
-                    label={formatCurrency(lead.estimated_budget)}
-                    color="neutral"
-                    variant="soft"
-                  />
+                  {lead.estimated_budget && (
+                    <Chip
+                      label={formatCurrency(lead.estimated_budget)}
+                      color="neutral"
+                      variant="soft"
+                    />
+                  )}
                 </Stack>
                 <Typography variant="h4" sx={{ overflowWrap: 'anywhere' }}>
                   {title}
                 </Typography>
                 <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                  {[lead.source, company?.name].filter(Boolean).join(' · ') ||
-                    'Lead'}
+                  {leadHeaderSubtitle(lead, contact, company, title)}
                 </Typography>
               </Box>
 
@@ -335,77 +347,25 @@ const LeadDetails = ({ leadId }) => {
                 direction="row"
                 spacing={1}
                 useFlexGap
-                sx={{ flexWrap: 'wrap' }}
+                sx={{
+                  flexWrap: 'wrap',
+                  justifyContent: { xs: 'flex-start', lg: 'flex-end' },
+                  minWidth: { lg: 360 },
+                }}
               >
-                {contact ? (
-                  <Button
-                    component={Link}
-                    href={paths.contactDetails(contact.id)}
-                    underline="none"
-                    variant="soft"
-                    color="neutral"
-                    startIcon={
-                      <IconifyIcon icon="material-symbols:person-outline-rounded" />
-                    }
-                  >
-                    Open Contact
-                  </Button>
-                ) : (
-                  <Button
-                    variant="soft"
-                    color="neutral"
-                    onClick={() => setDialog('contact')}
-                    startIcon={
-                      <IconifyIcon icon="material-symbols:person-add-outline-rounded" />
-                    }
-                  >
-                    Convert to Contact
-                  </Button>
-                )}
                 <Button
-                  variant="soft"
-                  color="neutral"
-                  onClick={() => setDialog('status')}
+                  variant="contained"
+                  onClick={() => openDialog('equipment')}
                   startIcon={
-                    <IconifyIcon icon="material-symbols:tune-rounded" />
+                    <IconifyIcon icon="material-symbols:agriculture-outline-rounded" />
                   }
                 >
-                  Update Lead
+                  Add Interest
                 </Button>
                 <Button
                   variant="soft"
                   color="neutral"
-                  onClick={() => setDialog('note')}
-                  startIcon={
-                    <IconifyIcon icon="material-symbols:note-add-outline-rounded" />
-                  }
-                >
-                  Add Note
-                </Button>
-                <Button
-                  variant="soft"
-                  color="neutral"
-                  onClick={() => setDialog('activity')}
-                  startIcon={
-                    <IconifyIcon icon="material-symbols:add-call-outline-rounded" />
-                  }
-                >
-                  Add Activity
-                </Button>
-                <Button
-                  variant="soft"
-                  color="neutral"
-                  onClick={() => setDialog('task')}
-                  startIcon={
-                    <IconifyIcon icon="material-symbols:add-task-outline-rounded" />
-                  }
-                >
-                  Add Task
-                </Button>
-                <Button
-                  variant="soft"
-                  color="neutral"
-                  onClick={() => setDialog('deal')}
+                  onClick={() => openDialog('deal')}
                   disabled={lead.status === 'converted'}
                   startIcon={
                     <IconifyIcon icon="material-symbols:currency-exchange-rounded" />
@@ -413,15 +373,77 @@ const LeadDetails = ({ leadId }) => {
                 >
                   Create Deal
                 </Button>
+                {!contact && (
+                  <Button
+                    variant="soft"
+                    color="neutral"
+                    onClick={() => openDialog('contact')}
+                    startIcon={
+                      <IconifyIcon icon="material-symbols:person-add-outline-rounded" />
+                    }
+                  >
+                    Create Contact
+                  </Button>
+                )}
                 <Button
-                  variant="contained"
-                  onClick={() => setDialog('equipment')}
-                  startIcon={
-                    <IconifyIcon icon="material-symbols:agriculture-outline-rounded" />
+                  variant="soft"
+                  color="neutral"
+                  onClick={handleActionMenuOpen}
+                  endIcon={
+                    <IconifyIcon icon="material-symbols:keyboard-arrow-down-rounded" />
                   }
                 >
-                  Add Interest
+                  More
                 </Button>
+                <Menu
+                  anchorEl={actionAnchorEl}
+                  open={actionsOpen}
+                  onClose={handleActionMenuClose}
+                  slotProps={{ paper: { sx: { minWidth: 220 } } }}
+                >
+                  {contact && (
+                    <MenuItem
+                      component={Link}
+                      href={paths.contactDetails(contact.id)}
+                      underline="none"
+                      onClick={handleActionMenuClose}
+                    >
+                      <IconifyIcon
+                        icon="material-symbols:person-outline-rounded"
+                        sx={{ mr: 1.25, fontSize: 20 }}
+                      />
+                      Open Contact
+                    </MenuItem>
+                  )}
+                  <MenuItem onClick={() => openDialog('status')}>
+                    <IconifyIcon
+                      icon="material-symbols:tune-rounded"
+                      sx={{ mr: 1.25, fontSize: 20 }}
+                    />
+                    Update Lead
+                  </MenuItem>
+                  <MenuItem onClick={() => openDialog('activity')}>
+                    <IconifyIcon
+                      icon="material-symbols:add-call-outline-rounded"
+                      sx={{ mr: 1.25, fontSize: 20 }}
+                    />
+                    Add Activity
+                  </MenuItem>
+                  <MenuItem onClick={() => openDialog('task')}>
+                    <IconifyIcon
+                      icon="material-symbols:add-task-outline-rounded"
+                      sx={{ mr: 1.25, fontSize: 20 }}
+                    />
+                    Add Task
+                  </MenuItem>
+                  <MenuItem onClick={() => openDialog('note')}>
+                    <IconifyIcon
+                      icon="material-symbols:note-add-outline-rounded"
+                      sx={{ mr: 1.25, fontSize: 20 }}
+                    />
+                    Add Note
+                  </MenuItem>
+                </Menu>
               </Stack>
             </Stack>
           </Paper>
@@ -433,7 +455,10 @@ const LeadDetails = ({ leadId }) => {
               title="Lead Info"
               icon="material-symbols:filter-alt-outline-rounded"
             >
-              <InfoRow label="Status" value={formatEnum(lead.status)} />
+              <InfoRow
+                label="Lead Status"
+                value={formatLeadStatus(lead.status)}
+              />
               <InfoRow label="Source" value={lead.source} />
               <InfoRow label="Account Number" value={lead.account_number} />
               <InfoRow label="Priority" value={lead.priority} />
@@ -531,8 +556,8 @@ const LeadDetails = ({ leadId }) => {
 
         <Grid size={{ xs: 12, lg: 8 }}>
           <Stack direction="column" spacing={3}>
-            <DealsCard deals={deals} />
             <EquipmentCard equipmentInterests={equipmentInterests} />
+            <DealsCard deals={deals} />
             <TasksCard
               tasks={tasks}
               supabase={supabase}
@@ -647,7 +672,7 @@ function DealsCard({ deals }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
       <SectionTitle
-        title="Related Deals"
+        title="Deals From This Lead"
         icon="material-symbols:handshake-outline-rounded"
       />
       <Stack direction="column" spacing={1.5}>
@@ -662,7 +687,7 @@ function DealsCard({ deals }) {
             />
           ))
         ) : (
-          <EmptyState label="No deals yet" />
+          <EmptyState label="No deals created from this lead yet" />
         )}
       </Stack>
     </Paper>
@@ -1133,14 +1158,14 @@ function UpdateLeadDialog({ open, lead, onClose, onSaved, supabase }) {
           />
           <TextField
             select
-            label="Status"
+            label="Lead Status"
             value={form.status}
             onChange={handleField(setForm, 'status')}
             fullWidth
           >
             {leadStatuses.map((status) => (
               <MenuItem key={status} value={status}>
-                {formatEnum(status)}
+                {formatLeadStatus(status)}
               </MenuItem>
             ))}
           </TextField>
@@ -1507,7 +1532,7 @@ function ConvertLeadToContactDialog({
       lead_id: lead.id,
       type: 'note',
       direction: 'inbound',
-      subject: 'Lead converted to contact',
+      subject: 'Lead contact created',
       body: noteBody,
       occurred_at: new Date().toISOString(),
     });
@@ -1745,7 +1770,7 @@ function ConvertLeadDialog({ open, lead, onClose, onSaved, supabase }) {
           />
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             This will create a deal linked to this lead, contact, and company,
-            then mark the lead as converted.
+            then mark this record as a reliable customer.
           </Typography>
         </Stack>
       </DialogContent>
@@ -2048,9 +2073,26 @@ function contactName(contact) {
 }
 
 function entityName(record) {
-  return record.contacts
-    ? contactName(record.contacts)
-    : record.companies?.name || 'Lead';
+  return (
+    record.companies?.name ||
+    (record.contacts ? contactName(record.contacts) : '') ||
+    (record.account_number ? `Account ${record.account_number}` : '') ||
+    record.source ||
+    'Lead'
+  );
+}
+
+function leadHeaderSubtitle(lead, contact, company, title) {
+  return (
+    [
+      lead.account_number ? `Account ${lead.account_number}` : null,
+      lead.source,
+      contact ? contactName(contact) : null,
+      company?.name !== title ? company?.name : null,
+    ]
+      .filter(Boolean)
+      .join(' · ') || 'Lead'
+  );
 }
 
 function leadToDealForm(lead) {

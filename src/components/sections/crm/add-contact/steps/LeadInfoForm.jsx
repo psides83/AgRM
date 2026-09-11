@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import * as yup from 'yup';
 import ContactFormSection from 'components/sections/crm/add-contact/ContactFormSection';
 import ControlledSelect from 'components/sections/crm/add-contact/ControlledSelect';
+import { formatLeadStatus } from 'components/sections/crm/constants';
 
 export const leadInfoSchema = yup.object({
   leadInfo: yup.object({
@@ -57,11 +58,11 @@ export const leadInfoSchema = yup.object({
 });
 
 const statusOptions = [
-  { value: 'new', label: 'New' },
-  { value: 'working', label: 'Working' },
-  { value: 'qualified', label: 'Qualified' },
-  { value: 'unqualified', label: 'Unqualified' },
-  { value: 'converted', label: 'Converted' },
+  { value: 'new', label: formatLeadStatus('new') },
+  { value: 'working', label: formatLeadStatus('working') },
+  { value: 'qualified', label: formatLeadStatus('qualified') },
+  { value: 'unqualified', label: formatLeadStatus('unqualified') },
+  { value: 'converted', label: formatLeadStatus('converted') },
 ];
 
 const priorityOptions = [
