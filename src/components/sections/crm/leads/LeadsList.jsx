@@ -31,20 +31,10 @@ import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import { formatPhone } from 'components/sections/crm/shared/phoneFormat';
 import {
+  equipmentCategoryIcons,
   formatLeadStatus,
   leadStatuses,
 } from 'components/sections/crm/constants';
-const equipmentCategoryIcons = {
-  tractor: '/deere-icons/tractor-row-crop.svg',
-  combine: '/deere-icons/combine.svg',
-  planter: '/deere-icons/planting-planter.svg',
-  sprayer: '/deere-icons/sprayer.svg',
-  hay: '/deere-icons/hay-baler.svg',
-  tillage: '/deere-icons/tillage.svg',
-  utility_vehicle: '/deere-icons/xuv-gator.svg',
-  attachment: '/deere-icons/3-point-rotary-cutter.svg',
-  other: '/deere-icons/generic-equipment.svg',
-};
 
 const emptyFilters = {
   search: '',

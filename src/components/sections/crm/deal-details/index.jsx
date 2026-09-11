@@ -28,22 +28,12 @@ import {
   activityDirections,
   activityTypes,
   dealStages,
+  equipmentCategories,
   equipmentStatuses,
   formatLeadStatus,
 } from 'components/sections/crm/constants';
 import { formatPhone } from 'components/sections/crm/shared/phoneFormat';
 
-const equipmentCategories = [
-  'tractor',
-  'combine',
-  'planter',
-  'sprayer',
-  'hay',
-  'tillage',
-  'utility_vehicle',
-  'attachment',
-  'other',
-];
 const equipmentConditions = ['new', 'used', 'either'];
 const equipmentAvailability = [
   'availability_unknown',

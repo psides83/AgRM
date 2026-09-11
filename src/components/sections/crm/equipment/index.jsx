@@ -29,19 +29,12 @@ import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
-import { equipmentStatuses } from 'components/sections/crm/constants';
+import {
+  equipmentCategories,
+  equipmentCategoryIcons,
+  equipmentStatuses,
+} from 'components/sections/crm/constants';
 
-const equipmentCategories = [
-  'tractor',
-  'combine',
-  'planter',
-  'sprayer',
-  'hay',
-  'tillage',
-  'utility_vehicle',
-  'attachment',
-  'other',
-];
 const equipmentConditions = ['new', 'used', 'either'];
 const equipmentAvailability = [
   'availability_unknown',
@@ -49,17 +42,6 @@ const equipmentAvailability = [
   'pending',
   'unavailable',
 ];
-const equipmentCategoryIcons = {
-  tractor: '/deere-icons/tractor-row-crop.svg',
-  combine: '/deere-icons/combine.svg',
-  planter: '/deere-icons/planting-planter.svg',
-  sprayer: '/deere-icons/sprayer.svg',
-  hay: '/deere-icons/hay-baler.svg',
-  tillage: '/deere-icons/tillage.svg',
-  utility_vehicle: '/deere-icons/xuv-gator.svg',
-  attachment: '/deere-icons/3-point-rotary-cutter.svg',
-  other: '/deere-icons/generic-equipment.svg',
-};
 
 const emptyFilters = {
   search: '',
