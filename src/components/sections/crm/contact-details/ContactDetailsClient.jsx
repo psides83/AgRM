@@ -77,6 +77,7 @@ const ContactDetailsClient = ({ contactId }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dialog, setDialog] = useState(null);
+  const [editingEquipment, setEditingEquipment] = useState(null);
   const [contactMenuAnchor, setContactMenuAnchor] = useState(null);
   const [actionMenuAnchor, setActionMenuAnchor] = useState(null);
 
@@ -653,7 +654,13 @@ const ContactDetailsClient = ({ contactId }) => {
               supabase={supabase}
               onSaved={fetchDetails}
             />
-            <EquipmentCard equipmentInterests={equipmentInterests} />
+            <EquipmentCard
+              equipmentInterests={equipmentInterests}
+              onEdit={(item) => {
+                setEditingEquipment(item);
+                setDialog('equipment');
+              }}
+            />
             <LeadsCard leads={leads} />
             <CrmFilesPanel recordType="contact" recordId={contact.id} />
           </Stack>
@@ -691,11 +698,18 @@ const ContactDetailsClient = ({ contactId }) => {
       />
       <AddEquipmentDialog
         open={dialog === 'equipment'}
+        item={editingEquipment}
         contact={contact}
         leads={leads}
         locations={equipmentLocations}
-        onClose={() => setDialog(null)}
-        onSaved={fetchDetails}
+        onClose={() => {
+          setDialog(null);
+          setEditingEquipment(null);
+        }}
+        onSaved={() => {
+          setEditingEquipment(null);
+          fetchDetails();
+        }}
         supabase={supabase}
       />
       <EditContactDialog
@@ -791,7 +805,7 @@ function leadDisplayName(lead) {
   );
 }
 
-function EquipmentCard({ equipmentInterests }) {
+function EquipmentCard({ equipmentInterests, onEdit }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
       <SectionTitle
@@ -829,6 +843,19 @@ function EquipmentCard({ equipmentInterests }) {
                   .filter((value) => value && value !== 'No Location')
                   .join(' · ')}
                 chip={interest.trade_in ? 'Trade-in' : null}
+                action={
+                  <Button
+                    size="small"
+                    variant="soft"
+                    color="neutral"
+                    onClick={() => onEdit(interest)}
+                    startIcon={
+                      <IconifyIcon icon="material-symbols:edit-outline-rounded" />
+                    }
+                  >
+                    Edit
+                  </Button>
+                }
               />
             );
           })
@@ -1167,7 +1194,7 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
   );
 }
 
-function RecordRow({ title, subtitle, chip, href }) {
+function RecordRow({ title, subtitle, chip, href, action }) {
   const titleNode = href ? (
     <Link
       href={href}
@@ -1205,14 +1232,21 @@ function RecordRow({ title, subtitle, chip, href }) {
             {subtitle}
           </Typography>
         </Box>
-        {chip && (
-          <Chip
-            label={chip}
-            size="small"
-            variant="soft"
-            color="primary"
-            sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
-          />
+        {(chip || action) && (
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              alignItems: 'center',
+              alignSelf: { xs: 'flex-start', sm: 'center' },
+              flexShrink: 0,
+            }}
+          >
+            {chip && (
+              <Chip label={chip} size="small" variant="soft" color="primary" />
+            )}
+            {action}
+          </Stack>
         )}
       </Stack>
     </Box>
@@ -2143,6 +2177,7 @@ function AddActivityDialog({ open, contact, onClose, onSaved, supabase }) {
 
 function AddEquipmentDialog({
   open,
+  item,
   contact,
   leads,
   locations,
@@ -2150,35 +2185,29 @@ function AddEquipmentDialog({
   onSaved,
   supabase,
 }) {
-  const [form, setForm] = useState({
-    leadId: '',
-    category: 'tractor',
-    make: '',
-    model: '',
-    stockNumber: '',
-    serialNumber: '',
-    condition: 'either',
-    availability: 'availability_unknown',
-    locationId: '',
-    status: 'not_started',
-    quotePrice: '',
-    priceMin: '',
-    priceMax: '',
-    tradeIn: 'false',
-    notes: '',
-  });
+  const [form, setForm] = useState(emptyContactEquipmentForm);
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const isEditing = Boolean(item);
+
+  useEffect(() => {
+    if (open) {
+      setForm(item ? equipmentToForm(item) : emptyContactEquipmentForm());
+      setError(null);
+    }
+  }, [item, open]);
 
   const handleSave = async () => {
     setIsSaving(true);
-    const { data: userResult } = await supabase.auth.getUser();
-    const { error } = await supabase.from('equipment_interests').insert({
-      owner_id: userResult.user.id,
+    setError(null);
+
+    const payload = {
       contact_id: contact.id,
       lead_id: form.leadId || null,
       category: form.category,
       make: cleanText(form.make),
       model: cleanText(form.model),
+      model_year: form.modelYear || null,
       stock_number: cleanText(form.stockNumber),
       serial_number: cleanText(form.serialNumber),
       condition: form.condition,
@@ -2190,52 +2219,74 @@ function AddEquipmentDialog({
       price_max: form.priceMax || null,
       trade_in: form.tradeIn === 'true',
       notes: cleanText(form.notes),
-    });
+    };
+
+    if (isEditing) {
+      delete payload.contact_id;
+      delete payload.lead_id;
+    }
+
+    let saveError = null;
+
+    if (isEditing) {
+      const { error: updateError } = await supabase
+        .from('equipment_interests')
+        .update(payload)
+        .eq('id', item.id);
+      saveError = updateError;
+    } else {
+      const { data: userResult, error: userError } =
+        await supabase.auth.getUser();
+
+      if (userError || !userResult.user) {
+        setError('You need to be logged in to add equipment.');
+        setIsSaving(false);
+        return;
+      }
+
+      const { error: insertError } = await supabase
+        .from('equipment_interests')
+        .insert({ ...payload, owner_id: userResult.user.id });
+      saveError = insertError;
+    }
 
     setIsSaving(false);
 
-    if (!error) {
-      setForm({
-        leadId: '',
-        category: 'tractor',
-        make: '',
-        model: '',
-        stockNumber: '',
-        serialNumber: '',
-        condition: 'either',
-        availability: 'availability_unknown',
-        locationId: '',
-        status: 'not_started',
-        quotePrice: '',
-        priceMin: '',
-        priceMax: '',
-        tradeIn: 'false',
-        notes: '',
-      });
-      onSaved();
-      onClose();
+    if (saveError) {
+      setError(saveError.message);
+      return;
     }
+
+    setForm(emptyContactEquipmentForm());
+    onSaved();
+    onClose();
   };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Add Equipment Interest</DialogTitle>
+      <DialogTitle>
+        {isEditing ? 'Edit Equipment Interest' : 'Add Equipment Interest'}
+      </DialogTitle>
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ pt: 1, minWidth: 0 }}>
-          <TextField
-            select
-            label="Related Lead"
-            value={form.leadId}
-            onChange={handleField(setForm, 'leadId')}
-            fullWidth
-          >
-            <MenuItem value="">No specific lead</MenuItem>
-            {leads.map((lead) => (
-              <MenuItem key={lead.id} value={lead.id}>
-                {lead.source || lead.status} - {formatDateTime(lead.created_at)}
-              </MenuItem>
-            ))}
-          </TextField>
+          {error && <Alert severity="error">{error}</Alert>}
+          {!isEditing && (
+            <TextField
+              select
+              label="Related Lead"
+              value={form.leadId}
+              onChange={handleField(setForm, 'leadId')}
+              fullWidth
+            >
+              <MenuItem value="">No specific lead</MenuItem>
+              {leads.map((lead) => (
+                <MenuItem key={lead.id} value={lead.id}>
+                  {lead.source || lead.status} -{' '}
+                  {formatDateTime(lead.created_at)}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
           <TextField
             select
             label="Category"
@@ -2259,6 +2310,13 @@ function AddEquipmentDialog({
             label="Model"
             value={form.model}
             onChange={handleField(setForm, 'model')}
+            fullWidth
+          />
+          <TextField
+            label="Year"
+            type="number"
+            value={form.modelYear}
+            onChange={handleField(setForm, 'modelYear')}
             fullWidth
           />
           <Stack
@@ -2389,11 +2447,53 @@ function AddEquipmentDialog({
           Cancel
         </Button>
         <Button variant="contained" onClick={handleSave} loading={isSaving}>
-          Save Interest
+          {isEditing ? 'Save Changes' : 'Save Interest'}
         </Button>
       </DialogActions>
     </Dialog>
   );
+}
+
+function emptyContactEquipmentForm() {
+  return {
+    leadId: '',
+    category: 'tractor',
+    make: '',
+    model: '',
+    modelYear: '',
+    stockNumber: '',
+    serialNumber: '',
+    condition: 'either',
+    availability: 'availability_unknown',
+    locationId: '',
+    status: 'not_started',
+    quotePrice: '',
+    priceMin: '',
+    priceMax: '',
+    tradeIn: 'false',
+    notes: '',
+  };
+}
+
+function equipmentToForm(item) {
+  return {
+    leadId: item.lead_id || '',
+    category: item.category || 'tractor',
+    make: item.make || '',
+    model: item.model || '',
+    modelYear: item.model_year || '',
+    stockNumber: item.stock_number || '',
+    serialNumber: item.serial_number || '',
+    condition: item.condition || 'either',
+    availability: normalizeAvailability(item.availability),
+    locationId: item.equipment_location_id || '',
+    status: item.status || 'not_started',
+    quotePrice: item.quote_price || '',
+    priceMin: item.price_min || '',
+    priceMax: item.price_max || '',
+    tradeIn: String(Boolean(item.trade_in)),
+    notes: item.notes || '',
+  };
 }
 
 function handleField(setForm, key) {

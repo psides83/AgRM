@@ -114,9 +114,9 @@ const Equipment = () => {
       .select(
         `
         *,
-        contacts(id, first_name, last_name, companies(id, name)),
-        leads(id, source, status, companies(id, name), contacts(id, first_name, last_name)),
-        deals(id, name, stage, companies(id, name), contacts(id, first_name, last_name)),
+        contacts(id, first_name, last_name, title, companies(id, name)),
+        leads(id, source, status, companies(id, name), contacts(id, first_name, last_name, title)),
+        deals(id, name, stage, companies(id, name), contacts(id, first_name, last_name, title)),
         equipment_locations(id, name, city, region)
       `,
       )
@@ -136,20 +136,22 @@ const Equipment = () => {
       await Promise.all([
         supabase
           .from('contacts')
-          .select('id, first_name, last_name, company_id, companies(id, name)')
+          .select(
+            'id, first_name, last_name, title, company_id, companies(id, name)',
+          )
           .order('last_name', { ascending: true })
           .limit(300),
         supabase
           .from('leads')
           .select(
-            'id, source, status, contact_id, company_id, contacts(id, first_name, last_name), companies(id, name)',
+            'id, source, status, contact_id, company_id, contacts(id, first_name, last_name, title), companies(id, name)',
           )
           .order('created_at', { ascending: false })
           .limit(300),
         supabase
           .from('deals')
           .select(
-            'id, name, stage, contact_id, company_id, lead_id, contacts(id, first_name, last_name), companies(id, name)',
+            'id, name, stage, contact_id, company_id, lead_id, contacts(id, first_name, last_name, title), companies(id, name)',
           )
           .order('updated_at', { ascending: false })
           .limit(300),
@@ -1050,24 +1052,51 @@ function equipmentHref(item) {
 }
 
 function relatedType(item) {
-  if (item.deal_id) return 'Deal';
-  if (item.lead_id) return 'Lead';
-  if (item.contact_id) return item.contacts?.companies?.name || 'Contact';
+  if (item.deal_id) {
+    return compactUnique([
+      'Deal',
+      item.deals?.contacts?.title,
+      item.deals?.companies?.name,
+    ]).join(' · ');
+  }
+  if (item.lead_id) {
+    return compactUnique([
+      'Lead',
+      item.leads?.contacts?.title,
+      item.leads?.companies?.name,
+    ]).join(' · ');
+  }
+  if (item.contact_id) {
+    return (
+      compactUnique([
+        item.contacts?.title,
+        item.contacts?.companies?.name,
+      ]).join(' · ') || 'Contact'
+    );
+  }
   return '-';
 }
 
 function relatedOptionLabel(option, type) {
   if (type === 'deal')
-    return [option.name, option.companies?.name].filter(Boolean).join(' - ');
-  if (type === 'lead')
     return [
-      option.source || 'Lead',
+      option.name,
       contactName(option.contacts),
+      option.contacts?.title,
       option.companies?.name,
     ]
       .filter(Boolean)
       .join(' - ');
-  return [contactName(option), option.companies?.name]
+  if (type === 'lead')
+    return [
+      option.source || 'Lead',
+      contactName(option.contacts),
+      option.contacts?.title,
+      option.companies?.name,
+    ]
+      .filter(Boolean)
+      .join(' - ');
+  return [contactName(option), option.title, option.companies?.name]
     .filter(Boolean)
     .join(' - ');
 }
@@ -1075,6 +1104,12 @@ function relatedOptionLabel(option, type) {
 function contactName(contact) {
   return (
     [contact?.first_name, contact?.last_name].filter(Boolean).join(' ') || ''
+  );
+}
+
+function compactUnique(values) {
+  return values.filter(
+    (value, index, list) => value && list.indexOf(value) === index,
   );
 }
 
