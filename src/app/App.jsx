@@ -33,6 +33,22 @@ const App = ({ children }) => {
     };
   }, [pathname, isShowcase]);
 
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) {
+      return;
+    }
+
+    const registerServiceWorker = async () => {
+      try {
+        await navigator.serviceWorker.register('/sw.js');
+      } catch {
+        // Installability should not block the CRM if registration fails.
+      }
+    };
+
+    registerServiceWorker();
+  }, []);
+
   // useLayoutEffect(() => {
   //   configDispatch({ type: REFRESH });
   // }, [mode]);

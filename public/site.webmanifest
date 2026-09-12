@@ -2,6 +2,9 @@
   "name": "AgRM",
   "short_name": "AgRM",
   "description": "Ag equipment sales CRM",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
   "icons": [
     {
       "src": "/brand/app-icon-192.png",
@@ -18,5 +21,6 @@
   ],
   "theme_color": "#103c24",
   "background_color": "#103c24",
+  "display_override": ["standalone", "minimal-ui"],
   "display": "standalone"
 }
