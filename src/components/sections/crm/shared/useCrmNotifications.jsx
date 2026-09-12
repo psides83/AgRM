@@ -26,102 +26,109 @@ export function useCrmNotifications() {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchNotifications = useCallback(async () => {
-    const now = new Date();
-    const startOfToday = dayjs().startOf('day').toISOString();
-    const today = dayjs().format('YYYY-MM-DD');
+    setIsLoading(true);
 
-    const [tasksResult, activitiesResult, dealsResult, equipmentResult] =
-      await Promise.all([
-        supabase
-          .from('tasks')
-          .select(
-            `
-            id,
-            title,
-            body,
-            due_at,
-            created_at,
-            contacts(id, first_name, last_name),
-            companies(id, name),
-            leads(id, status, source, contacts(id, first_name, last_name), companies(id, name))
-          `,
-          )
-          .is('completed_at', null)
-          .lt('due_at', now.toISOString())
-          .order('due_at', { ascending: true }),
-        supabase
-          .from('activities')
-          .select(
-            `
-            id,
-            type,
-            subject,
-            body,
-            due_at,
-            created_at,
-            contacts(id, first_name, last_name),
-            companies(id, name),
-            leads(id, status, source, contacts(id, first_name, last_name), companies(id, name)),
-            deals(id, name, contacts(id, first_name, last_name), companies(id, name))
-          `,
-          )
-          .is('completed_at', null)
-          .lt('due_at', now.toISOString())
-          .order('due_at', { ascending: true }),
-        supabase
-          .from('deals')
-          .select(
-            `
-            id,
-            name,
-            stage,
-            amount,
-            expected_close_date,
-            updated_at,
-            contacts(id, first_name, last_name),
-            companies(id, name)
-          `,
-          )
-          .is('closed_at', null)
-          .neq('stage', 'closed')
-          .lt('expected_close_date', today)
-          .order('expected_close_date', { ascending: true }),
-        supabase
-          .from('equipment_interests')
-          .select(
-            `
-            id,
-            category,
-            make,
-            model,
-            model_year,
-            status,
-            updated_at,
-            contacts(id, first_name, last_name),
-            leads(id, status, source, contacts(id, first_name, last_name), companies(id, name)),
-            deals(id, name, contacts(id, first_name, last_name), companies(id, name))
-          `,
-          )
-          .in('status', actionRequiredEquipmentStatuses)
-          .lt('updated_at', startOfToday)
-          .order('updated_at', { ascending: true }),
-      ]);
+    try {
+      const now = new Date();
+      const startOfToday = dayjs().startOf('day').toISOString();
+      const today = dayjs().format('YYYY-MM-DD');
 
-    const nextNotifications = [
-      ...(tasksResult.data || []).map(taskNotification),
-      ...(activitiesResult.data || []).map(activityNotification),
-      ...(dealsResult.data || []).map(dealNotification),
-      ...(equipmentResult.data || []).map(equipmentNotification),
-    ]
-      .filter(Boolean)
-      .sort(
-        (a, b) =>
-          new Date(a.sortAt || a.createdAt || 0) -
-          new Date(b.sortAt || b.createdAt || 0),
-      );
+      const [tasksResult, activitiesResult, dealsResult, equipmentResult] =
+        await Promise.all([
+          supabase
+            .from('tasks')
+            .select(
+              `
+              id,
+              title,
+              body,
+              due_at,
+              created_at,
+              contacts(id, first_name, last_name),
+              companies(id, name),
+              leads(id, status, source, contacts(id, first_name, last_name), companies(id, name))
+            `,
+            )
+            .is('completed_at', null)
+            .lt('due_at', now.toISOString())
+            .order('due_at', { ascending: true }),
+          supabase
+            .from('activities')
+            .select(
+              `
+              id,
+              type,
+              subject,
+              body,
+              due_at,
+              created_at,
+              contacts(id, first_name, last_name),
+              companies(id, name),
+              leads(id, status, source, contacts(id, first_name, last_name), companies(id, name)),
+              deals(id, name, contacts(id, first_name, last_name), companies(id, name))
+            `,
+            )
+            .is('completed_at', null)
+            .lt('due_at', now.toISOString())
+            .order('due_at', { ascending: true }),
+          supabase
+            .from('deals')
+            .select(
+              `
+              id,
+              name,
+              stage,
+              amount,
+              expected_close_date,
+              updated_at,
+              contacts(id, first_name, last_name),
+              companies(id, name)
+            `,
+            )
+            .is('closed_at', null)
+            .neq('stage', 'closed')
+            .lt('expected_close_date', today)
+            .order('expected_close_date', { ascending: true }),
+          supabase
+            .from('equipment_interests')
+            .select(
+              `
+              id,
+              category,
+              make,
+              model,
+              model_year,
+              status,
+              updated_at,
+              contacts(id, first_name, last_name),
+              leads(id, status, source, contacts(id, first_name, last_name), companies(id, name)),
+              deals(id, name, contacts(id, first_name, last_name), companies(id, name))
+            `,
+            )
+            .in('status', actionRequiredEquipmentStatuses)
+            .lt('updated_at', startOfToday)
+            .order('updated_at', { ascending: true }),
+        ]);
 
-    setNotifications(nextNotifications);
-    setIsLoading(false);
+      const nextNotifications = [
+        ...(tasksResult.data || []).map(taskNotification),
+        ...(activitiesResult.data || []).map(activityNotification),
+        ...(dealsResult.data || []).map(dealNotification),
+        ...(equipmentResult.data || []).map(equipmentNotification),
+      ]
+        .filter(Boolean)
+        .sort(
+          (a, b) =>
+            new Date(a.sortAt || a.createdAt || 0) -
+            new Date(b.sortAt || b.createdAt || 0),
+        );
+
+      setNotifications(nextNotifications);
+    } catch {
+      setNotifications([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, [supabase]);
 
   useEffect(() => {

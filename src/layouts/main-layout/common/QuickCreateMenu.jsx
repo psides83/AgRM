@@ -87,19 +87,27 @@ const QuickCreateMenu = ({ type = 'default' }) => {
   const compact = type !== 'default';
 
   const fetchOptions = async () => {
-    const [contactsResult, companiesResult, leadsResult, dealsResult, locationsResult] = await Promise.all([
-      supabase.from('contacts').select('id, first_name, last_name, company_id, companies(id, name)').order('last_name', { ascending: true }).limit(200),
-      supabase.from('companies').select('id, name').order('name', { ascending: true }).limit(200),
-      supabase.from('leads').select('id, source, account_number, status, contact_id, company_id, contacts(id, first_name, last_name), companies(id, name)').neq('status', 'converted').order('created_at', { ascending: false }).limit(200),
-      supabase.from('deals').select('id, name, stage, contact_id, company_id, lead_id, contacts(id, first_name, last_name), companies(id, name)').order('updated_at', { ascending: false }).limit(200),
-      supabase.from('equipment_locations').select('id, name, city, region').order('name', { ascending: true }).limit(200),
-    ]);
+    try {
+      const [contactsResult, companiesResult, leadsResult, dealsResult, locationsResult] = await Promise.all([
+        supabase.from('contacts').select('id, first_name, last_name, company_id, companies(id, name)').order('last_name', { ascending: true }).limit(200),
+        supabase.from('companies').select('id, name').order('name', { ascending: true }).limit(200),
+        supabase.from('leads').select('id, source, account_number, status, contact_id, company_id, contacts(id, first_name, last_name), companies(id, name)').neq('status', 'converted').order('created_at', { ascending: false }).limit(200),
+        supabase.from('deals').select('id, name, stage, contact_id, company_id, lead_id, contacts(id, first_name, last_name), companies(id, name)').order('updated_at', { ascending: false }).limit(200),
+        supabase.from('equipment_locations').select('id, name, city, region').order('name', { ascending: true }).limit(200),
+      ]);
 
-    if (!contactsResult.error) setContacts(contactsResult.data || []);
-    if (!companiesResult.error) setCompanies(companiesResult.data || []);
-    if (!leadsResult.error) setLeads(leadsResult.data || []);
-    if (!dealsResult.error) setDeals(dealsResult.data || []);
-    if (!locationsResult.error) setEquipmentLocations(locationsResult.data || []);
+      if (!contactsResult.error) setContacts(contactsResult.data || []);
+      if (!companiesResult.error) setCompanies(companiesResult.data || []);
+      if (!leadsResult.error) setLeads(leadsResult.data || []);
+      if (!dealsResult.error) setDeals(dealsResult.data || []);
+      if (!locationsResult.error) setEquipmentLocations(locationsResult.data || []);
+    } catch {
+      setContacts([]);
+      setCompanies([]);
+      setLeads([]);
+      setDeals([]);
+      setEquipmentLocations([]);
+    }
   };
 
   useEffect(() => {
