@@ -206,7 +206,6 @@ async function getDashboardData() {
   ]);
 
   const queryError = [
-    profileResult.error,
     leadsResult.error,
     leadFollowUpsResult.error,
     activityFollowUpsResult.error,
@@ -273,7 +272,9 @@ async function getDashboardData() {
     },
     leads: leadsResult.data || [],
     deals: dealsResult.data || [],
-    commissionRate: profileResult.data?.commission_rate,
+    commissionRate: profileResult.error
+      ? null
+      : profileResult.data?.commission_rate,
     followUps,
     timeline,
   };
@@ -567,6 +568,7 @@ function FollowUps({ followUps }) {
 }
 
 function DealsByStage({ deals, commissionRate }) {
+  const hasRate = hasCommissionRate(commissionRate);
   const stageSummary = dealStages.map((stage) => {
     const stageDeals = deals.filter((deal) => deal.stage === stage);
     const amount = stageDeals.reduce(
@@ -577,10 +579,12 @@ function DealsByStage({ deals, commissionRate }) {
       (sum, deal) => sum + Number(deal.margin || 0),
       0,
     );
-    const commission = stageDeals.reduce(
-      (sum, deal) => sum + calculateCommission(deal.margin, commissionRate),
-      0,
-    );
+    const commission = hasRate
+      ? stageDeals.reduce(
+          (sum, deal) => sum + calculateCommission(deal.margin, commissionRate),
+          0,
+        )
+      : 0;
 
     return {
       stage,
@@ -597,6 +601,15 @@ function DealsByStage({ deals, commissionRate }) {
         title="Deals by stage"
         icon="material-symbols:view-kanban-outline-rounded"
       />
+      {!hasRate && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Add your commission rate in{' '}
+          <Link href={paths.account} underline="hover">
+            your profile
+          </Link>{' '}
+          to see commission estimates.
+        </Alert>
+      )}
       <Stack direction="column" spacing={1.5}>
         {stageSummary.map((stage) => (
           <Box key={stage.stage}>
@@ -609,7 +622,11 @@ function DealsByStage({ deals, commissionRate }) {
                 {formatEnum(stage.stage)}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {stage.count} / Sales {formatCurrency(stage.amount)} / Margin {formatCurrency(stage.margin)} / Commission {formatCurrency(stage.commission)}
+                {stage.count} / Sales {formatCurrency(stage.amount)} / Margin{' '}
+                {formatCurrency(stage.margin)}
+                {hasRate
+                  ? ` / Commission ${formatCurrency(stage.commission)}`
+                  : ''}
               </Typography>
             </Stack>
             <Box
@@ -753,6 +770,15 @@ function formatCurrency(value) {
     currency: 'USD',
     maximumFractionDigits: 0,
   }).format(Number(value));
+}
+
+function hasCommissionRate(value) {
+  return (
+    value !== null &&
+    value !== undefined &&
+    value !== '' &&
+    Number.isFinite(Number(value))
+  );
 }
 
 function formatEnum(value) {
