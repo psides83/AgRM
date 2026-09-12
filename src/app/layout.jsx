@@ -14,13 +14,17 @@ import App from './App';
 export const metadata = {
   title: 'AgRM',
   description: 'Ag equipment sales CRM',
-  icons: [
-    {
-      rel: 'icon',
-      type: 'image/svg+xml',
-      url: `/deere-icons/tractor-row-crop.svg`,
-    },
-  ],
+  manifest: '/site.webmanifest',
+  icons: {
+    icon: [
+      { url: '/brand/favicon.svg', type: 'image/svg+xml' },
+      { url: '/brand/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/brand/favicon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    apple: [{ url: '/brand/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    shortcut: ['/favicon.ico'],
+  },
 };
 
 export default async function RootLayout({ children }) {

@@ -1,0 +1,22 @@
+{
+  "name": "AgRM",
+  "short_name": "AgRM",
+  "description": "Ag equipment sales CRM",
+  "icons": [
+    {
+      "src": "/brand/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/brand/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#103c24",
+  "background_color": "#103c24",
+  "display": "standalone"
+}

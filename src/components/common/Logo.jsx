@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { Box, Link, Typography, typographyClasses } from '@mui/material';
 import paths, { rootPaths } from 'routes/paths';
 
-const logoSrc = '/deere-icons/tractor-row-crop.svg';
+const logoSrc = '/brand/app-icon.svg';
 
 const Logo = ({ sx, viewBox, showName = true, isShowcase, ...rest }) => {
   const pathname = usePathname();
