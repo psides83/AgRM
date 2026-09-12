@@ -23,11 +23,13 @@ import Grid from '@mui/material/Grid';
 import { useRouter } from 'next/navigation';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
+import { useAuth } from 'providers/AuthProvider';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import CrmFilesPanel from 'components/sections/crm/shared/CrmFilesPanel';
 import AddTaskDialog from 'components/sections/crm/shared/AddTaskDialog';
 import TasksCard from 'components/sections/crm/shared/TasksCard';
+import { calculateCommission } from 'components/sections/crm/shared/commission';
 import {
   activityDirections,
   activityTypes,
@@ -56,6 +58,7 @@ const equipmentAvailability = [
 const LeadDetails = ({ leadId }) => {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+  const { profile } = useAuth();
   const [lead, setLead] = useState(null);
   const [equipmentInterests, setEquipmentInterests] = useState([]);
   const [equipmentLocations, setEquipmentLocations] = useState([]);
@@ -549,7 +552,7 @@ const LeadDetails = ({ leadId }) => {
         <Grid size={{ xs: 12, lg: 8 }}>
           <Stack direction="column" spacing={3}>
             <EquipmentCard equipmentInterests={equipmentInterests} />
-            <DealsCard deals={deals} />
+          <DealsCard deals={deals} commissionRate={profile?.commission_rate} />
             <TasksCard
               tasks={tasks}
               supabase={supabase}
@@ -668,7 +671,7 @@ function InfoRow({ label, value }) {
   );
 }
 
-function DealsCard({ deals }) {
+function DealsCard({ deals, commissionRate }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
       <SectionTitle
@@ -682,7 +685,7 @@ function DealsCard({ deals }) {
               key={deal.id}
               title={deal.name}
               href={paths.dealDetails(deal.id)}
-              subtitle={`${formatEnum(deal.stage)} · ${formatCurrency(deal.amount)} · Close ${formatDate(deal.expected_close_date)}`}
+              subtitle={`${formatEnum(deal.stage)} · Sales ${formatCurrency(deal.amount)} · Margin ${formatCurrency(deal.margin)} · Commission ${formatCurrency(calculateCommission(deal.margin, commissionRate))} · Close ${formatDate(deal.expected_close_date)}`}
               chip={`${deal.probability || 0}%`}
             />
           ))
@@ -1755,6 +1758,7 @@ function ConvertLeadDialog({ open, lead, onClose, onSaved, supabase }) {
         name: form.name.trim(),
         stage: form.stage,
         amount: form.amount || null,
+        margin: form.margin || null,
         probability: Number(form.probability) || 0,
         expected_close_date: form.expectedCloseDate || null,
         notes: cleanText(form.notes),
@@ -1821,12 +1825,21 @@ function ConvertLeadDialog({ open, lead, onClose, onSaved, supabase }) {
           </TextField>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
-              label="Amount"
+              label="Sales Amount"
               type="number"
               value={form.amount}
               onChange={handleField(setForm, 'amount')}
               fullWidth
             />
+            <TextField
+              label="Margin"
+              type="number"
+              value={form.margin}
+              onChange={handleField(setForm, 'margin')}
+              fullWidth
+            />
+          </Stack>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
               label="Probability"
               type="number"
@@ -2190,6 +2203,7 @@ function leadToDealForm(lead) {
     name: baseName || 'New deal',
     stage: 'needs_discovery',
     amount: lead?.estimated_budget || '',
+    margin: '',
     probability: 25,
     expectedCloseDate: lead?.target_purchase_date || '',
     notes: lead?.notes || '',

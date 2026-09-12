@@ -43,8 +43,12 @@ function defaultProfileFromUser(user) {
     job_title: user.user_metadata?.job_title || '',
     dealership_name: user.user_metadata?.dealership_name || '',
     territory: user.user_metadata?.territory || '',
+    commission_rate: user.user_metadata?.commission_rate ?? null,
     timezone: user.user_metadata?.timezone || 'America/Chicago',
     locale: user.user_metadata?.locale || 'en-US',
+    theme_mode: user.user_metadata?.theme_mode || null,
+    theme_preset: user.user_metadata?.theme_preset || null,
+    primary_color: user.user_metadata?.primary_color || null,
   };
 }
 

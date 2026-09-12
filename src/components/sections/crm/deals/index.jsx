@@ -21,17 +21,20 @@ import {
 import Grid from '@mui/material/Grid';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
+import { useAuth } from 'providers/AuthProvider';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import {
   dealStages,
   formatLeadStatus,
 } from 'components/sections/crm/constants';
+import { calculateCommission, commissionLabel } from 'components/sections/crm/shared/commission';
 
 const emptyDealForm = {
   name: '',
   stage: 'needs_discovery',
   amount: '',
+  margin: '',
   probability: 0,
   expectedCloseDate: '',
   contactId: '',
@@ -41,6 +44,7 @@ const emptyDealForm = {
 
 const Deals = () => {
   const supabase = useMemo(() => createClient(), []);
+  const { profile } = useAuth();
   const [deals, setDeals] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [leads, setLeads] = useState([]);
@@ -60,6 +64,7 @@ const Deals = () => {
         name,
         stage,
         amount,
+        margin,
         probability,
         expected_close_date,
         notes,
@@ -186,6 +191,7 @@ const Deals = () => {
               stage={column.stage}
               deals={column.deals}
               isLoading={isLoading}
+              commissionRate={profile?.commission_rate}
               onStageChange={handleStageChange}
               onEdit={setEditingDeal}
             />
@@ -218,8 +224,13 @@ const Deals = () => {
   );
 };
 
-function StageColumn({ stage, deals, isLoading, onStageChange, onEdit }) {
+function StageColumn({ stage, deals, isLoading, commissionRate, onStageChange, onEdit }) {
   const total = deals.reduce((sum, deal) => sum + Number(deal.amount || 0), 0);
+  const totalMargin = deals.reduce((sum, deal) => sum + Number(deal.margin || 0), 0);
+  const totalCommission = deals.reduce(
+    (sum, deal) => sum + calculateCommission(deal.margin, commissionRate),
+    0,
+  );
 
   return (
     <Paper sx={{ p: 2, minHeight: 240 }}>
@@ -227,7 +238,7 @@ function StageColumn({ stage, deals, isLoading, onStageChange, onEdit }) {
         <Box>
           <Typography variant="h6">{formatEnum(stage)}</Typography>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            {deals.length} deal{deals.length === 1 ? '' : 's'} · {formatCurrency(total)}
+            {deals.length} deal{deals.length === 1 ? '' : 's'} · Sales {formatCurrency(total)} · Margin {formatCurrency(totalMargin)} · Commission {formatCurrency(totalCommission)}
           </Typography>
         </Box>
         <Chip label={deals.length} size="small" variant="soft" color="primary" />
@@ -241,6 +252,7 @@ function StageColumn({ stage, deals, isLoading, onStageChange, onEdit }) {
             <DealCard
               key={deal.id}
               deal={deal}
+              commissionRate={commissionRate}
               onStageChange={onStageChange}
               onEdit={onEdit}
             />
@@ -253,10 +265,11 @@ function StageColumn({ stage, deals, isLoading, onStageChange, onEdit }) {
   );
 }
 
-function DealCard({ deal, onStageChange, onEdit }) {
+function DealCard({ deal, commissionRate, onStageChange, onEdit }) {
   const stageIndex = dealStages.indexOf(deal.stage);
   const nextStage = stageIndex >= 0 ? dealStages[stageIndex + 1] : null;
   const canAdvance = Boolean(nextStage);
+  const commission = calculateCommission(deal.margin, commissionRate);
 
   return (
     <Paper
@@ -279,7 +292,9 @@ function DealCard({ deal, onStageChange, onEdit }) {
         </Box>
 
         <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
-          <Chip label={formatCurrency(deal.amount)} size="small" variant="soft" color="neutral" />
+          <Chip label={`Sales ${formatCurrency(deal.amount)}`} size="small" variant="soft" color="neutral" />
+          <Chip label={`Margin ${formatCurrency(deal.margin)}`} size="small" variant="soft" color="neutral" />
+          <Chip label={`Commission ${formatCurrency(commission)}`} size="small" variant="soft" color="neutral" title={commissionLabel(commissionRate)} />
           <Chip label={`${deal.probability || 0}%`} size="small" variant="soft" color="neutral" />
         </Stack>
 
@@ -344,6 +359,7 @@ function EditDealDialog({ open, deal, onClose, onSaved, supabase }) {
         name: deal?.name || '',
         stage: deal?.stage || 'needs_discovery',
         amount: deal?.amount || '',
+        margin: deal?.margin || '',
         probability: deal?.probability || 0,
         expectedCloseDate: deal?.expected_close_date || '',
         contactId: '',
@@ -369,6 +385,7 @@ function EditDealDialog({ open, deal, onClose, onSaved, supabase }) {
         name: form.name.trim(),
         stage: form.stage,
         amount: form.amount || null,
+        margin: form.margin || null,
         probability: Number(form.probability) || 0,
         expected_close_date: form.expectedCloseDate || null,
         closed_at:
@@ -411,7 +428,10 @@ function EditDealDialog({ open, deal, onClose, onSaved, supabase }) {
             ))}
           </TextField>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField label="Amount" type="number" value={form.amount} onChange={handleField(setForm, 'amount')} fullWidth />
+            <TextField label="Sales Amount" type="number" value={form.amount} onChange={handleField(setForm, 'amount')} fullWidth />
+            <TextField label="Margin" type="number" value={form.margin} onChange={handleField(setForm, 'margin')} fullWidth />
+          </Stack>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
               label="Probability"
               type="number"
@@ -495,6 +515,7 @@ function CreateDealDialog({ open, contacts, leads, onClose, onSaved, supabase })
         name: form.name.trim(),
         stage: form.stage,
         amount: form.amount || null,
+        margin: form.margin || null,
         probability: Number(form.probability) || 0,
         expected_close_date: form.expectedCloseDate || null,
         notes: cleanText(form.notes),
@@ -588,7 +609,10 @@ function CreateDealDialog({ open, contacts, leads, onClose, onSaved, supabase })
             )}
           />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField label="Amount" type="number" value={form.amount} onChange={handleField(setForm, 'amount')} fullWidth />
+            <TextField label="Sales Amount" type="number" value={form.amount} onChange={handleField(setForm, 'amount')} fullWidth />
+            <TextField label="Margin" type="number" value={form.margin} onChange={handleField(setForm, 'margin')} fullWidth />
+          </Stack>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
               label="Probability"
               type="number"

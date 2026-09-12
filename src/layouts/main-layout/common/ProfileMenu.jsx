@@ -13,11 +13,9 @@ import {
   MenuItem,
   paperClasses,
   Stack,
-  Switch,
   Typography,
 } from '@mui/material';
 import Menu from '@mui/material/Menu';
-import { useThemeMode } from 'hooks/useThemeMode';
 import { demoUser, useAuth } from 'providers/AuthProvider';
 import { useBreakpoints } from 'providers/BreakpointsProvider';
 import { useSettingsContext } from 'providers/SettingsProvider';
@@ -34,8 +32,6 @@ const ProfileMenu = ({ type = 'default' }) => {
     config: { textDirection },
   } = useSettingsContext();
 
-  const { themePreset, setThemePreset } = useThemeMode();
-
   const { user: authUser, isAuthenticated, supabase } = useAuth();
   // Use demoUser as fallback if no session user
   const user = useMemo(() => authUser || demoUser, [authUser]);
@@ -45,10 +41,6 @@ const ProfileMenu = ({ type = 'default' }) => {
   };
   const handleClose = () => {
     setAnchorEl(null);
-  };
-
-  const handleThemeToggle = () => {
-    setThemePreset(themePreset === 'default-dark' ? 'default-light' : 'default-dark');
   };
 
   const menuButton = (
@@ -160,20 +152,12 @@ const ProfileMenu = ({ type = 'default' }) => {
             Accessibility
           </ProfileMenuItem>
 
-          <ProfileMenuItem icon="material-symbols:settings-outline-rounded" onClick={handleClose}>
-            Preferences
-          </ProfileMenuItem>
-
           <ProfileMenuItem
-            onClick={handleThemeToggle}
-            icon="material-symbols:dark-mode-outline-rounded"
+            icon="material-symbols:settings-outline-rounded"
+            onClick={handleClose}
+            href={paths.preferences}
           >
-            Dark mode
-            <Switch
-              checked={themePreset === 'default-dark'}
-              onChange={handleThemeToggle}
-              sx={{ ml: 'auto' }}
-            />
+            Preferences
           </ProfileMenuItem>
         </Box>
         <Divider />

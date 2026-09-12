@@ -1,9 +1,7 @@
 import { Box, Stack } from '@mui/material';
-import LanguageMenu from './LanguageMenu';
 import NotificationMenu from './NotificationMenu';
 import ProfileMenu from './ProfileMenu';
 import QuickCreateMenu from './QuickCreateMenu';
-import ThemeToggler from './ThemeToggler';
 
 const AppbarActionItems = ({ type = 'default', sx, searchComponent }) => {
   return (
@@ -22,12 +20,6 @@ const AppbarActionItems = ({ type = 'default', sx, searchComponent }) => {
     >
       {searchComponent}
       <QuickCreateMenu type={type} />
-      <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-        <LanguageMenu type={type} />
-      </Box>
-      <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-        <ThemeToggler type={type} />
-      </Box>
       <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
         <NotificationMenu type={type} />
       </Box>

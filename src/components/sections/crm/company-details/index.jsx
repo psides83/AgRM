@@ -25,9 +25,11 @@ import Grid from '@mui/material/Grid';
 import { useRouter } from 'next/navigation';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
+import { useAuth } from 'providers/AuthProvider';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import CrmFilesPanel from 'components/sections/crm/shared/CrmFilesPanel';
+import { calculateCommission } from 'components/sections/crm/shared/commission';
 import {
   activityDirections,
   activityTypes,
@@ -55,6 +57,7 @@ const equipmentAvailability = [
 const CompanyDetails = ({ companyId }) => {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+  const { profile } = useAuth();
   const [company, setCompany] = useState(null);
   const [contacts, setContacts] = useState([]);
   const [leads, setLeads] = useState([]);
@@ -276,6 +279,14 @@ const CompanyDetails = ({ companyId }) => {
     (sum, deal) => sum + Number(deal.amount || 0),
     0,
   );
+  const pipelineMargin = openDeals.reduce(
+    (sum, deal) => sum + Number(deal.margin || 0),
+    0,
+  );
+  const pipelineCommission = openDeals.reduce(
+    (sum, deal) => sum + calculateCommission(deal.margin, profile?.commission_rate),
+    0,
+  );
   const companyInitial = (company?.name || 'Company')
     .trim()
     .charAt(0)
@@ -408,7 +419,19 @@ const CompanyDetails = ({ companyId }) => {
                   color="neutral"
                 />
                 <Chip
-                  label={`${formatCurrency(pipelineValue)} pipeline`}
+                  label={`Sales ${formatCurrency(pipelineValue)} pipeline`}
+                  size="small"
+                  variant="soft"
+                  color="neutral"
+                />
+                <Chip
+                  label={`Margin ${formatCurrency(pipelineMargin)} pipeline`}
+                  size="small"
+                  variant="soft"
+                  color="neutral"
+                />
+                <Chip
+                  label={`Commission ${formatCurrency(pipelineCommission)} pipeline`}
                   size="small"
                   variant="soft"
                   color="neutral"
@@ -584,7 +607,7 @@ const CompanyDetails = ({ companyId }) => {
       <Grid size={{ xs: 12, lg: 8 }}>
         <Stack direction="column" spacing={3}>
           <LeadsCard leads={leads} />
-          <DealsCard deals={deals} />
+          <DealsCard deals={deals} commissionRate={profile?.commission_rate} />
           <EquipmentCard equipmentInterests={equipmentInterests} />
           <CrmFilesPanel recordType="company" recordId={company.id} />
           <TimelineCard
@@ -751,7 +774,7 @@ function LeadsCard({ leads }) {
   );
 }
 
-function DealsCard({ deals }) {
+function DealsCard({ deals, commissionRate }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
       <SectionTitle
@@ -765,7 +788,7 @@ function DealsCard({ deals }) {
               key={deal.id}
               href={paths.dealDetails(deal.id)}
               title={deal.name}
-              subtitle={`${contactName(deal.contacts)} · ${formatCurrency(deal.amount)} · Close ${formatDate(deal.expected_close_date)}`}
+              subtitle={`${contactName(deal.contacts)} · Sales ${formatCurrency(deal.amount)} · Margin ${formatCurrency(deal.margin)} · Commission ${formatCurrency(calculateCommission(deal.margin, commissionRate))} · Close ${formatDate(deal.expected_close_date)}`}
               chip={formatEnum(deal.stage)}
             />
           ))

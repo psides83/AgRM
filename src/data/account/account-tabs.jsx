@@ -1,5 +1,6 @@
 import BusinessCardManager from 'components/sections/crm/business-card';
 import PersonalInfoTabPanel from 'components/sections/account/personal-info/PersonalInfoTabPanel';
+import PreferencesTabPanel from 'components/sections/account/preferences/PreferencesTabPanel';
 
 export const accountTabs = [
   {
@@ -10,6 +11,15 @@ export const accountTabs = [
     icon: 'material-symbols:person-outline',
     panelIcon: 'material-symbols:person-outline',
     tabPanel: <PersonalInfoTabPanel />,
+  },
+  {
+    id: 2,
+    label: 'Preferences',
+    title: 'Preferences',
+    value: 'preferences',
+    icon: 'material-symbols:tune-rounded',
+    panelIcon: 'material-symbols:tune-rounded',
+    tabPanel: <PreferencesTabPanel />,
   },
   {
     id: 'business_card',

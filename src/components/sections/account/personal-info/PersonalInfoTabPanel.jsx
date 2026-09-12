@@ -23,6 +23,7 @@ const emptyForm = {
   jobTitle: '',
   dealershipName: '',
   territory: '',
+  commissionRate: '',
   timezone: 'America/Chicago',
   locale: 'en-US',
   avatarUrl: '',
@@ -62,6 +63,7 @@ const PersonalInfoTabPanel = () => {
       job_title: cleanText(form.jobTitle),
       dealership_name: cleanText(form.dealershipName),
       territory: cleanText(form.territory),
+      commission_rate: cleanNumber(form.commissionRate),
       timezone: cleanText(form.timezone) || 'America/Chicago',
       locale: cleanText(form.locale) || 'en-US',
     };
@@ -83,6 +85,7 @@ const PersonalInfoTabPanel = () => {
         job_title: payload.job_title,
         dealership_name: payload.dealership_name,
         territory: payload.territory,
+        commission_rate: payload.commission_rate,
         timezone: payload.timezone,
         locale: payload.locale,
       },
@@ -224,6 +227,15 @@ const PersonalInfoTabPanel = () => {
             onChange={handleField(setForm, 'territory')}
             fullWidth
           />
+          <TextField
+            label="Commission Rate"
+            type="number"
+            value={form.commissionRate}
+            onChange={handleField(setForm, 'commissionRate')}
+            helperText="Enter a percentage, for example 10 for 10%."
+            slotProps={{ htmlInput: { min: 0, max: 100, step: 0.01 } }}
+            fullWidth
+          />
         </Stack>
       </AccountTabPanelSection>
 
@@ -265,6 +277,7 @@ function profileToForm(profile, user) {
     jobTitle: profile?.job_title || metadata.job_title || '',
     dealershipName: profile?.dealership_name || metadata.dealership_name || '',
     territory: profile?.territory || metadata.territory || '',
+    commissionRate: profile?.commission_rate ?? metadata.commission_rate ?? '',
     timezone: profile?.timezone || metadata.timezone || 'America/Chicago',
     locale: profile?.locale || metadata.locale || 'en-US',
     avatarUrl: profile?.avatar_url || metadata.avatar_url || '',
@@ -289,6 +302,15 @@ function getFileExtension(filename) {
 
 function cleanText(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function cleanNumber(value) {
+  if (value === '' || value === null || typeof value === 'undefined') {
+    return null;
+  }
+
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
 }
 
 export default PersonalInfoTabPanel;

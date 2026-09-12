@@ -55,6 +55,7 @@ const paths = {
   pricingTable: `/${rootPaths.pagesRoot}/${rootPaths.pricingRoot}/table`,
 
   account: `/${rootPaths.pagesRoot}/account`,
+  preferences: `/${rootPaths.pagesRoot}/account?tab=preferences`,
   businessCard: `/${rootPaths.pagesRoot}/account?tab=business_card`,
   faq: `/${rootPaths.pagesRoot}/faq`,
   comingSoon: `/${rootPaths.pagesRoot}/coming-soon`,

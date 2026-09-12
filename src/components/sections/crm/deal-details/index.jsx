@@ -21,9 +21,11 @@ import {
 import Grid from '@mui/material/Grid';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
+import { useAuth } from 'providers/AuthProvider';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import CrmFilesPanel from 'components/sections/crm/shared/CrmFilesPanel';
+import { calculateCommission, commissionLabel } from 'components/sections/crm/shared/commission';
 import {
   activityDirections,
   activityTypes,
@@ -44,6 +46,7 @@ const equipmentAvailability = [
 
 const DealDetails = ({ dealId }) => {
   const supabase = useMemo(() => createClient(), []);
+  const { profile } = useAuth();
   const [deal, setDeal] = useState(null);
   const [equipmentInterests, setEquipmentInterests] = useState([]);
   const [equipmentLocations, setEquipmentLocations] = useState([]);
@@ -210,6 +213,8 @@ const DealDetails = ({ dealId }) => {
     return <Alert severity="error">{error || 'Deal not found.'}</Alert>;
   }
 
+  const commission = calculateCommission(deal.margin, profile?.commission_rate);
+
   return (
     <Grid container spacing={3}>
       <Grid size={12}>
@@ -281,9 +286,20 @@ const DealDetails = ({ dealId }) => {
                   color={deal.stage === 'closed' ? 'success' : 'primary'}
                 />
                 <Chip
-                  label={formatCurrency(deal.amount)}
+                  label={`Sales ${formatCurrency(deal.amount)}`}
                   variant="soft"
                   color="neutral"
+                />
+                <Chip
+                  label={`Margin ${formatCurrency(deal.margin)}`}
+                  variant="soft"
+                  color="neutral"
+                />
+                <Chip
+                  label={`Commission ${formatCurrency(commission)}`}
+                  variant="soft"
+                  color="neutral"
+                  title={commissionLabel(profile?.commission_rate)}
                 />
                 <Chip
                   label={`${deal.probability || 0}% probability`}
@@ -319,7 +335,7 @@ const DealDetails = ({ dealId }) => {
 
       <Grid size={{ xs: 12, lg: 4 }}>
         <Stack direction="column" spacing={3}>
-          <DealInfoCard deal={deal} />
+          <DealInfoCard deal={deal} commissionRate={profile?.commission_rate} />
           <LinkedRecordsCard deal={deal} />
         </Stack>
       </Grid>
@@ -411,7 +427,9 @@ function SectionTitle({ title, icon, action }) {
   );
 }
 
-function DealInfoCard({ deal }) {
+function DealInfoCard({ deal, commissionRate }) {
+  const commission = calculateCommission(deal.margin, commissionRate);
+
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
       <SectionTitle
@@ -420,7 +438,12 @@ function DealInfoCard({ deal }) {
       />
       <Stack direction="column" spacing={1.5}>
         <InfoRow label="Stage" value={formatEnum(deal.stage)} />
-        <InfoRow label="Amount" value={formatCurrency(deal.amount)} />
+        <InfoRow label="Sales Amount" value={formatCurrency(deal.amount)} />
+        <InfoRow label="Margin" value={formatCurrency(deal.margin)} />
+        <InfoRow
+          label="Commission"
+          value={`${formatCurrency(commission)} (${commissionLabel(commissionRate)})`}
+        />
         <InfoRow label="Probability" value={`${deal.probability || 0}%`} />
         <InfoRow
           label="Expected Close"
@@ -1070,6 +1093,7 @@ function EditDealDialog({ open, deal, onClose, onSaved, supabase }) {
     name: deal?.name || '',
     stage: deal?.stage || 'needs_discovery',
     amount: deal?.amount || '',
+    margin: deal?.margin || '',
     probability: deal?.probability || 0,
     expectedCloseDate: deal?.expected_close_date || '',
     lostReason: deal?.lost_reason || '',
@@ -1083,6 +1107,7 @@ function EditDealDialog({ open, deal, onClose, onSaved, supabase }) {
         name: deal?.name || '',
         stage: deal?.stage || 'needs_discovery',
         amount: deal?.amount || '',
+        margin: deal?.margin || '',
         probability: deal?.probability || 0,
         expectedCloseDate: deal?.expected_close_date || '',
         lostReason: deal?.lost_reason || '',
@@ -1098,6 +1123,7 @@ function EditDealDialog({ open, deal, onClose, onSaved, supabase }) {
       name: form.name.trim(),
       stage: form.stage,
       amount: form.amount || null,
+      margin: form.margin || null,
       probability: Number(form.probability) || 0,
       expected_close_date: form.expectedCloseDate || null,
       closed_at:
@@ -1145,12 +1171,21 @@ function EditDealDialog({ open, deal, onClose, onSaved, supabase }) {
           </TextField>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
-              label="Amount"
+              label="Sales Amount"
               type="number"
               value={form.amount}
               onChange={handleField(setForm, 'amount')}
               fullWidth
             />
+            <TextField
+              label="Margin"
+              type="number"
+              value={form.margin}
+              onChange={handleField(setForm, 'margin')}
+              fullWidth
+            />
+          </Stack>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
               label="Probability"
               type="number"

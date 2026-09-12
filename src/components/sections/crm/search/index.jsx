@@ -17,6 +17,7 @@ import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import { formatPhone } from 'components/sections/crm/shared/phoneFormat';
 import { formatLeadStatus } from 'components/sections/crm/constants';
+import { calculateCommission } from 'components/sections/crm/shared/commission';
 
 async function getSearchResults(rawQuery) {
   const query = cleanQuery(rawQuery);
@@ -27,14 +28,25 @@ async function getSearchResults(rawQuery) {
 
   const supabase = await createClient();
   const pattern = `%${query}%`;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const [
+    profileResult,
     contactsResult,
     companiesResult,
     leadsResult,
     dealsResult,
     equipmentResult,
   ] = await Promise.all([
+    user
+      ? supabase
+          .from('profiles')
+          .select('commission_rate')
+          .eq('id', user.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
     supabase
       .from('contacts')
       .select(
@@ -66,7 +78,7 @@ async function getSearchResults(rawQuery) {
     supabase
       .from('deals')
       .select(
-        'id, name, stage, amount, probability, expected_close_date, notes, contacts(id, first_name, last_name), companies(id, name)',
+        'id, name, stage, amount, margin, probability, expected_close_date, notes, contacts(id, first_name, last_name), companies(id, name)',
       )
       .or(
         `name.ilike.${pattern},notes.ilike.${pattern},lost_reason.ilike.${pattern}`,
@@ -106,6 +118,7 @@ async function getSearchResults(rawQuery) {
   ]);
 
   const queryError = [
+    profileResult.error,
     contactsResult.error,
     companiesResult.error,
     leadsResult.error,
@@ -116,6 +129,7 @@ async function getSearchResults(rawQuery) {
 
   return {
     query,
+    commissionRate: profileResult.data?.commission_rate,
     results: {
       contacts: contactsResult.data || [],
       companies: companiesResult.data || [],
@@ -137,7 +151,7 @@ const CRMSearch = async ({ query: rawQuery }) => {
     );
   }
 
-  const { query, results } = data;
+  const { query, results, commissionRate } = data;
   const total = Object.values(results).reduce(
     (sum, items) => sum + items.length,
     0,
@@ -296,7 +310,9 @@ const CRMSearch = async ({ query: rawQuery }) => {
                 title={deal.name}
                 subtitle={[
                   entityName(deal),
-                  formatCurrency(deal.amount),
+                  `Sales ${formatCurrency(deal.amount)}`,
+                  `Margin ${formatCurrency(deal.margin)}`,
+                  `Commission ${formatCurrency(calculateCommission(deal.margin, commissionRate))}`,
                   `Close ${formatDate(deal.expected_close_date)}`,
                 ]
                   .filter(Boolean)

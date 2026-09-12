@@ -25,11 +25,13 @@ import Grid from '@mui/material/Grid';
 import { useRouter } from 'next/navigation';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
+import { useAuth } from 'providers/AuthProvider';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import CrmFilesPanel from 'components/sections/crm/shared/CrmFilesPanel';
 import AddTaskDialog from 'components/sections/crm/shared/AddTaskDialog';
 import TasksCard from 'components/sections/crm/shared/TasksCard';
+import { calculateCommission } from 'components/sections/crm/shared/commission';
 import {
   activityDirections,
   activityTypes,
@@ -57,6 +59,7 @@ const equipmentAvailability = [
 const ContactDetailsClient = ({ contactId }) => {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+  const { profile } = useAuth();
   const [contact, setContact] = useState(null);
   const [leads, setLeads] = useState([]);
   const [deals, setDeals] = useState([]);
@@ -670,7 +673,7 @@ const ContactDetailsClient = ({ contactId }) => {
               }}
             />
             <LeadsCard leads={leads} />
-            <DealsCard deals={deals} />
+          <DealsCard deals={deals} commissionRate={profile?.commission_rate} />
             <CrmFilesPanel recordType="contact" recordId={contact.id} />
           </Stack>
         </Grid>
@@ -806,7 +809,7 @@ function LeadsCard({ leads }) {
   );
 }
 
-function DealsCard({ deals }) {
+function DealsCard({ deals, commissionRate }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
       <SectionTitle
@@ -820,7 +823,7 @@ function DealsCard({ deals }) {
               key={deal.id}
               href={paths.dealDetails(deal.id)}
               title={deal.name}
-              subtitle={`${deal.companies?.name || 'No company'} · ${formatCurrency(deal.amount)} · Close ${formatDate(deal.expected_close_date)}`}
+              subtitle={`${deal.companies?.name || 'No company'} · Sales ${formatCurrency(deal.amount)} · Margin ${formatCurrency(deal.margin)} · Commission ${formatCurrency(calculateCommission(deal.margin, commissionRate))} · Close ${formatDate(deal.expected_close_date)}`}
               chip={formatEnum(deal.stage)}
             />
           ))

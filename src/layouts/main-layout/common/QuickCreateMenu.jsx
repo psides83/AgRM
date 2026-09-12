@@ -52,7 +52,7 @@ const createItems = [
 const emptyCompanyForm = { name: '', companyType: '', website: '', email: '', phone: '', city: '', region: '', notes: '' };
 const emptyContactForm = { firstName: '', lastName: '', title: '', email: '', phone: '', mobilePhone: '', companyName: '', notes: '' };
 const emptyLeadForm = { contactId: '', companyId: '', source: '', status: 'new', priority: 3, estimatedBudget: '', nextFollowUpAt: '', notes: '' };
-const emptyDealForm = { leadId: '', contactId: '', companyId: '', name: '', stage: 'needs_discovery', amount: '', probability: 25, expectedCloseDate: '', notes: '' };
+const emptyDealForm = { leadId: '', contactId: '', companyId: '', name: '', stage: 'needs_discovery', amount: '', margin: '', probability: 25, expectedCloseDate: '', notes: '' };
 const emptyTaskForm = { relatedType: 'contact', relatedId: '', title: '', body: '', dueAt: '' };
 const emptyActivityForm = { relatedType: 'contact', relatedId: '', type: 'call', direction: 'outbound', subject: '', body: '', occurredAt: '', dueAt: '' };
 const emptyEquipmentForm = {
@@ -437,6 +437,7 @@ function CreateDealDialog({ open, onClose, supabase, contacts, companies, leads,
       name: form.name.trim(),
       stage: form.stage,
       amount: form.amount || null,
+      margin: form.margin || null,
       probability: Number(form.probability) || 0,
       expected_close_date: form.expectedCloseDate || null,
       notes: cleanText(form.notes),
@@ -466,7 +467,10 @@ function CreateDealDialog({ open, onClose, supabase, contacts, companies, leads,
             <TextField label="Probability" type="number" value={form.probability} onChange={handleField(setForm, 'probability')} fullWidth />
           </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField label="Amount" type="number" value={form.amount} onChange={handleField(setForm, 'amount')} fullWidth />
+            <TextField label="Sales Amount" type="number" value={form.amount} onChange={handleField(setForm, 'amount')} fullWidth />
+            <TextField label="Margin" type="number" value={form.margin} onChange={handleField(setForm, 'margin')} fullWidth />
+          </Stack>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField label="Expected Close" type="date" value={form.expectedCloseDate} onChange={handleField(setForm, 'expectedCloseDate')} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
           </Stack>
           <TextField label="Notes" value={form.notes} onChange={handleField(setForm, 'notes')} fullWidth multiline rows={3} />

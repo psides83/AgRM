@@ -21,6 +21,7 @@ import { createClient } from 'lib/supabase/server';
 import paths from 'routes/paths';
 import IconifyIcon from 'components/base/IconifyIcon';
 import { dealStages } from 'components/sections/crm/constants';
+import { calculateCommission } from 'components/sections/crm/shared/commission';
 import OpenTasksPanel from 'components/sections/dashboards/crm/OpenTasksPanel';
 
 const metricCards = [
@@ -79,6 +80,7 @@ async function getDashboardData() {
   }
 
   const [
+    profileResult,
     contacts,
     openLeads,
     openDeals,
@@ -90,6 +92,11 @@ async function getDashboardData() {
     activitiesResult,
     notesResult,
   ] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('commission_rate')
+      .eq('id', user.id)
+      .maybeSingle(),
     getCount(supabase, 'contacts'),
     getCount(supabase, 'leads', [['neq', 'status', 'converted']]),
     getCount(supabase, 'deals', [['neq', 'stage', 'closed']]),
@@ -156,6 +163,7 @@ async function getDashboardData() {
         name,
         stage,
         amount,
+        margin,
         probability,
         expected_close_date,
         contacts(id, first_name, last_name),
@@ -198,6 +206,7 @@ async function getDashboardData() {
   ]);
 
   const queryError = [
+    profileResult.error,
     leadsResult.error,
     leadFollowUpsResult.error,
     activityFollowUpsResult.error,
@@ -264,6 +273,7 @@ async function getDashboardData() {
     },
     leads: leadsResult.data || [],
     deals: dealsResult.data || [],
+    commissionRate: profileResult.data?.commission_rate,
     followUps,
     timeline,
   };
@@ -360,7 +370,7 @@ const CRM = async () => {
       </Grid>
 
       <Grid size={{ xs: 12, xl: 5 }}>
-        <DealsByStage deals={data.deals} />
+        <DealsByStage deals={data.deals} commissionRate={data.commissionRate} />
       </Grid>
 
       <Grid size={{ xs: 12, xl: 7 }}>
@@ -556,11 +566,19 @@ function FollowUps({ followUps }) {
   );
 }
 
-function DealsByStage({ deals }) {
+function DealsByStage({ deals, commissionRate }) {
   const stageSummary = dealStages.map((stage) => {
     const stageDeals = deals.filter((deal) => deal.stage === stage);
     const amount = stageDeals.reduce(
       (sum, deal) => sum + Number(deal.amount || 0),
+      0,
+    );
+    const margin = stageDeals.reduce(
+      (sum, deal) => sum + Number(deal.margin || 0),
+      0,
+    );
+    const commission = stageDeals.reduce(
+      (sum, deal) => sum + calculateCommission(deal.margin, commissionRate),
       0,
     );
 
@@ -568,6 +586,8 @@ function DealsByStage({ deals }) {
       stage,
       count: stageDeals.length,
       amount,
+      margin,
+      commission,
     };
   });
 
@@ -589,7 +609,7 @@ function DealsByStage({ deals }) {
                 {formatEnum(stage.stage)}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {stage.count} / {formatCurrency(stage.amount)}
+                {stage.count} / Sales {formatCurrency(stage.amount)} / Margin {formatCurrency(stage.margin)} / Commission {formatCurrency(stage.commission)}
               </Typography>
             </Stack>
             <Box

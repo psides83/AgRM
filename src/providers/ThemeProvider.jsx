@@ -7,6 +7,7 @@ import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { REFRESH } from 'reducers/SettingsReducer';
 import { createTheme } from 'theme/theme';
 import PageLoader from 'components/loading/PageLoader';
+import ProfilePreferencesSync from './ProfilePreferencesSync';
 import { useSettingsContext } from './SettingsProvider';
 
 const RTLMode = dynamic(() => import('theme/RTLMode'), {
@@ -57,6 +58,7 @@ const ThemeProvider = ({ children }) => {
       modeStorageKey="agrm-mode"
     >
       <CssBaseline enableColorScheme />
+      <ProfilePreferencesSync />
       <RTLMode>{children}</RTLMode>
     </MuiThemeProvider>
   );
