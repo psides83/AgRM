@@ -182,17 +182,17 @@ const ActivitiesPage = () => {
   };
 
   const handleExport = () => {
-    const exportRows = activities
+    const exportRows = contactReportActivities(activities)
       .filter((activity) => activityInExportRange(activity, exportRange))
       .sort((a, b) => dateValue(activityDate(a)) - dateValue(activityDate(b)));
 
     if (!exportRows.length) {
-      setError('No activities found for that export date range.');
+      setError('No contact activities found for that export date range.');
       return;
     }
 
     downloadCsv(
-      `activities-${exportRange.startDate || 'all'}-${exportRange.endDate || 'all'}.csv`,
+      `contact-activities-${exportRange.startDate || 'all'}-${exportRange.endDate || 'all'}.csv`,
       activityExportCsv(exportRows),
     );
   };
@@ -281,7 +281,8 @@ const ActivitiesPage = () => {
               <Box sx={{ minWidth: { md: 220 }, flexGrow: 1 }}>
                 <Typography variant="subtitle2">Export CSV</Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Date, Company, Contact, Location, Notes
+                  Contact activity report: Date, Company, Contact, Location,
+                  Notes
                 </Typography>
               </Box>
               <TextField
@@ -756,6 +757,10 @@ function activityDate(activity) {
   return activity.occurred_at || activity.created_at;
 }
 
+function contactReportActivities(activities) {
+  return activities.filter((activity) => activity.contact_id);
+}
+
 function startOfDay(value) {
   const date = new Date(`${value}T00:00:00`);
   return Number.isNaN(date.getTime()) ? null : date;
@@ -833,7 +838,7 @@ function locationText(record) {
 }
 
 function exportNotes(activity) {
-  return [activity.subject, activity.body].filter(Boolean).join('\n\n');
+  return activity.body || activity.subject || formatEnum(activity.type);
 }
 
 function recordHref(activity) {

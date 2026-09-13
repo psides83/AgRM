@@ -55,6 +55,16 @@ const equipmentAvailability = [
   'unavailable',
 ];
 
+const callResults = [
+  { value: 'no_answer', label: 'No Answer' },
+  { value: 'left_voicemail', label: 'Left Voicemail' },
+  { value: 'contacted', label: 'Contacted' },
+  { value: 'interested', label: 'Interested' },
+  { value: 'not_interested', label: 'Not Interested' },
+  { value: 'bad_number', label: 'Bad Number' },
+  { value: 'do_not_contact', label: 'Do Not Contact' },
+];
+
 const LeadDetails = ({ leadId }) => {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -350,6 +360,16 @@ const LeadDetails = ({ leadId }) => {
               >
                 <Button
                   variant="contained"
+                  onClick={() => openDialog('call')}
+                  startIcon={
+                    <IconifyIcon icon="material-symbols:add-call-outline-rounded" />
+                  }
+                >
+                  Log Call
+                </Button>
+                <Button
+                  variant="soft"
+                  color="neutral"
                   onClick={() => openDialog('equipment')}
                   startIcon={
                     <IconifyIcon icon="material-symbols:agriculture-outline-rounded" />
@@ -455,8 +475,19 @@ const LeadDetails = ({ leadId }) => {
                 value={formatLeadStatus(lead.status)}
               />
               <InfoRow label="Source" value={lead.source} />
+              <InfoRow label="Import Source" value={lead.import_source} />
+              <InfoRow label="Branch" value={lead.branch} />
               <InfoRow label="Account Number" value={lead.account_number} />
               <InfoRow label="Priority" value={lead.priority} />
+              <InfoRow label="Call Result" value={lead.call_result} />
+              <InfoRow
+                label="Call Attempts"
+                value={lead.call_attempt_count}
+              />
+              <InfoRow
+                label="Last Contacted"
+                value={formatDateTime(lead.last_contacted_at)}
+              />
               <InfoRow
                 label="Budget"
                 value={formatCurrency(lead.estimated_budget)}
@@ -513,9 +544,31 @@ const LeadDetails = ({ leadId }) => {
                   </Button>
                 </>
               ) : (
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  No contact linked.
-                </Typography>
+                <>
+                  <InfoRow label="Prospect" value={prospectName(lead)} />
+                  <InfoRow label="Email" value={lead.email} />
+                  <InfoRow
+                    label="Phone"
+                    value={formatPhone(
+                      lead.mobile_phone || lead.phone || lead.home_phone,
+                    )}
+                  />
+                  <InfoRow label="Home" value={formatPhone(lead.home_phone)} />
+                  <InfoRow
+                    label="Location"
+                    value={[lead.city, lead.region, lead.postal_code]
+                      .filter(Boolean)
+                      .join(', ')}
+                  />
+                  <Button
+                    variant="soft"
+                    color="neutral"
+                    sx={{ mt: 1 }}
+                    onClick={() => openDialog('contact')}
+                  >
+                    Convert to Contact
+                  </Button>
+                </>
               )}
               <Divider />
               {company ? (
@@ -541,11 +594,24 @@ const LeadDetails = ({ leadId }) => {
                   </Button>
                 </>
               ) : (
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  No company linked.
-                </Typography>
+                <>
+                  <InfoRow label="Prospect Company" value={lead.company_name} />
+                  <InfoRow
+                    label="Address"
+                    value={[
+                      lead.address_line1,
+                      lead.city,
+                      lead.region,
+                      lead.postal_code,
+                    ]
+                      .filter(Boolean)
+                      .join(', ')}
+                  />
+                </>
               )}
             </InfoCard>
+
+            <SourceDetailsCard details={lead.source_details} />
           </Stack>
         </Grid>
 
@@ -592,6 +658,13 @@ const LeadDetails = ({ leadId }) => {
       />
       <AddActivityDialog
         open={dialog === 'activity'}
+        lead={lead}
+        onClose={() => setDialog(null)}
+        onSaved={fetchDetails}
+        supabase={supabase}
+      />
+      <LogCallDialog
+        open={dialog === 'call'}
         lead={lead}
         onClose={() => setDialog(null)}
         onSaved={fetchDetails}
@@ -668,6 +741,29 @@ function InfoRow({ label, value }) {
         {value || '-'}
       </Typography>
     </Stack>
+  );
+}
+
+function SourceDetailsCard({ details }) {
+  const items = Object.entries(details || {})
+    .map(([key, detail]) => ({
+      key,
+      label: detail?.label || formatEnum(key),
+      value: detail?.value,
+    }))
+    .filter((item) => item.value);
+
+  if (!items.length) return null;
+
+  return (
+    <InfoCard
+      title="Imported Details"
+      icon="material-symbols:database-outline-rounded"
+    >
+      {items.map((item) => (
+        <InfoRow key={item.key} label={item.label} value={item.value} />
+      ))}
+    </InfoCard>
   );
 }
 
@@ -1105,7 +1201,7 @@ function RecordRow({ title, subtitle, chip, href }) {
 function UpdateLeadDialog({ open, lead, onClose, onSaved, onDelete, supabase }) {
   const [form, setForm] = useState({
     accountNumber: lead?.account_number || '',
-    status: lead?.status || 'new',
+    status: lead?.status || 'not_contacted',
     priority: lead?.priority || 3,
     nextFollowUpAt: '',
     latitude: '',
@@ -1120,7 +1216,7 @@ function UpdateLeadDialog({ open, lead, onClose, onSaved, onDelete, supabase }) 
       setError(null);
       setForm({
         accountNumber: lead?.account_number || '',
-        status: lead?.status || 'new',
+        status: lead?.status || 'not_contacted',
         priority: lead?.priority || 3,
         nextFollowUpAt: toDateTimeLocal(lead?.next_follow_up_at),
         latitude: lead?.latitude ?? '',
@@ -1484,6 +1580,180 @@ function AddActivityDialog({ open, lead, onClose, onSaved, supabase }) {
   );
 }
 
+function LogCallDialog({ open, lead, onClose, onSaved, supabase }) {
+  const [form, setForm] = useState({
+    result: 'no_answer',
+    notes: '',
+    nextFollowUpAt: '',
+    createTask: 'true',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setError(null);
+    setForm({
+      result: 'no_answer',
+      notes: '',
+      nextFollowUpAt: '',
+      createTask: 'true',
+    });
+  }, [open]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setError(null);
+
+    const { data: userResult, error: userError } =
+      await supabase.auth.getUser();
+    if (userError || !userResult.user) {
+      setError('You need to be logged in to log a call.');
+      setIsSaving(false);
+      return;
+    }
+
+    const resultLabel = callResultLabel(form.result);
+    const occurredAt = new Date().toISOString();
+    const nextStatus = leadStatusFromCallResult(form.result, lead.status);
+
+    const { error: activityError } = await supabase.from('activities').insert({
+      owner_id: userResult.user.id,
+      lead_id: lead.id,
+      contact_id: lead.contact_id,
+      company_id: lead.company_id,
+      type: 'call',
+      direction: 'outbound',
+      subject: resultLabel,
+      body: preserveText(form.notes),
+      occurred_at: occurredAt,
+      due_at: form.nextFollowUpAt
+        ? new Date(form.nextFollowUpAt).toISOString()
+        : null,
+      completed_at: occurredAt,
+    });
+
+    if (activityError) {
+      setError(activityError.message);
+      setIsSaving(false);
+      return;
+    }
+
+    const { error: leadError } = await supabase
+      .from('leads')
+      .update({
+        status: nextStatus,
+        call_result: resultLabel,
+        call_attempt_count: Number(lead.call_attempt_count || 0) + 1,
+        last_contacted_at: occurredAt,
+        next_follow_up_at: form.nextFollowUpAt
+          ? new Date(form.nextFollowUpAt).toISOString()
+          : lead.next_follow_up_at,
+      })
+      .eq('id', lead.id);
+
+    if (leadError) {
+      setError(leadError.message);
+      setIsSaving(false);
+      return;
+    }
+
+    if (form.createTask === 'true' && form.nextFollowUpAt) {
+      const dueAt = new Date(form.nextFollowUpAt).toISOString();
+      const { error: taskError } = await supabase.from('tasks').insert({
+        owner_id: userResult.user.id,
+        lead_id: lead.id,
+        contact_id: lead.contact_id,
+        company_id: lead.company_id,
+        title: `Follow up with ${entityName(lead)}`,
+        body: preserveText(form.notes) || `Previous call result: ${resultLabel}`,
+        due_at: dueAt,
+      });
+
+      if (taskError) {
+        setError(taskError.message);
+        setIsSaving(false);
+        return;
+      }
+    }
+
+    setIsSaving(false);
+    onSaved();
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Log Lead Call</DialogTitle>
+      <DialogContent>
+        <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
+          {error && <Alert severity="error">{error}</Alert>}
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            {[
+              prospectName(lead) || entityName(lead),
+              formatPhone(lead.mobile_phone || lead.phone || lead.home_phone),
+            ]
+              .filter(Boolean)
+              .join(' - ')}
+          </Typography>
+          <TextField
+            select
+            label="Call Result"
+            value={form.result}
+            onChange={handleField(setForm, 'result')}
+            fullWidth
+          >
+            {callResults.map((result) => (
+              <MenuItem key={result.value} value={result.value}>
+                {result.label}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            label="Next Follow-up"
+            type="datetime-local"
+            value={form.nextFollowUpAt}
+            onChange={handleField(setForm, 'nextFollowUpAt')}
+            slotProps={{ inputLabel: { shrink: true } }}
+            fullWidth
+          />
+          <FollowUpPresetButtons
+            onSelect={(nextFollowUpAt) =>
+              setForm((prev) => ({ ...prev, nextFollowUpAt }))
+            }
+          />
+          <TextField
+            select
+            label="Follow-up Task"
+            value={form.createTask}
+            onChange={handleField(setForm, 'createTask')}
+            fullWidth
+          >
+            <MenuItem value="true">Create task when follow-up is set</MenuItem>
+            <MenuItem value="false">Only update lead follow-up date</MenuItem>
+          </TextField>
+          <TextField
+            label="Call Notes"
+            value={form.notes}
+            onChange={handleField(setForm, 'notes')}
+            fullWidth
+            multiline
+            rows={4}
+          />
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button color="neutral" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="contained" onClick={handleSave} loading={isSaving}>
+          Save Call
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 function ConvertLeadToContactDialog({
   open,
   lead,
@@ -1492,6 +1762,12 @@ function ConvertLeadToContactDialog({
   supabase,
 }) {
   const [form, setForm] = useState({
+    contactMode: 'create',
+    existingContactId: '',
+    companyMode: 'create',
+    existingCompanyId: '',
+    createSecondaryContact: 'false',
+    companyName: '',
     firstName: '',
     lastName: '',
     title: '',
@@ -1499,32 +1775,106 @@ function ConvertLeadToContactDialog({
     email: '',
     phone: '',
     mobilePhone: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    county: '',
+    region: '',
+    postalCode: '',
     notes: '',
+    qualifyingActivityType: 'call',
+    qualifyingActivityDirection: 'outbound',
+    qualifyingActivitySubject: 'Qualified lead contact',
+    qualifyingActivityNotes: '',
+    qualifyingActivityOccurredAt: '',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
   const [duplicateConfirmation, setDuplicateConfirmation] = useState(null);
+  const [contacts, setContacts] = useState([]);
+  const [companies, setCompanies] = useState([]);
 
   useEffect(() => {
     if (open) {
+      const secondary = secondaryContactFromLead(lead);
       setForm({
-        firstName: '',
-        lastName: '',
+        contactMode: 'create',
+        existingContactId: '',
+        companyMode: lead?.company_id ? 'existing' : 'create',
+        existingCompanyId: lead?.company_id || '',
+        createSecondaryContact: secondary.firstName ? 'true' : 'false',
+        companyName: lead?.company_name || '',
+        firstName: lead?.first_name || '',
+        lastName: lead?.last_name || '',
         title: '',
-        accountNumber: '',
-        email: '',
-        phone: '',
-        mobilePhone: '',
-        notes: '',
+        accountNumber: lead?.account_number || '',
+        email: lead?.email || '',
+        phone: formatPhone(lead?.phone || lead?.home_phone),
+        mobilePhone: formatPhone(lead?.mobile_phone),
+        addressLine1: lead?.address_line1 || '',
+        addressLine2: lead?.address_line2 || '',
+        city: lead?.city || '',
+        county: lead?.county || '',
+        region: lead?.region || '',
+        postalCode: lead?.postal_code || '',
+        notes: lead?.notes || '',
+        qualifyingActivityType: 'call',
+        qualifyingActivityDirection: 'outbound',
+        qualifyingActivitySubject: lead?.call_result
+          ? `Qualified lead: ${lead.call_result}`
+          : 'Qualified lead contact',
+        qualifyingActivityNotes: '',
+        qualifyingActivityOccurredAt: toDateTimeLocal(
+          lead?.last_contacted_at || new Date().toISOString(),
+        ),
       });
       setError(null);
       setDuplicateConfirmation(null);
     }
-  }, [open]);
+  }, [lead, open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchOptions = async () => {
+      const [contactsResult, companiesResult] = await Promise.all([
+        supabase
+          .from('contacts')
+          .select(
+            'id, first_name, last_name, account_number, email, phone, mobile_phone, company_id, companies(id, name)',
+          )
+          .order('last_name', { ascending: true })
+          .limit(300),
+        supabase
+          .from('companies')
+          .select('id, name, account_number, city, region')
+          .order('name', { ascending: true })
+          .limit(300),
+      ]);
+
+      if (!contactsResult.error) setContacts(contactsResult.data || []);
+      if (!companiesResult.error) setCompanies(companiesResult.data || []);
+    };
+
+    fetchOptions();
+  }, [open, supabase]);
 
   const handleSave = async (options = {}) => {
-    if (!form.firstName.trim() || !form.lastName.trim()) {
+    if (
+      form.contactMode === 'create' &&
+      (!form.firstName.trim() || !form.lastName.trim())
+    ) {
       setError('First name and last name are required.');
+      return;
+    }
+
+    if (form.contactMode === 'existing' && !form.existingContactId) {
+      setError('Select an existing contact.');
+      return;
+    }
+
+    if (form.companyMode === 'existing' && !form.existingCompanyId) {
+      setError('Select an existing company or switch to Create Company.');
       return;
     }
 
@@ -1539,7 +1889,7 @@ function ConvertLeadToContactDialog({
       return;
     }
 
-    if (!options.skipDuplicateCheck) {
+    if (form.contactMode === 'create' && !options.skipDuplicateCheck) {
       const matches = await findPotentialDuplicates(supabase, [
         {
           type: 'contact',
@@ -1561,32 +1911,109 @@ function ConvertLeadToContactDialog({
       }
     }
 
-    const { data: contact, error: contactError } = await supabase
-      .from('contacts')
-      .insert({
-        owner_id: userResult.user.id,
-        company_id: lead.company_id,
-        first_name: cleanText(form.firstName),
-        last_name: cleanText(form.lastName),
-        title: cleanText(form.title),
-        account_number: cleanText(form.accountNumber),
-        email: cleanText(form.email),
-        phone: cleanPhone(form.phone),
-        mobile_phone: cleanPhone(form.mobilePhone),
-        notes: cleanText(form.notes),
-      })
-      .select('id')
-      .single();
+    const existingContact = contacts.find(
+      (contact) => contact.id === form.existingContactId,
+    );
+    let companyId =
+      form.companyMode === 'none'
+        ? null
+        : form.companyMode === 'existing'
+        ? form.existingCompanyId
+        : lead.company_id || null;
 
-    if (contactError) {
-      setError(contactError.message);
-      setIsSaving(false);
-      return;
+    if (!companyId && form.contactMode === 'existing') {
+      companyId = existingContact?.company_id || null;
+    }
+
+    if (form.companyMode === 'create' && cleanText(form.companyName)) {
+      const { data: company, error: companyError } = await supabase
+        .from('companies')
+        .upsert(
+          {
+            owner_id: userResult.user.id,
+            name: cleanText(form.companyName),
+            account_number: cleanText(form.accountNumber),
+            email: cleanText(form.email),
+            phone: cleanPhone(form.phone || form.mobilePhone),
+            address_line1: cleanText(form.addressLine1),
+            address_line2: cleanText(form.addressLine2),
+            city: cleanText(form.city),
+            county: cleanText(form.county),
+            region: cleanText(form.region),
+            postal_code: cleanText(form.postalCode),
+            country: lead.country || 'US',
+            notes: cleanText(lead.notes),
+          },
+          { onConflict: 'owner_id,name' },
+        )
+        .select('id')
+        .single();
+
+      if (companyError) {
+        setError(companyError.message);
+        setIsSaving(false);
+        return;
+      }
+
+      companyId = company.id;
+    }
+
+    let contact = existingContact ? { id: existingContact.id } : null;
+
+    if (form.contactMode === 'create') {
+      const { data: newContact, error: contactError } = await supabase
+        .from('contacts')
+        .insert({
+          owner_id: userResult.user.id,
+          company_id: companyId,
+          first_name: cleanText(form.firstName),
+          last_name: cleanText(form.lastName),
+          title: cleanText(form.title),
+          account_number: cleanText(form.accountNumber),
+          email: cleanText(form.email),
+          phone: cleanPhone(form.phone),
+          mobile_phone: cleanPhone(form.mobilePhone),
+          address_line1: cleanText(form.addressLine1),
+          address_line2: cleanText(form.addressLine2),
+          city: cleanText(form.city),
+          county: cleanText(form.county),
+          region: cleanText(form.region),
+          postal_code: cleanText(form.postalCode),
+          country: lead.country || 'US',
+          latitude: lead.latitude,
+          longitude: lead.longitude,
+          notes: cleanText(form.notes),
+        })
+        .select('id')
+        .single();
+
+      if (contactError) {
+        setError(contactError.message);
+        setIsSaving(false);
+        return;
+      }
+
+      contact = newContact;
+    } else if (companyId && existingContact?.company_id !== companyId) {
+      const { error: updateContactError } = await supabase
+        .from('contacts')
+        .update({ company_id: companyId })
+        .eq('id', existingContact.id);
+
+      if (updateContactError) {
+        setError(updateContactError.message);
+        setIsSaving(false);
+        return;
+      }
     }
 
     const { error: leadError } = await supabase
       .from('leads')
-      .update({ contact_id: contact.id })
+      .update({
+        contact_id: contact.id,
+        company_id: companyId,
+        status: 'converted',
+      })
       .eq('id', lead.id);
 
     if (leadError) {
@@ -1595,12 +2022,81 @@ function ConvertLeadToContactDialog({
       return;
     }
 
-    const noteBody = cleanText(form.notes);
+    const { error: activityRolloverError } = await supabase
+      .from('activities')
+      .update({
+        contact_id: contact.id,
+        company_id: companyId,
+      })
+      .eq('lead_id', lead.id);
+
+    if (activityRolloverError) {
+      setError(activityRolloverError.message);
+      setIsSaving(false);
+      return;
+    }
+
+    const secondary = secondaryContactFromLead(lead);
+    if (
+      form.createSecondaryContact === 'true' &&
+      secondary.firstName &&
+      companyId
+    ) {
+      const { error: secondaryError } = await supabase.from('contacts').insert({
+        owner_id: userResult.user.id,
+        company_id: companyId,
+        first_name: cleanText(secondary.firstName),
+        last_name: cleanText(secondary.lastName) || 'Unknown',
+        title: cleanText(secondary.title),
+        phone: cleanPhone(secondary.phone),
+        email: cleanText(secondary.email),
+        notes: `Created from secondary contact on lead ${entityName(lead)}.`,
+      });
+
+      if (secondaryError) {
+        setError(secondaryError.message);
+        setIsSaving(false);
+        return;
+      }
+    }
+
+    const qualifyingOccurredAt = form.qualifyingActivityOccurredAt
+      ? new Date(form.qualifyingActivityOccurredAt).toISOString()
+      : new Date().toISOString();
+    const qualifyingSubject =
+      cleanText(form.qualifyingActivitySubject) || 'Qualified lead contact';
+    const qualifyingBody = preserveText(
+      form.qualifyingActivityNotes ||
+        `Lead qualified and converted to contact: ${entityName(lead)}.`,
+    );
+
+    const { error: qualifyingActivityError } = await supabase
+      .from('activities')
+      .insert({
+        owner_id: userResult.user.id,
+        contact_id: contact.id,
+        company_id: companyId,
+        lead_id: lead.id,
+        type: form.qualifyingActivityType,
+        direction: form.qualifyingActivityDirection,
+        subject: qualifyingSubject,
+        body: qualifyingBody,
+        occurred_at: qualifyingOccurredAt,
+        completed_at: qualifyingOccurredAt,
+      });
+
+    if (qualifyingActivityError) {
+      setError(qualifyingActivityError.message);
+      setIsSaving(false);
+      return;
+    }
+
+    const noteBody = conversionNoteBody(lead, form);
     if (noteBody) {
       const { error: noteError } = await supabase.from('notes').insert({
         owner_id: userResult.user.id,
         contact_id: contact.id,
-        company_id: lead.company_id,
+        company_id: companyId,
         lead_id: lead.id,
         body: noteBody,
       });
@@ -1615,11 +2111,14 @@ function ConvertLeadToContactDialog({
     await supabase.from('activities').insert({
       owner_id: userResult.user.id,
       contact_id: contact.id,
-      company_id: lead.company_id,
+      company_id: companyId,
       lead_id: lead.id,
       type: 'note',
       direction: 'inbound',
-      subject: 'Lead contact created',
+      subject:
+        form.contactMode === 'existing'
+          ? 'Lead linked to existing contact'
+          : 'Lead contact created',
       body: noteBody,
       occurred_at: new Date().toISOString(),
     });
@@ -1637,62 +2136,232 @@ function ConvertLeadToContactDialog({
         <DialogContent>
           <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
             {error && <Alert severity="error">{error}</Alert>}
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                label="First Name"
-                value={form.firstName}
-                onChange={handleField(setForm, 'firstName')}
-                fullWidth
-                required
-              />
-              <TextField
-                label="Last Name"
-                value={form.lastName}
-                onChange={handleField(setForm, 'lastName')}
-                fullWidth
-                required
-              />
-            </Stack>
             <TextField
-              label="Title / Role"
-              value={form.title}
-              onChange={handleField(setForm, 'title')}
+              select
+              label="Contact"
+              value={form.contactMode}
+              onChange={handleField(setForm, 'contactMode')}
               fullWidth
-            />
-            <TextField
-              label="Account Number"
-              value={form.accountNumber}
-              onChange={handleField(setForm, 'accountNumber')}
-              fullWidth
-            />
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            >
+              <MenuItem value="create">Create New Contact</MenuItem>
+              <MenuItem value="existing">Use Existing Contact</MenuItem>
+            </TextField>
+            {form.contactMode === 'existing' && (
               <TextField
-                label="Email"
-                type="email"
-                value={form.email}
-                onChange={handleField(setForm, 'email')}
+                select
+                label="Existing Contact"
+                value={form.existingContactId}
+                onChange={handleField(setForm, 'existingContactId')}
+                fullWidth
+              >
+                <MenuItem value="">Select contact</MenuItem>
+                {contacts.map((contact) => (
+                  <MenuItem key={contact.id} value={contact.id}>
+                    {contactOptionLabel(contact)}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+            <TextField
+              select
+              label="Company"
+              value={form.companyMode}
+              onChange={handleField(setForm, 'companyMode')}
+              fullWidth
+            >
+              <MenuItem value="create">Create / Update From Lead</MenuItem>
+              <MenuItem value="existing">Use Existing Company</MenuItem>
+              <MenuItem value="none">No Company</MenuItem>
+            </TextField>
+            {form.companyMode === 'existing' && (
+              <TextField
+                select
+                label="Existing Company"
+                value={form.existingCompanyId}
+                onChange={handleField(setForm, 'existingCompanyId')}
+                fullWidth
+              >
+                <MenuItem value="">Select company</MenuItem>
+                {companies.map((company) => (
+                  <MenuItem key={company.id} value={company.id}>
+                    {companyOptionLabel(company)}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+            <TextField
+              label="Company"
+              value={form.companyName}
+              onChange={handleField(setForm, 'companyName')}
+              fullWidth
+              disabled={form.companyMode !== 'create'}
+            />
+            {form.contactMode === 'create' && (
+              <>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <TextField
+                    label="First Name"
+                    value={form.firstName}
+                    onChange={handleField(setForm, 'firstName')}
+                    fullWidth
+                    required
+                  />
+                  <TextField
+                    label="Last Name"
+                    value={form.lastName}
+                    onChange={handleField(setForm, 'lastName')}
+                    fullWidth
+                    required
+                  />
+                </Stack>
+                <TextField
+                  label="Title / Role"
+                  value={form.title}
+                  onChange={handleField(setForm, 'title')}
+                  fullWidth
+                />
+                <TextField
+                  label="Account Number"
+                  value={form.accountNumber}
+                  onChange={handleField(setForm, 'accountNumber')}
+                  fullWidth
+                />
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <TextField
+                    label="Email"
+                    type="email"
+                    value={form.email}
+                    onChange={handleField(setForm, 'email')}
+                    fullWidth
+                  />
+                  <TextField
+                    label="Phone"
+                    value={form.phone}
+                    onChange={handlePhoneChange(setForm, 'phone')}
+                    fullWidth
+                  />
+                </Stack>
+                <TextField
+                  label="Mobile Phone"
+                  value={form.mobilePhone}
+                  onChange={handlePhoneChange(setForm, 'mobilePhone')}
+                  fullWidth
+                />
+              </>
+            )}
+            {form.companyMode === 'create' && (
+              <>
+              <TextField
+                label="Address"
+                value={form.addressLine1}
+                onChange={handleField(setForm, 'addressLine1')}
+                fullWidth
+              />
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                label="City"
+                value={form.city}
+                onChange={handleField(setForm, 'city')}
                 fullWidth
               />
               <TextField
-                label="Phone"
-                value={form.phone}
-                onChange={handlePhoneChange(setForm, 'phone')}
+                label="County"
+                value={form.county}
+                onChange={handleField(setForm, 'county')}
                 fullWidth
               />
-            </Stack>
+              </Stack>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                label="State"
+                value={form.region}
+                onChange={handleField(setForm, 'region')}
+                fullWidth
+              />
+              <TextField
+                label="Zip"
+                value={form.postalCode}
+                onChange={handleField(setForm, 'postalCode')}
+                fullWidth
+              />
+              </Stack>
+              </>
+            )}
+            {secondaryContactFromLead(lead).firstName && (
+              <TextField
+                select
+                label="Secondary Contact"
+                value={form.createSecondaryContact}
+                onChange={handleField(setForm, 'createSecondaryContact')}
+                fullWidth
+              >
+                <MenuItem value="true">
+                  Create {secondaryContactLabel(lead)}
+                </MenuItem>
+                <MenuItem value="false">Preserve in notes only</MenuItem>
+              </TextField>
+            )}
             <TextField
-              label="Mobile Phone"
-              value={form.mobilePhone}
-              onChange={handlePhoneChange(setForm, 'mobilePhone')}
-              fullWidth
-            />
-            <TextField
-              label="Initial Notes"
+              label="Relationship Notes"
               value={form.notes}
               onChange={handleField(setForm, 'notes')}
               fullWidth
               multiline
               rows={4}
+            />
+            <Divider />
+            <Typography variant="subtitle2">Qualifying Contact Activity</Typography>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                select
+                label="Contact Method"
+                value={form.qualifyingActivityType}
+                onChange={handleField(setForm, 'qualifyingActivityType')}
+                fullWidth
+              >
+                {activityTypes.map((type) => (
+                  <MenuItem key={type} value={type}>
+                    {formatEnum(type)}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="Direction"
+                value={form.qualifyingActivityDirection}
+                onChange={handleField(setForm, 'qualifyingActivityDirection')}
+                fullWidth
+              >
+                {activityDirections.map((direction) => (
+                  <MenuItem key={direction} value={direction}>
+                    {formatEnum(direction)}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                label="Activity Subject"
+                value={form.qualifyingActivitySubject}
+                onChange={handleField(setForm, 'qualifyingActivitySubject')}
+                fullWidth
+              />
+              <TextField
+                label="Activity Date"
+                type="datetime-local"
+                value={form.qualifyingActivityOccurredAt}
+                onChange={handleField(setForm, 'qualifyingActivityOccurredAt')}
+                slotProps={{ inputLabel: { shrink: true } }}
+                fullWidth
+              />
+            </Stack>
+            <TextField
+              label="Activity Notes"
+              value={form.qualifyingActivityNotes}
+              onChange={handleField(setForm, 'qualifyingActivityNotes')}
+              fullWidth
+              multiline
+              rows={3}
             />
           </Stack>
         </DialogContent>
@@ -1705,7 +2374,7 @@ function ConvertLeadToContactDialog({
             onClick={() => handleSave()}
             loading={isSaving}
           >
-            Create Contact
+            Convert Lead
           </Button>
         </DialogActions>
       </Dialog>
@@ -2114,6 +2783,31 @@ function EmptyState({ label }) {
   );
 }
 
+function FollowUpPresetButtons({ onSelect }) {
+  return (
+    <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+      {followUpPresets.map((preset) => (
+        <Button
+          key={preset.label}
+          size="small"
+          variant="soft"
+          color="neutral"
+          onClick={() => onSelect(toPresetDateTimeLocal(preset.days))}
+        >
+          {preset.label}
+        </Button>
+      ))}
+    </Stack>
+  );
+}
+
+const followUpPresets = [
+  { label: 'Tomorrow', days: 1 },
+  { label: '3 Days', days: 3 },
+  { label: '1 Week', days: 7 },
+  { label: '30 Days', days: 30 },
+];
+
 function handleField(setForm, key) {
   return (event) => setForm((prev) => ({ ...prev, [key]: event.target.value }));
 }
@@ -2173,6 +2867,8 @@ function entityName(record) {
   return (
     record.companies?.name ||
     (record.contacts ? contactName(record.contacts) : '') ||
+    prospectName(record) ||
+    record.company_name ||
     (record.account_number ? `Account ${record.account_number}` : '') ||
     record.source ||
     'Lead'
@@ -2183,9 +2879,11 @@ function leadHeaderSubtitle(lead, contact, company, title) {
   return (
     [
       lead.account_number ? `Account ${lead.account_number}` : null,
-      lead.source,
+      lead.import_source || lead.source,
       contact ? contactName(contact) : null,
+      !contact ? prospectName(lead) : null,
       company?.name !== title ? company?.name : null,
+      !company && lead.company_name !== title ? lead.company_name : null,
     ]
       .filter(Boolean)
       .join(' · ') || 'Lead'
@@ -2194,7 +2892,7 @@ function leadHeaderSubtitle(lead, contact, company, title) {
 
 function leadToDealForm(lead) {
   const contact = lead?.contacts ? contactName(lead.contacts) : '';
-  const company = lead?.companies?.name || '';
+  const company = lead?.companies?.name || lead?.company_name || '';
   const baseName = [contact || company, lead?.source]
     .filter(Boolean)
     .join(' - ');
@@ -2208,6 +2906,104 @@ function leadToDealForm(lead) {
     expectedCloseDate: lead?.target_purchase_date || '',
     notes: lead?.notes || '',
   };
+}
+
+function contactOptionLabel(contact) {
+  return [
+    contactName(contact),
+    contact.account_number,
+    contact.companies?.name,
+    contact.email,
+    formatPhone(contact.mobile_phone || contact.phone),
+  ]
+    .filter(Boolean)
+    .join(' - ');
+}
+
+function companyOptionLabel(company) {
+  return [
+    company.name,
+    company.account_number,
+    [company.city, company.region].filter(Boolean).join(', '),
+  ]
+    .filter(Boolean)
+    .join(' - ');
+}
+
+function conversionNoteBody(lead, form) {
+  const sourceDetails = Object.values(lead?.source_details || {})
+    .map((detail) => `${detail.label}: ${detail.value}`)
+    .join('\n');
+  const secondary = secondaryContactFromLead(lead);
+  const secondaryLine = secondary.firstName
+    ? `Secondary contact: ${[
+        [secondary.firstName, secondary.lastName].filter(Boolean).join(' '),
+        secondary.title,
+        secondary.phone,
+        secondary.email,
+      ]
+        .filter(Boolean)
+        .join(' - ')}`
+    : null;
+
+  return [
+    `Converted from lead: ${entityName(lead)}`,
+    lead.import_source ? `Import source: ${lead.import_source}` : null,
+    lead.source ? `Lead source: ${lead.source}` : null,
+    lead.call_result ? `Last call result: ${lead.call_result}` : null,
+    form.contactMode === 'existing'
+      ? 'Linked to an existing contact.'
+      : 'Created a new contact.',
+    form.companyMode === 'existing'
+      ? 'Linked to an existing company.'
+      : form.companyMode === 'create' && cleanText(form.companyName)
+        ? `Created or updated company: ${form.companyName}`
+        : 'No company linked.',
+    secondaryLine,
+    cleanText(form.notes),
+    sourceDetails ? `Imported source details:\n${sourceDetails}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function secondaryContactFromLead(lead) {
+  const details = lead?.source_details || {};
+  return {
+    firstName: details.secondaryFirstName?.value || '',
+    lastName: details.secondaryLastName?.value || '',
+    title: details.secondaryTitle?.value || '',
+    phone: details.secondaryPhone?.value || '',
+    email: details.secondaryEmail?.value || '',
+  };
+}
+
+function secondaryContactLabel(lead) {
+  const secondary = secondaryContactFromLead(lead);
+  const name = [secondary.firstName, secondary.lastName]
+    .filter(Boolean)
+    .join(' ');
+  return name || 'secondary contact';
+}
+
+function prospectName(lead) {
+  return [lead?.first_name, lead?.last_name].filter(Boolean).join(' ');
+}
+
+function callResultLabel(value) {
+  return callResults.find((result) => result.value === value)?.label || value;
+}
+
+function leadStatusFromCallResult(result, currentStatus) {
+  if (['bad_number', 'do_not_contact', 'not_interested'].includes(result)) {
+    if (result === 'bad_number') return 'bad_number';
+    if (result === 'do_not_contact') return 'do_not_contact';
+    return 'not_a_fit';
+  }
+  if (result === 'interested') return 'relationship_started';
+  if (result === 'contacted') return 'contacted';
+  if (['left_voicemail', 'no_answer'].includes(result)) return 'attempted';
+  return currentStatus || 'not_contacted';
 }
 
 function cleanText(value) {
@@ -2268,6 +3064,13 @@ function toDateTimeLocal(value) {
   const offset = date.getTimezoneOffset();
   const localDate = new Date(date.getTime() - offset * 60000);
   return localDate.toISOString().slice(0, 16);
+}
+
+function toPresetDateTimeLocal(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  date.setHours(9, 0, 0, 0);
+  return toDateTimeLocal(date.toISOString());
 }
 
 export default LeadDetails;

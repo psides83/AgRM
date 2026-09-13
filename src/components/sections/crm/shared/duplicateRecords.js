@@ -117,6 +117,13 @@ async function findLeadMatches(supabase, lead) {
   if (
     !hasText(lead.source) &&
     !hasText(lead.accountNumber) &&
+    !hasText(lead.firstName) &&
+    !hasText(lead.lastName) &&
+    !hasText(lead.companyName) &&
+    !hasText(lead.phone) &&
+    !hasText(lead.mobilePhone) &&
+    !hasText(lead.email) &&
+    !hasText(lead.addressLine1) &&
     !lead.contactId &&
     !lead.companyId
   )
@@ -125,7 +132,7 @@ async function findLeadMatches(supabase, lead) {
   const { data, error } = await supabase
     .from('leads')
     .select(
-      'id, source, account_number, status, priority, estimated_budget, next_follow_up_at, notes, latitude, longitude, contact_id, company_id, contacts(id, first_name, last_name), companies(id, name)',
+      'id, source, account_number, first_name, last_name, company_name, phone, mobile_phone, email, address_line1, city, region, postal_code, status, priority, estimated_budget, next_follow_up_at, notes, latitude, longitude, contact_id, company_id, contacts(id, first_name, last_name), companies(id, name)',
     )
     .neq('status', 'converted')
     .limit(300);
@@ -138,7 +145,10 @@ async function findLeadMatches(supabase, lead) {
         ? [candidate.contacts.first_name, candidate.contacts.last_name]
             .filter(Boolean)
             .join(' ')
-        : candidate.companies?.name;
+        : [candidate.first_name, candidate.last_name].filter(Boolean).join(' ');
+      const importedName = [lead.firstName, lead.lastName]
+        .filter(Boolean)
+        .join(' ');
       const reasons = [
         lead.contactId &&
           lead.contactId === candidate.contact_id &&
@@ -148,6 +158,15 @@ async function findLeadMatches(supabase, lead) {
           'same company has an open lead',
         sameValue(lead.accountNumber, candidate.account_number) &&
           'same account number',
+        exactText(importedName, candidateName) && 'same lead name',
+        similarText(importedName, candidateName) && 'similar lead name',
+        sameValue(lead.companyName, candidate.company_name || candidate.companies?.name) &&
+          'same company name',
+        sameValue(lead.email, candidate.email) && 'same email',
+        samePhone(lead.phone, candidate.phone) && 'same phone',
+        samePhone(lead.mobilePhone, candidate.mobile_phone) &&
+          'same mobile phone',
+        sameAddress(lead, candidate) && 'same address',
         hasText(lead.source) &&
           exactText(lead.source, candidate.source) &&
           'same source',
@@ -164,6 +183,7 @@ async function findLeadMatches(supabase, lead) {
             subtitle: [
               candidate.status,
               candidate.account_number,
+              candidate.company_name || candidate.companies?.name,
               candidate.source,
             ]
               .filter(Boolean)
@@ -175,6 +195,15 @@ async function findLeadMatches(supabase, lead) {
     })
     .filter(Boolean)
     .slice(0, 5);
+}
+
+function sameAddress(left, right) {
+  return (
+    sameValue(left.addressLine1, right.address_line1) &&
+    sameValue(left.city, right.city) &&
+    sameValue(left.region, right.region) &&
+    sameValue(left.postalCode, right.postal_code)
+  );
 }
 
 function hasText(value) {

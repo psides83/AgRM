@@ -508,7 +508,7 @@ async function saveLead(supabase, ownerId, companyId, contactId, leadInfo) {
       company_id: companyId,
       source: cleanText(leadInfo.source),
       account_number: cleanText(leadInfo.accountNumber),
-      status: cleanText(leadInfo.status) || 'new',
+      status: cleanText(leadInfo.status) || 'not_contacted',
       priority: Number(leadInfo.priority) || 3,
       estimated_budget: leadInfo.estimatedBudget || null,
       target_purchase_date: leadInfo.targetPurchaseDate || null,

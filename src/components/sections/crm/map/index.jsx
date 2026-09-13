@@ -628,7 +628,7 @@ function CreateLeadFromPinDialog({ open, pin, supabase, onClose, onSaved }) {
   const [form, setForm] = useState({
     source: 'Map pin',
     accountNumber: '',
-    status: 'new',
+    status: 'not_contacted',
     priority: 3,
     estimatedBudget: '',
     nextFollowUpAt: '',
@@ -642,7 +642,7 @@ function CreateLeadFromPinDialog({ open, pin, supabase, onClose, onSaved }) {
       setForm({
         source: 'Map pin',
         accountNumber: '',
-        status: 'new',
+        status: 'not_contacted',
         priority: 3,
         estimatedBudget: '',
         nextFollowUpAt: '',

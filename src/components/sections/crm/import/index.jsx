@@ -38,6 +38,7 @@ import {
 import { formatLeadStatus } from 'components/sections/crm/constants';
 
 const importTypes = [
+  { value: 'lead_call_list', label: 'Lead Call List' },
   { value: 'contacts', label: 'Contacts' },
   { value: 'leads', label: 'Leads' },
   { value: 'contacts_and_leads', label: 'Contacts and Leads' },
@@ -60,7 +61,10 @@ const googleImportActions = [
   { value: 'skip', label: 'Skip' },
 ];
 
+const mappingProfilesStorageKey = 'agrm-import-mapping-profiles';
+
 const fieldLabels = {
+  importSource: 'Import Source',
   firstName: 'First Name',
   lastName: 'Last Name',
   fullName: 'Full Name',
@@ -69,6 +73,7 @@ const fieldLabels = {
   email: 'Email',
   phone: 'Phone',
   mobilePhone: 'Mobile Phone',
+  homePhone: 'Home Phone',
   tags: 'Tags',
   companyName: 'Company Name',
   companyType: 'Company Type',
@@ -98,9 +103,43 @@ const fieldLabels = {
   leadLatitude: 'Lead Latitude',
   leadLongitude: 'Lead Longitude',
   leadNotes: 'Lead Notes',
+  branch: 'Branch',
+  madeContact: 'Made Contact',
+  callResult: 'Call Result',
+  called: 'Called',
+  dateCalled: 'Date Called',
+  visited: 'Visited',
+  dateVisited: 'Date Visited',
+  distance: 'Distance',
+  workPhone: 'Work Phone',
+  equipmentOwned: 'Equipment Owned',
+  equipmentSerial: 'Equipment Serial',
+  equipmentValue: 'Equipment / Fleet Value',
+  equityPercent: 'Equity Percent',
+  newUsed: 'New / Used',
+  lastInstallment: 'Last Installment',
+  apr: 'APR',
+  paymentAmount: 'Payment Amount',
+  paymentFrequency: 'Payment Frequency',
+  buyingProbability: 'Buying Probability',
+  loyaltyScore: 'Loyalty Score',
+  prospectProfileUrl: 'Prospect Profile URL',
+  routeUrl: 'Route URL',
+  startAddress: 'Start Address',
+  sourceDescription: 'Source Description',
+  equipmentYtd: 'Equipment YTD',
+  partsYtd: 'Parts YTD',
+  serviceYtd: 'Service YTD',
+  arTotalAging: 'AR Total Aging',
+  secondaryFirstName: 'Secondary First Name',
+  secondaryLastName: 'Secondary Last Name',
+  secondaryTitle: 'Secondary Title',
+  secondaryPhone: 'Secondary Phone',
+  secondaryEmail: 'Secondary Email',
 };
 
 const fieldAliases = {
+  importSource: ['importsource', 'import_source', 'list', 'listname'],
   firstName: ['first', 'firstname', 'first_name', 'givenname', 'given_name'],
   lastName: [
     'last',
@@ -173,6 +212,7 @@ const fieldAliases = {
     'office_phone',
     'workphone',
     'work_phone',
+    'work',
   ],
   mobilePhone: [
     'mobile',
@@ -182,6 +222,7 @@ const fieldAliases = {
     'cellphone',
     'cell_phone',
   ],
+  homePhone: ['home', 'homephone', 'home_phone'],
   tags: ['tags', 'tag', 'labels', 'categories'],
   companyName: [
     'company',
@@ -315,16 +356,220 @@ const fieldAliases = {
   leadLatitude: ['leadlat', 'lead_lat', 'leadlatitude', 'lead_latitude'],
   leadLongitude: ['leadlng', 'lead_lng', 'leadlongitude', 'lead_longitude'],
   leadNotes: ['leadnotes', 'lead_notes', 'leadcomment', 'lead_comment'],
+  branch: ['branch', 'location'],
+  madeContact: ['madecontact', 'made_contact'],
+  callResult: ['callresult', 'call_result'],
+  called: ['called'],
+  dateCalled: ['datecalled', 'date_called'],
+  visited: ['visited'],
+  dateVisited: ['datevisited', 'date_visited'],
+  distance: ['distance'],
+  workPhone: ['work', 'workphone', 'work_phone'],
+  equipmentOwned: ['equipment'],
+  equipmentSerial: ['serial', 'serialnumber', 'serial_number', 'serial#'],
+  equipmentValue: ['fleetvalue', 'fleet_value', 'totalcashprice', 'total_cash_price'],
+  equityPercent: ['noteequity', 'note_equity', 'noteequity%', 'equitypercent'],
+  newUsed: ['nu', 'n/u', 'newused', 'new_used'],
+  lastInstallment: ['lastinstallment', 'last_installment'],
+  apr: ['apr'],
+  paymentAmount: ['averageschedulepayment', 'average_schedule_payment'],
+  paymentFrequency: ['paymentfrequency', 'payment_frequency'],
+  buyingProbability: ['buyingprobability', 'buying_probability'],
+  loyaltyScore: ['loyaltyscore', 'loyalty_score'],
+  prospectProfileUrl: ['prospectprofilelink', 'prospect_profile_link'],
+  routeUrl: ['route'],
+  startAddress: ['startaddress', 'start_address'],
+  sourceDescription: ['description'],
+  equipmentYtd: ['equipmentytd', 'equipment_ytd'],
+  partsYtd: ['partsytd', 'parts_ytd'],
+  serviceYtd: ['serviceytd', 'service_ytd'],
+  arTotalAging: ['artotalaging', 'ar_total_aging'],
+  secondaryFirstName: ['firstname2', 'first_name_2', 'secondaryfirstname'],
+  secondaryLastName: ['lastname2', 'last_name_2', 'secondarylastname'],
+  secondaryTitle: ['title2', 'title_2', 'secondarytitle'],
+  secondaryPhone: ['phone2', 'phone_2', 'secondaryphone'],
+  secondaryEmail: ['email2', 'email_2', 'secondaryemail'],
 };
+
+const leadSourceProfiles = [
+  {
+    label: 'Customer history lead list',
+    source: 'Customer history import',
+    requiredHeaders: ['account_number', 'branch', 'delivery_address'],
+    fieldMap: {
+      target: 'called',
+      made_contact: 'callResult',
+      date_of_contact: 'dateCalled',
+      notes: 'leadNotes',
+      account_number: 'leadAccountNumber',
+      branch: 'branch',
+      company: 'companyName',
+      first_name: 'firstName',
+      last_name: 'lastName',
+      work: 'phone',
+      mobile: 'mobilePhone',
+      home: 'homePhone',
+      email: 'email',
+      delivery_address: 'addressLine1',
+      delivery_city: 'city',
+      delivery_county: 'county',
+      delivery_state: 'region',
+      delivery_zip: 'postalCode',
+      postal_address: 'addressLine1',
+      postal_city: 'city',
+      postal_county: 'county',
+      postal_state: 'region',
+      postal_zip: 'postalCode',
+      equipment_ytd_arec: 'equipmentYtd',
+      parts_ytd_arec: 'partsYtd',
+      service_ytd_arec: 'serviceYtd',
+      ar_total_aging_arec: 'arTotalAging',
+    },
+  },
+  {
+    label: 'Equity equipment lead list',
+    source: 'Equity equipment import',
+    requiredHeaders: ['note_equity', 'serial', 'last_installment'],
+    fieldMap: {
+      transfered_contact: 'fullName',
+      customer: 'fullName',
+      location: 'branch',
+      phone: 'phone',
+      made_contact: 'callResult',
+      date_of_contact: 'dateCalled',
+      notes: 'leadNotes',
+      note_equity: 'equityPercent',
+      n_u: 'newUsed',
+      equipment: 'equipmentOwned',
+      serial: 'equipmentSerial',
+      total_cash_price: 'equipmentValue',
+      last_installment: 'lastInstallment',
+      apr: 'apr',
+      zip_code: 'postalCode',
+      county: 'county',
+      average_schedule_payment: 'paymentAmount',
+      payment_frequency: 'paymentFrequency',
+      settlement_dealer: 'branch',
+    },
+  },
+  {
+    label: 'Prospect route lead list',
+    source: 'Prospect route import',
+    requiredHeaders: ['buyid', 'buyingprobability', 'route'],
+    fieldMap: {
+      called: 'called',
+      date_called: 'dateCalled',
+      call_result: 'callResult',
+      notes: 'leadNotes',
+      visited: 'visited',
+      date_visited: 'dateVisited',
+      distance: 'distance',
+      first_name_1: 'firstName',
+      last_name_1: 'lastName',
+      title_1: 'title',
+      phone: 'phone',
+      street: 'addressLine1',
+      city: 'city',
+      state: 'region',
+      zip: 'postalCode',
+      county: 'county',
+      fleet_value: 'equipmentValue',
+      primary_brand: 'equipmentOwned',
+      company: 'companyName',
+      first_name_2: 'secondaryFirstName',
+      last_name_2: 'secondaryLastName',
+      title_2: 'secondaryTitle',
+      buyid: 'leadAccountNumber',
+      buyingprobability: 'buyingProbability',
+      description: 'sourceDescription',
+      buy_website: 'website',
+      prospect_profile_link: 'prospectProfileUrl',
+      loyalty_score: 'loyaltyScore',
+      udf: 'branch',
+      start_address: 'startAddress',
+      route: 'routeUrl',
+    },
+  },
+];
+
+const coreImportFields = new Set([
+  'firstName',
+  'lastName',
+  'fullName',
+  'companyName',
+  'accountNumber',
+  'leadAccountNumber',
+  'email',
+  'phone',
+  'mobilePhone',
+  'homePhone',
+  'addressLine1',
+  'addressLine2',
+  'city',
+  'county',
+  'region',
+  'postalCode',
+  'branch',
+  'leadSource',
+  'importSource',
+  'leadStatus',
+  'priority',
+  'madeContact',
+  'callResult',
+  'called',
+  'dateCalled',
+  'visited',
+  'dateVisited',
+  'lastContactedAt',
+  'nextFollowUpAt',
+  'leadNotes',
+  'notes',
+  'latitude',
+  'longitude',
+  'leadLatitude',
+  'leadLongitude',
+]);
+
+const preservedImportFields = new Set([
+  'distance',
+  'equipmentOwned',
+  'equipmentSerial',
+  'equipmentValue',
+  'equityPercent',
+  'newUsed',
+  'lastInstallment',
+  'apr',
+  'paymentAmount',
+  'paymentFrequency',
+  'buyingProbability',
+  'loyaltyScore',
+  'prospectProfileUrl',
+  'routeUrl',
+  'startAddress',
+  'sourceDescription',
+  'equipmentYtd',
+  'partsYtd',
+  'serviceYtd',
+  'arTotalAging',
+  'secondaryFirstName',
+  'secondaryLastName',
+  'secondaryTitle',
+  'secondaryPhone',
+  'secondaryEmail',
+]);
 
 const CRMImport = () => {
   const supabase = useMemo(() => createClient(), []);
-  const [importType, setImportType] = useState('contacts_and_leads');
+  const [importType, setImportType] = useState('lead_call_list');
   const [fileName, setFileName] = useState('');
   const [fileTypeLabel, setFileTypeLabel] = useState('');
+  const [sheetUrl, setSheetUrl] = useState('');
   const [headers, setHeaders] = useState([]);
   const [fieldMap, setFieldMap] = useState({});
   const [previewRows, setPreviewRows] = useState([]);
+  const [previewFilter, setPreviewFilter] = useState('all');
+  const [mappingProfileName, setMappingProfileName] = useState('');
+  const [savedMappingProfiles, setSavedMappingProfiles] = useState([]);
   const [crmTargets, setCrmTargets] = useState({ contacts: [], leads: [] });
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -344,24 +589,70 @@ const CRMImport = () => {
   const importableCount = previewRows.filter((row) =>
     isImportableRow(row, includeDuplicates),
   ).length;
+  const duplicateRows = previewRows.filter((row) => row.duplicates.length);
+  const invalidRows = previewRows.filter((row) => !row.isValid);
+  const visiblePreviewRows = previewRows.filter((row) => {
+    if (previewFilter === 'duplicates') return row.duplicates.length > 0;
+    if (previewFilter === 'review') return !row.isValid;
+    if (previewFilter === 'ready') return isImportableRow(row, includeDuplicates);
+    return true;
+  });
+
+  useEffect(() => {
+    setSavedMappingProfiles(loadMappingProfiles());
+  }, []);
 
   const handleFile = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setFileName(file.name);
+    await analyzeCsvText(await file.text(), file.name);
+    event.target.value = '';
+  };
+
+  const handleGoogleSheetImport = async () => {
+    if (!sheetUrl.trim()) return;
+
+    setFileName('Google Sheet');
     setFileTypeLabel('');
     setResult(null);
     setError(null);
     setIsAnalyzing(true);
 
     try {
-      const text = await file.text();
+      const response = await fetch('/api/google-sheets/csv', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: sheetUrl }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not read that Google Sheet.');
+      }
+
+      await analyzeCsvText(data.csv, 'Google Sheet');
+    } catch (nextError) {
+      setError(nextError.message || 'Could not read this Google Sheet.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const analyzeCsvText = async (text, nextFileName) => {
+    setFileName(nextFileName);
+    setFileTypeLabel('');
+    setResult(null);
+    setError(null);
+    setIsAnalyzing(true);
+
+    try {
       const { headers: nextHeaders, rows } = parseCsv(text);
       const isGoogleSavedCollection = isGoogleSavedCollectionsCsv(nextHeaders);
+      const sourceProfile = detectLeadSourceProfile(nextHeaders);
       const nextFieldMap = isGoogleSavedCollection
         ? buildGoogleSavedCollectionFieldMap(nextHeaders)
-        : buildFieldMap(nextHeaders);
+        : buildFieldMap(nextHeaders, sourceProfile);
       const nextPreviewRows = rows
         .slice(0, 250)
         .map((row, index) =>
@@ -371,7 +662,7 @@ const CRMImport = () => {
             nextFieldMap,
             importType,
             index,
-            { isGoogleSavedCollection },
+            { isGoogleSavedCollection, sourceProfile },
           ),
         );
       const rowsWithDuplicates = await markDuplicates(
@@ -382,7 +673,9 @@ const CRMImport = () => {
       setHeaders(nextHeaders);
       setFieldMap(nextFieldMap);
       setFileTypeLabel(
-        isGoogleSavedCollection ? 'Google saved collections' : 'CSV',
+        isGoogleSavedCollection
+          ? 'Google saved collections'
+          : sourceProfile?.label || 'CSV',
       );
       setPreviewRows(rowsWithDuplicates);
       setCrmTargets(
@@ -394,7 +687,6 @@ const CRMImport = () => {
       setError(nextError.message || 'Could not read this CSV file.');
     } finally {
       setIsAnalyzing(false);
-      event.target.value = '';
     }
   };
 
@@ -428,7 +720,9 @@ const CRMImport = () => {
           continue;
         }
 
-        const companyId = await saveCompany(supabase, userResult.user.id, row);
+        const companyId = row.shouldCreateContact
+          ? await saveCompany(supabase, userResult.user.id, row)
+          : null;
         const contactId = await saveContact(
           supabase,
           userResult.user.id,
@@ -478,7 +772,7 @@ const CRMImport = () => {
     );
   };
 
-  const rebuildPreviewRows = async (nextFieldMap) => {
+  const rebuildPreviewRows = async (nextFieldMap, nextImportType = importType) => {
     setIsAnalyzing(true);
     setError(null);
 
@@ -488,10 +782,11 @@ const CRMImport = () => {
           row.raw,
           headers,
           nextFieldMap,
-          importType,
+          nextImportType,
           row.index,
           {
             isGoogleSavedCollection,
+            sourceProfile: row.sourceProfile,
           },
         ),
       );
@@ -513,6 +808,47 @@ const CRMImport = () => {
     rebuildPreviewRows(nextFieldMap);
   };
 
+  const handleSaveMappingProfile = () => {
+    const name = mappingProfileName.trim();
+    if (!name) {
+      setError('Name this mapping before saving it.');
+      return;
+    }
+
+    const nextProfile = {
+      id: name.toLowerCase(),
+      name,
+      importType,
+      fileTypeLabel,
+      fieldMap,
+      savedAt: new Date().toISOString(),
+    };
+    const nextProfiles = [
+      nextProfile,
+      ...savedMappingProfiles.filter(
+        (profile) => profile.id !== nextProfile.id,
+      ),
+    ];
+
+    saveMappingProfiles(nextProfiles);
+    setSavedMappingProfiles(nextProfiles);
+    setMappingProfileName('');
+    setError(null);
+  };
+
+  const handleLoadMappingProfile = async (profileId) => {
+    const profile = savedMappingProfiles.find(
+      (savedProfile) => savedProfile.id === profileId,
+    );
+    if (!profile) return;
+
+    const nextImportType = profile.importType || importType;
+    setImportType(nextImportType);
+    setFieldMap(profile.fieldMap || {});
+    setMappingProfileName(profile.name || '');
+    await rebuildPreviewRows(profile.fieldMap || {}, nextImportType);
+  };
+
   const handleCreateSingleRow = async ({ row, createType, rowFieldMap }) => {
     setError(null);
     setIsRowSaving(true);
@@ -531,6 +867,7 @@ const CRMImport = () => {
         row.index,
         {
           isGoogleSavedCollection: row.isGoogleSavedCollection,
+          sourceProfile: row.sourceProfile,
         },
       );
       const createRow = mergeFetchedGoogleDetails(row, normalizedRow);
@@ -560,11 +897,9 @@ const CRMImport = () => {
           shouldCreateContact: false,
           shouldCreateLead: true,
         };
-        const companyId = await saveCompany(
-          supabase,
-          userResult.user.id,
-          leadRow,
-        );
+        const companyId = leadRow.shouldCreateContact
+          ? await saveCompany(supabase, userResult.user.id, leadRow)
+          : null;
         await saveLead(supabase, userResult.user.id, companyId, null, leadRow);
         setResult({ contacts: 0, leads: 1, mapUpdates: 0, skipped: 0 });
       }
@@ -605,7 +940,7 @@ const CRMImport = () => {
           .update({
             source: cleanText(values.leadSource),
             account_number: cleanText(values.leadAccountNumber),
-            status: values.leadStatus || 'new',
+            status: values.leadStatus || 'not_contacted',
             priority: normalizePriority(values.priority),
             estimated_budget: values.estimatedBudget || null,
             next_follow_up_at: values.nextFollowUpAt || null,
@@ -755,7 +1090,7 @@ const CRMImport = () => {
                   sx={{ maxWidth: { xs: 1, md: 560 }, color: 'text.secondary' }}
                 >
                   {fileName ||
-                    'Upload a CSV or Google Saved Collections export.'}
+                    'Upload a CSV, paste a shared Google Sheet link, or import a Google Saved Collections export.'}
                 </Typography>
               </Box>
 
@@ -795,6 +1130,31 @@ const CRMImport = () => {
                   />
                 </Button>
               </Stack>
+            </Stack>
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={1.5}
+              sx={{ mt: 2 }}
+            >
+              <TextField
+                label="Google Sheet Link"
+                value={sheetUrl}
+                onChange={(event) => setSheetUrl(event.target.value)}
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+                fullWidth
+              />
+              <Button
+                variant="soft"
+                onClick={handleGoogleSheetImport}
+                loading={isAnalyzing && fileName === 'Google Sheet'}
+                disabled={!sheetUrl.trim() || isAnalyzing}
+                startIcon={
+                  <IconifyIcon icon="material-symbols:add-link-rounded" />
+                }
+                sx={{ minHeight: 48, minWidth: { md: 180 } }}
+              >
+                Load Sheet
+              </Button>
             </Stack>
           </Paper>
 
@@ -852,7 +1212,7 @@ const CRMImport = () => {
                     />
                     <SummaryStat
                       label="Review"
-                      value={previewRows.filter((row) => !row.isValid).length}
+                      value={invalidRows.length}
                       color="warning"
                     />
                     <SummaryStat
@@ -896,6 +1256,13 @@ const CRMImport = () => {
                 </Stack>
               </Paper>
 
+              <ImportReviewPanel
+                fileTypeLabel={fileTypeLabel}
+                headers={headers}
+                fieldMap={fieldMap}
+                previewRows={previewRows}
+              />
+
               <Paper
                 sx={{
                   width: 1,
@@ -905,7 +1272,51 @@ const CRMImport = () => {
                 }}
               >
                 <Stack direction="column" spacing={1.5} sx={{ minWidth: 0 }}>
-                  <SectionHeader title="Detected Fields" />
+                  <Stack
+                    direction={{ xs: 'column', lg: 'row' }}
+                    spacing={2}
+                    sx={{
+                      justifyContent: 'space-between',
+                      alignItems: { xs: 'stretch', lg: 'center' },
+                    }}
+                  >
+                    <SectionHeader title="Detected Fields" />
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                      <TextField
+                        label="Mapping Name"
+                        value={mappingProfileName}
+                        onChange={(event) =>
+                          setMappingProfileName(event.target.value)
+                        }
+                        size="small"
+                        sx={{ minWidth: { sm: 220 } }}
+                      />
+                      <Button
+                        variant="soft"
+                        onClick={handleSaveMappingProfile}
+                        disabled={!headers.length}
+                      >
+                        Save Mapping
+                      </Button>
+                      <TextField
+                        select
+                        label="Saved Mappings"
+                        value=""
+                        onChange={(event) =>
+                          handleLoadMappingProfile(event.target.value)
+                        }
+                        size="small"
+                        sx={{ minWidth: { sm: 220 } }}
+                      >
+                        <MenuItem value="">Load mapping</MenuItem>
+                        {savedMappingProfiles.map((profile) => (
+                          <MenuItem key={profile.id} value={profile.id}>
+                            {profile.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Stack>
+                  </Stack>
                   <Box
                     sx={{
                       display: 'grid',
@@ -950,12 +1361,29 @@ const CRMImport = () => {
                   }}
                 >
                   <SectionHeader title="Preview Rows" />
-                  {previewRows.length > 25 && (
+                  <TextField
+                    select
+                    label="Preview"
+                    value={previewFilter}
+                    onChange={(event) => setPreviewFilter(event.target.value)}
+                    size="small"
+                    sx={{ minWidth: 210 }}
+                  >
+                    <MenuItem value="all">All Rows ({previewRows.length})</MenuItem>
+                    <MenuItem value="duplicates">
+                      Duplicates ({duplicateRows.length})
+                    </MenuItem>
+                    <MenuItem value="review">
+                      Needs Review ({invalidRows.length})
+                    </MenuItem>
+                    <MenuItem value="ready">Ready ({importableCount})</MenuItem>
+                  </TextField>
+                  {visiblePreviewRows.length > 25 && (
                     <Typography
                       variant="caption"
                       sx={{ color: 'text.secondary' }}
                     >
-                      Showing 25 of {previewRows.length} rows.
+                      Showing 25 of {visiblePreviewRows.length} rows.
                     </Typography>
                   )}
                 </Stack>
@@ -988,7 +1416,7 @@ const CRMImport = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {previewRows.slice(0, 25).map((row) => (
+                      {visiblePreviewRows.slice(0, 25).map((row) => (
                         <TableRow key={row.index}>
                           <TableCell>{row.index + 1}</TableCell>
                           <PreviewTableCell value={row.accountNumber || '-'} />
@@ -1193,6 +1621,93 @@ function SummaryStat({ label, value, color = 'primary' }) {
       <Typography variant="h6" sx={{ lineHeight: 1.2, color: palette.color }}>
         {value}
       </Typography>
+    </Box>
+  );
+}
+
+function ImportReviewPanel({ fileTypeLabel, headers, fieldMap, previewRows }) {
+  const review = buildImportReview(headers, fieldMap, previewRows);
+
+  return (
+    <Paper sx={{ width: 1, maxWidth: 1, overflow: 'hidden', p: { xs: 2, md: 3 } }}>
+      <Stack direction="column" spacing={2} sx={{ minWidth: 0 }}>
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={1}
+          sx={{ justifyContent: 'space-between', alignItems: { md: 'center' } }}
+        >
+          <Box>
+            <SectionHeader title="Import Review" />
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Detected profile: {fileTypeLabel || 'CSV'}
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+            <Chip label={`${review.core.length} core fields`} size="small" variant="soft" color="primary" />
+            <Chip label={`${review.preserved.length} preserved`} size="small" variant="soft" color="info" />
+            <Chip label={`${review.ignored.length} ignored`} size="small" variant="soft" color="neutral" />
+          </Stack>
+        </Stack>
+
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, minmax(0, 1fr))' },
+            gap: 2,
+          }}
+        >
+          <ReviewColumn title="Lead Fields" items={review.core} empty="No lead fields mapped" />
+          <ReviewColumn title="Preserved Details" items={review.preserved} empty="No source details preserved" />
+          <ReviewColumn title="Ignored Columns" items={review.ignored} empty="No ignored columns" muted />
+        </Box>
+
+        {review.warnings.length > 0 && (
+          <Alert severity="warning">
+            <Stack direction="column" spacing={0.5}>
+              {review.warnings.map((warning) => (
+                <Typography key={warning} variant="body2">
+                  {warning}
+                </Typography>
+              ))}
+            </Stack>
+          </Alert>
+        )}
+      </Stack>
+    </Paper>
+  );
+}
+
+function ReviewColumn({ title, items, empty, muted = false }) {
+  return (
+    <Box
+      sx={{
+        minWidth: 0,
+        border: 1,
+        borderColor: 'dividerLight',
+        borderRadius: 1,
+        p: 1.5,
+      }}
+    >
+      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+        {title}
+      </Typography>
+      {items.length ? (
+        <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: 'wrap' }}>
+          {items.map((item) => (
+            <Chip
+              key={`${item.header}-${item.field || 'ignored'}`}
+              label={item.field ? `${item.header} -> ${fieldLabels[item.field] || item.field}` : item.header}
+              size="small"
+              variant="soft"
+              color={muted ? 'neutral' : 'primary'}
+            />
+          ))}
+        </Stack>
+      ) : (
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          {empty}
+        </Typography>
+      )}
     </Box>
   );
 }
@@ -1720,6 +2235,27 @@ function RowStatus({ row }) {
   return <Chip label="Ready" size="small" color="success" variant="soft" />;
 }
 
+function loadMappingProfiles() {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const profiles = JSON.parse(
+      window.localStorage.getItem(mappingProfilesStorageKey) || '[]',
+    );
+    return Array.isArray(profiles) ? profiles : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveMappingProfiles(profiles) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(
+    mappingProfilesStorageKey,
+    JSON.stringify(profiles),
+  );
+}
+
 function isImportableRow(row, includeDuplicates) {
   if (row.mergedInto) return false;
   if (!row.isValid) return false;
@@ -1963,6 +2499,16 @@ async function markDuplicates(supabase, rows) {
           record: {
             source: row.leadSource,
             accountNumber: row.leadAccountNumber,
+            firstName: row.firstName,
+            lastName: row.lastName,
+            companyName: row.companyName,
+            phone: row.phone || row.workPhone,
+            mobilePhone: row.mobilePhone,
+            email: row.email,
+            addressLine1: row.addressLine1,
+            city: row.city,
+            region: row.region,
+            postalCode: row.postalCode,
           },
         });
       }
@@ -1989,6 +2535,7 @@ function normalizeImportRow(
     duplicates: [],
     errors: [],
     isGoogleSavedCollection: Boolean(options.isGoogleSavedCollection),
+    sourceProfile: options.sourceProfile || null,
   };
 
   headers.forEach((header) => {
@@ -1997,10 +2544,14 @@ function normalizeImportRow(
     row[field] = cleanText(rawRow[header]) || '';
   });
 
-  if (!row.firstName && !row.lastName && row.fullName) {
-    const nameParts = row.fullName.split(/\s+/).filter(Boolean);
-    row.firstName = nameParts.shift() || '';
-    row.lastName = nameParts.join(' ');
+  if (!row.companyName && row.fullName && looksLikeCompanyName(row.fullName)) {
+    row.companyName = row.fullName;
+  }
+
+  if (!row.firstName && !row.lastName && row.fullName && !row.companyName) {
+    const parsedName = parsePersonName(row.fullName);
+    row.firstName = parsedName.firstName;
+    row.lastName = parsedName.lastName;
   }
 
   if (row.isGoogleSavedCollection) {
@@ -2028,27 +2579,50 @@ function normalizeImportRow(
   }
 
   row.country = row.country || 'US';
-  row.leadStatus = normalizeLeadStatus(row.leadStatus) || 'new';
+  row.importSource =
+    row.importSource || row.sourceProfile?.source || row.sourceProfile?.label;
+  row.leadSource = row.leadSource || row.importSource;
+  row.callResult = row.callResult || row.madeContact || '';
+  row.initialContactDate =
+    row.initialContactDate || row.dateCalled || row.dateVisited;
+  row.initialContactNotes = row.initialContactNotes || row.callResult;
+  row.lastContactedAt = row.lastContactedAt || row.dateCalled;
+  row.leadStatus =
+    normalizeLeadStatus(row.leadStatus) ||
+    inferLeadStatus(row.callResult, row.called, row.madeContact);
   row.priority = normalizePriority(row.priority);
   row.tags = parseList(row.tags);
   row.phone = formatPhone(row.phone);
+  row.workPhone = formatPhone(row.workPhone);
   row.mobilePhone = formatPhone(row.mobilePhone);
+  row.homePhone = formatPhone(row.homePhone);
+  row.secondaryPhone = formatPhone(row.secondaryPhone);
   row.companyPhone = formatPhone(row.companyPhone);
   row.latitude = cleanNumber(row.latitude);
   row.longitude = cleanNumber(row.longitude);
   row.leadLatitude = cleanNumber(row.leadLatitude);
   row.leadLongitude = cleanNumber(row.leadLongitude);
   row.initialContactDate = cleanDateTime(row.initialContactDate);
+  row.lastContactedAt = cleanDateTime(row.lastContactedAt);
+  row.dateVisited = cleanDateTime(row.dateVisited);
+  row.visited = parseBoolean(row.visited);
+  row.called = parseBoolean(row.called);
+  row.callAttemptCount = row.called || row.callResult ? 1 : 0;
+  row.sourceDetails = buildSourceDetails(row);
+  row.leadNotes = buildLeadNotes(row);
 
   row.shouldCreateContact =
-    (importType !== 'leads' && !row.isGoogleSavedCollection) ||
+    (importType !== 'leads' &&
+      importType !== 'lead_call_list' &&
+      !row.isGoogleSavedCollection) ||
     Boolean(
-      row.firstName ||
-      row.lastName ||
-      row.accountNumber ||
-      row.email ||
-      row.phone ||
-      row.mobilePhone,
+      importType !== 'lead_call_list' &&
+        (row.firstName ||
+          row.lastName ||
+          row.accountNumber ||
+          row.email ||
+          row.phone ||
+          row.mobilePhone),
     );
   row.shouldCreateLead =
     importType !== 'contacts' &&
@@ -2074,7 +2648,14 @@ function hasLeadData(row) {
   return Boolean(
     row.leadSource ||
     row.leadAccountNumber ||
-    row.leadStatus !== 'new' ||
+    row.firstName ||
+    row.lastName ||
+    row.companyName ||
+    row.phone ||
+    row.mobilePhone ||
+    row.email ||
+    row.addressLine1 ||
+    !['new', 'not_contacted'].includes(row.leadStatus) ||
     row.priority !== 3 ||
     row.estimatedBudget ||
     row.targetPurchaseDate ||
@@ -2084,6 +2665,125 @@ function hasLeadData(row) {
     row.leadLatitude !== null ||
     row.leadLongitude !== null,
   );
+}
+
+function parsePersonName(value) {
+  const text = cleanText(value) || '';
+  if (!text) return { firstName: '', lastName: '' };
+
+  if (text.includes(',')) {
+    const [lastName, ...firstParts] = text.split(',');
+    return {
+      firstName: cleanText(firstParts.join(' ')) || '',
+      lastName: cleanText(lastName) || '',
+    };
+  }
+
+  const nameParts = text.split(/\s+/).filter(Boolean);
+  return {
+    firstName: nameParts.shift() || '',
+    lastName: nameParts.join(' '),
+  };
+}
+
+function looksLikeCompanyName(value) {
+  const text = String(value || '').toLowerCase();
+  return /\b(llc|l\.l\.c|inc|ltd|corp|company|co|farm|farms|dairy|ranch|livestock|partnership)\b/.test(
+    text,
+  );
+}
+
+function inferLeadStatus(callResult, called, madeContact) {
+  const result = normalizeHeader([callResult, madeContact].filter(Boolean).join(' '));
+
+  if (result.includes('badnumber')) return 'bad_number';
+  if (result.includes('donotcontact') || result.includes('notafit'))
+    return result.includes('donotcontact') ? 'do_not_contact' : 'not_a_fit';
+  if (result.includes('leftvoicemail') || result.includes('voicemail'))
+    return 'attempted';
+  if (result.includes('phone') || result.includes('contacted')) return 'contacted';
+  if (parseBoolean(called)) return 'attempted';
+  return 'not_contacted';
+}
+
+function parseBoolean(value) {
+  const normalized = normalizeHeader(value);
+  if (['true', 'yes', 'y', '1', 'called', 'visited'].includes(normalized))
+    return true;
+  if (['false', 'no', 'n', '0'].includes(normalized)) return false;
+  return Boolean(value && normalized);
+}
+
+function buildSourceDetails(row) {
+  const detailFields = [
+    ['branch', 'Branch'],
+    ['distance', 'Distance'],
+    ['equipmentOwned', 'Equipment'],
+    ['equipmentSerial', 'Serial #'],
+    ['equipmentValue', 'Equipment / fleet value'],
+    ['equityPercent', 'Equity %'],
+    ['newUsed', 'New / used'],
+    ['lastInstallment', 'Last installment'],
+    ['apr', 'APR'],
+    ['paymentAmount', 'Payment amount'],
+    ['paymentFrequency', 'Payment frequency'],
+    ['buyingProbability', 'Buying probability'],
+    ['loyaltyScore', 'Loyalty score'],
+    ['sourceDescription', 'Description'],
+    ['prospectProfileUrl', 'Prospect profile'],
+    ['startAddress', 'Start address'],
+    ['routeUrl', 'Route'],
+    ['equipmentYtd', 'Equipment YTD'],
+    ['partsYtd', 'Parts YTD'],
+    ['serviceYtd', 'Service YTD'],
+    ['arTotalAging', 'AR aging'],
+    ['secondaryFirstName', 'Secondary first name'],
+    ['secondaryLastName', 'Secondary last name'],
+    ['secondaryTitle', 'Secondary title'],
+    ['secondaryPhone', 'Secondary phone'],
+    ['secondaryEmail', 'Secondary email'],
+  ];
+
+  return detailFields.reduce((details, [field, label]) => {
+    const value = cleanText(row[field]);
+    return value ? { ...details, [field]: { label, value } } : details;
+  }, {});
+}
+
+function buildLeadNotes(row) {
+  const sourceLines = Object.values(row.sourceDetails || {}).map(
+    (detail) => `${detail.label}: ${detail.value}`,
+  );
+  const contactLines = [
+    row.homePhone ? `Home: ${row.homePhone}` : null,
+    secondaryContactLine(row),
+    row.callResult ? `Call result: ${row.callResult}` : null,
+    row.visited ? 'Visited: yes' : null,
+  ];
+
+  return [
+    cleanText(row.leadNotes || row.notes),
+    ...contactLines,
+    ...sourceLines,
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+function secondaryContactLine(row) {
+  const name = [row.secondaryFirstName, row.secondaryLastName]
+    .filter(Boolean)
+    .join(' ');
+  const detail = [
+    name,
+    row.secondaryTitle,
+    row.secondaryPhone,
+    row.secondaryEmail,
+  ]
+    .filter(Boolean)
+    .join(' - ');
+
+  return detail ? `Secondary contact: ${detail}` : null;
 }
 
 function hasCustomerData(row) {
@@ -2175,6 +2875,27 @@ async function saveLead(supabase, ownerId, companyId, contactId, row) {
       contact_id: contactId,
       source: cleanText(row.leadSource),
       account_number: cleanText(row.leadAccountNumber),
+      first_name: cleanText(row.firstName),
+      last_name: cleanText(row.lastName),
+      company_name: cleanText(row.companyName),
+      phone: cleanPhone(row.phone || row.workPhone),
+      mobile_phone: cleanPhone(row.mobilePhone),
+      home_phone: cleanPhone(row.homePhone),
+      email: cleanText(row.email),
+      address_line1: cleanText(row.addressLine1),
+      address_line2: cleanText(row.addressLine2),
+      city: cleanText(row.city),
+      county: cleanText(row.county),
+      region: cleanText(row.region),
+      postal_code: cleanText(row.postalCode),
+      country: cleanText(row.country) || 'US',
+      branch: cleanText(row.branch),
+      import_source: cleanText(row.importSource),
+      source_details: row.sourceDetails || {},
+      call_result: cleanText(row.callResult),
+      call_attempt_count: row.callAttemptCount || 0,
+      visited: Boolean(row.visited),
+      last_visited_at: row.dateVisited || null,
       status: row.leadStatus,
       priority: row.priority,
       estimated_budget: row.estimatedBudget || null,
@@ -2336,9 +3057,11 @@ async function saveInitialContactActivity(
   if (error) throw error;
 }
 
-function buildFieldMap(headers) {
+function buildFieldMap(headers, sourceProfile = null) {
   return headers.reduce((map, header) => {
-    const field = detectField(header);
+    const profileField =
+      sourceProfile?.fieldMap?.[normalizeHeaderWithUnderscores(header)];
+    const field = profileField || detectField(header);
     return field ? { ...map, [header]: field } : map;
   }, {});
 }
@@ -2358,6 +3081,17 @@ function isGoogleSavedCollectionsCsv(headers) {
     normalizedHeaders.includes('title') &&
     (normalizedHeaders.includes('item_content_url') ||
       normalizedHeaders.includes('url'))
+  );
+}
+
+function detectLeadSourceProfile(headers) {
+  const normalizedHeaders = headers.map(normalizeHeaderWithUnderscores);
+  return (
+    leadSourceProfiles.find((profile) =>
+      profile.requiredHeaders.every((header) =>
+        normalizedHeaders.includes(header),
+      ),
+    ) || null
   );
 }
 
@@ -2618,6 +3352,63 @@ function mergeTags(currentTags, nextTags) {
   ];
 }
 
+function buildImportReview(headers, fieldMap, previewRows) {
+  const mapped = headers
+    .map((header) => ({ header, field: fieldMap[header] }))
+    .filter((item) => item.field);
+  const core = mapped.filter((item) => coreImportFields.has(item.field));
+  const preserved = mapped.filter((item) => preservedImportFields.has(item.field));
+  const ignored = headers
+    .filter((header) => !fieldMap[header])
+    .map((header) => ({ header, field: null }));
+
+  return {
+    core,
+    preserved,
+    ignored,
+    warnings: importWarnings(previewRows, fieldMap),
+  };
+}
+
+function importWarnings(previewRows, fieldMap) {
+  const warnings = [];
+  const rows = previewRows || [];
+  const mappedFields = new Set(Object.values(fieldMap).filter(Boolean));
+  const missingPhoneCount = rows.filter(
+    (row) => !row.phone && !row.mobilePhone && !row.homePhone,
+  ).length;
+  const missingNameCount = rows.filter(
+    (row) => !row.firstName && !row.lastName && !row.companyName,
+  ).length;
+  const missingAddressCount = rows.filter(
+    (row) =>
+      !row.addressLine1 &&
+      !row.city &&
+      !row.region &&
+      !row.postalCode &&
+      row.latitude === null &&
+      row.longitude === null,
+  ).length;
+
+  if (!mappedFields.has('phone') && !mappedFields.has('mobilePhone')) {
+    warnings.push('No primary phone column is mapped.');
+  }
+  if (!mappedFields.has('firstName') && !mappedFields.has('fullName')) {
+    warnings.push('No primary person name column is mapped.');
+  }
+  if (missingPhoneCount) {
+    warnings.push(`${missingPhoneCount} preview row${missingPhoneCount === 1 ? '' : 's'} have no phone number.`);
+  }
+  if (missingNameCount) {
+    warnings.push(`${missingNameCount} preview row${missingNameCount === 1 ? '' : 's'} have no person or company name.`);
+  }
+  if (missingAddressCount) {
+    warnings.push(`${missingAddressCount} preview row${missingAddressCount === 1 ? '' : 's'} have no address or coordinates.`);
+  }
+
+  return warnings.slice(0, 5);
+}
+
 function contactName(contact) {
   return (
     [contact?.first_name, contact?.last_name].filter(Boolean).join(' ') ||
@@ -2683,7 +3474,20 @@ function toCoordinatePair(latitudeValue, longitudeValue) {
 function normalizeLeadStatus(value) {
   const normalized = normalizeHeader(value);
   return (
-    ['new', 'working', 'qualified', 'unqualified', 'converted'].find(
+    [
+      'not_contacted',
+      'attempted',
+      'contacted',
+      'relationship_started',
+      'bad_number',
+      'do_not_contact',
+      'not_a_fit',
+      'converted',
+      'new',
+      'working',
+      'qualified',
+      'unqualified',
+    ].find(
       (status) => normalizeHeader(status) === normalized,
     ) || null
   );

@@ -135,19 +135,29 @@ export const activityTypes = [
 export const activityDirections = ['outbound', 'inbound', 'internal'];
 
 export const leadStatuses = [
-  'new',
-  'working',
-  'qualified',
-  'unqualified',
+  'not_contacted',
+  'attempted',
+  'contacted',
+  'relationship_started',
+  'bad_number',
+  'do_not_contact',
+  'not_a_fit',
   'converted',
 ];
 
 export const leadStatusLabels = {
   new: 'Not Contacted',
-  working: 'Working',
+  working: 'Attempted',
   qualified: 'Contacted',
   unqualified: 'Not a Fit',
-  converted: 'Reliable Customer',
+  not_contacted: 'Not Contacted',
+  attempted: 'Attempted',
+  contacted: 'Contacted',
+  relationship_started: 'Relationship Started',
+  bad_number: 'Bad Number',
+  do_not_contact: 'Do Not Contact',
+  not_a_fit: 'Not a Fit',
+  converted: 'Converted',
 };
 
 export function formatLeadStatus(status) {
