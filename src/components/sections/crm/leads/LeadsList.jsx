@@ -1152,6 +1152,7 @@ function BulkLeadActions({
     branch: '',
     source: '',
   });
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -1193,112 +1194,166 @@ function BulkLeadActions({
     setForm((prev) => ({ ...prev, status }));
   };
 
+  const handleDelete = async () => {
+    if (!selectedIds.length) return;
+
+    setIsSaving(true);
+    setError(null);
+
+    const { error: deleteError } = await supabase
+      .from('leads')
+      .delete()
+      .in('id', selectedIds);
+
+    setIsSaving(false);
+
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+
+    setDeleteOpen(false);
+    onSaved();
+  };
+
   return (
-    <Paper
-      variant="outlined"
-      sx={{ mt: 3, p: 2, borderColor: 'primary.light' }}
-    >
-      <Stack direction="column" spacing={2}>
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          spacing={2}
-          sx={{ justifyContent: 'space-between', alignItems: { md: 'center' } }}
-        >
-          <Box>
-            <Typography variant="subtitle2">
-              {selectedCount} selected lead{selectedCount === 1 ? '' : 's'}
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              Apply only the fields you fill in.
-            </Typography>
-          </Box>
-          <Stack direction="row" spacing={1}>
-            <Button color="neutral" variant="soft" onClick={onClear}>
-              Clear
+    <>
+      <Paper
+        variant="outlined"
+        sx={{ mt: 3, p: 2, borderColor: 'primary.light' }}
+      >
+        <Stack direction="column" spacing={2}>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}
+            sx={{
+              justifyContent: 'space-between',
+              alignItems: { md: 'center' },
+            }}
+          >
+            <Box>
+              <Typography variant="subtitle2">
+                {selectedCount} selected lead{selectedCount === 1 ? '' : 's'}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Apply only the fields you fill in.
+              </Typography>
+            </Box>
+            <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+              <Button color="neutral" variant="soft" onClick={onClear}>
+                Clear
+              </Button>
+              <Button
+                variant="soft"
+                color="error"
+                onClick={() => setDeleteOpen(true)}
+              >
+                Delete
+              </Button>
+              <Button
+                variant="contained"
+                disabled={!hasChanges}
+                loading={isSaving}
+                onClick={handleApply}
+              >
+                Apply
+              </Button>
+            </Stack>
+          </Stack>
+          {error && <Alert severity="error">{error}</Alert>}
+          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+            <Button
+              size="small"
+              variant="soft"
+              color="error"
+              onClick={() => applyStatusPreset('not_a_fit')}
+            >
+              Close as Not a Fit
             </Button>
             <Button
-              variant="contained"
-              disabled={!hasChanges}
-              loading={isSaving}
-              onClick={handleApply}
+              size="small"
+              variant="soft"
+              color="error"
+              onClick={() => applyStatusPreset('bad_number')}
             >
-              Apply
+              Mark Bad Number
+            </Button>
+            <Button
+              size="small"
+              variant="soft"
+              color="error"
+              onClick={() => applyStatusPreset('do_not_contact')}
+            >
+              Mark Do Not Contact
+            </Button>
+            <Button
+              size="small"
+              variant="soft"
+              color="info"
+              onClick={() => applyStatusPreset('attempted')}
+            >
+              Mark Attempted
             </Button>
           </Stack>
+          <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2}>
+            <TextField
+              select
+              label="Status"
+              value={form.status}
+              onChange={handleField(setForm, 'status')}
+              sx={{ minWidth: { lg: 220 } }}
+            >
+              <MenuItem value="">Do not change</MenuItem>
+              {leadStatuses.map((status) => (
+                <MenuItem key={status} value={status}>
+                  {formatLeadStatus(status)}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="Next Follow-up"
+              type="datetime-local"
+              value={form.nextFollowUpAt}
+              onChange={handleField(setForm, 'nextFollowUpAt')}
+              slotProps={{ inputLabel: { shrink: true } }}
+              sx={{ minWidth: { lg: 240 } }}
+            />
+            <TextField
+              label="Branch"
+              value={form.branch}
+              onChange={handleField(setForm, 'branch')}
+              sx={{ minWidth: { lg: 180 } }}
+            />
+            <TextField
+              label="Lead Source"
+              value={form.source}
+              onChange={handleField(setForm, 'source')}
+              sx={{ minWidth: { lg: 220 } }}
+            />
+          </Stack>
         </Stack>
-        {error && <Alert severity="error">{error}</Alert>}
-        <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
-          <Button
-            size="small"
-            variant="soft"
-            color="error"
-            onClick={() => applyStatusPreset('not_a_fit')}
-          >
-            Close as Not a Fit
+      </Paper>
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle>Delete Selected Leads?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            This will permanently delete {selectedCount} selected lead
+            {selectedCount === 1 ? '' : 's'}. Lead activities, notes, files,
+            equipment interests, and tasks will be removed with them. Any deals
+            linked to these leads will stay, but their lead link will be
+            cleared.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button color="neutral" onClick={() => setDeleteOpen(false)}>
+            Cancel
           </Button>
-          <Button
-            size="small"
-            variant="soft"
-            color="error"
-            onClick={() => applyStatusPreset('bad_number')}
-          >
-            Mark Bad Number
+          <Button color="error" variant="contained" loading={isSaving} onClick={handleDelete}>
+            Delete Leads
           </Button>
-          <Button
-            size="small"
-            variant="soft"
-            color="error"
-            onClick={() => applyStatusPreset('do_not_contact')}
-          >
-            Mark Do Not Contact
-          </Button>
-          <Button
-            size="small"
-            variant="soft"
-            color="info"
-            onClick={() => applyStatusPreset('attempted')}
-          >
-            Mark Attempted
-          </Button>
-        </Stack>
-        <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2}>
-          <TextField
-            select
-            label="Status"
-            value={form.status}
-            onChange={handleField(setForm, 'status')}
-            sx={{ minWidth: { lg: 220 } }}
-          >
-            <MenuItem value="">Do not change</MenuItem>
-            {leadStatuses.map((status) => (
-              <MenuItem key={status} value={status}>
-                {formatLeadStatus(status)}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            label="Next Follow-up"
-            type="datetime-local"
-            value={form.nextFollowUpAt}
-            onChange={handleField(setForm, 'nextFollowUpAt')}
-            slotProps={{ inputLabel: { shrink: true } }}
-            sx={{ minWidth: { lg: 240 } }}
-          />
-          <TextField
-            label="Branch"
-            value={form.branch}
-            onChange={handleField(setForm, 'branch')}
-            sx={{ minWidth: { lg: 180 } }}
-          />
-          <TextField
-            label="Lead Source"
-            value={form.source}
-            onChange={handleField(setForm, 'source')}
-            sx={{ minWidth: { lg: 220 } }}
-          />
-        </Stack>
-      </Stack>
-    </Paper>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
 
