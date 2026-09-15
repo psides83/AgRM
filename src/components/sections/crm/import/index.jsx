@@ -72,6 +72,7 @@ const fieldLabels = {
   accountNumber: 'Account Number',
   email: 'Email',
   phone: 'Phone',
+  phoneType: 'Phone Type',
   mobilePhone: 'Mobile Phone',
   homePhone: 'Home Phone',
   tags: 'Tags',
@@ -214,6 +215,7 @@ const fieldAliases = {
     'work_phone',
     'work',
   ],
+  phoneType: ['phonetype', 'phone_type', 'phonekind', 'phone_kind'],
   mobilePhone: [
     'mobile',
     'mobilephone',
@@ -467,6 +469,7 @@ const leadSourceProfiles = [
       first_name_1: 'firstName',
       last_name_1: 'lastName',
       title_1: 'title',
+      phone_type: 'phoneType',
       phone: 'phone',
       street: 'addressLine1',
       city: 'city',
@@ -531,6 +534,7 @@ const coreImportFields = new Set([
 ]);
 
 const preservedImportFields = new Set([
+  'phoneType',
   'distance',
   'equipmentOwned',
   'equipmentSerial',
@@ -2717,6 +2721,7 @@ function parseBoolean(value) {
 function buildSourceDetails(row) {
   const detailFields = [
     ['branch', 'Branch'],
+    ['phoneType', 'Phone type'],
     ['distance', 'Distance'],
     ['equipmentOwned', 'Equipment'],
     ['equipmentSerial', 'Serial #'],
@@ -2756,6 +2761,7 @@ function buildLeadNotes(row) {
   );
   const contactLines = [
     row.homePhone ? `Home: ${row.homePhone}` : null,
+    row.phoneType ? `Phone type: ${row.phoneType}` : null,
     secondaryContactLine(row),
     row.callResult ? `Call result: ${row.callResult}` : null,
     row.visited ? 'Visited: yes' : null,
