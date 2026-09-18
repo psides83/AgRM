@@ -569,7 +569,7 @@ const CompanyDetails = ({ companyId }) => {
             {company.ein_last4 ? (
               <SensitiveInfoRow
                 label="EIN"
-                maskedValue={`Encrypted, ending ${company.ein_last4}`}
+                maskedValue={`*******${company.ein_last4}`}
                 endpoint={`/api/crm/company-sensitive/${company.id}?field=ein`}
                 format="ein"
               />

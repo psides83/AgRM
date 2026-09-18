@@ -598,7 +598,7 @@ const ContactDetailsClient = ({ contactId }) => {
               {contact.ssn_last4 ? (
                 <SensitiveInfoRow
                   label="SSN"
-                  maskedValue={`Encrypted, ending ${contact.ssn_last4}`}
+                  maskedValue={`*****${contact.ssn_last4}`}
                   endpoint={`/api/crm/contact-sensitive/${contact.id}?field=ssn`}
                   format="ssn"
                 />
