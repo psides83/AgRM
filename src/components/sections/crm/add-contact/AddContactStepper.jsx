@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
+import { useEffect, useState } from "react";
+import { FormProvider, useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
 import {
   Box,
   Button,
@@ -12,21 +12,21 @@ import {
   StepLabel,
   Stepper,
   Typography,
-} from '@mui/material';
-import { useSnackbar } from 'notistack';
-import { createClient } from 'lib/supabase/client';
+} from "@mui/material";
+import { useSnackbar } from "notistack";
+import { createClient } from "lib/supabase/client";
 import CompanyInfoForm, {
   companyInfoSchema,
-} from 'components/sections/crm/add-contact/steps/CompanyInfoForm';
+} from "components/sections/crm/add-contact/steps/CompanyInfoForm";
 import LeadInfoForm, {
   leadInfoSchema,
-} from 'components/sections/crm/add-contact/steps/LeadInfoForm';
+} from "components/sections/crm/add-contact/steps/LeadInfoForm";
 import PersonalInfoForm, {
   personalInfoSchema,
-} from 'components/sections/crm/add-contact/steps/PersonalInfoForm';
-import DuplicateRecordDialog from 'components/sections/crm/shared/DuplicateRecordDialog';
-import { findPotentialDuplicates } from 'components/sections/crm/shared/duplicateRecords';
-import { cleanPhone } from 'components/sections/crm/shared/phoneFormat';
+} from "components/sections/crm/add-contact/steps/PersonalInfoForm";
+import DuplicateRecordDialog from "components/sections/crm/shared/DuplicateRecordDialog";
+import { findPotentialDuplicates } from "components/sections/crm/shared/duplicateRecords";
+import { cleanPhone } from "components/sections/crm/shared/phoneFormat";
 
 const steps = [
   {
@@ -34,7 +34,7 @@ const steps = [
     label: (
       <Typography variant="subtitle2" fontWeight={700}>
         Personal Info
-        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+        <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
           rmation
         </Box>
       </Typography>
@@ -48,11 +48,11 @@ const steps = [
         variant="subtitle2"
         fontWeight={700}
         sx={{
-          '& br': { display: { xs: 'none', sm: 'inline' } },
+          "& br": { display: { xs: "none", sm: "inline" } },
         }}
       >
         Company Info
-        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+        <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
           rmation
         </Box>
       </Typography>
@@ -66,11 +66,11 @@ const steps = [
         variant="subtitle2"
         fontWeight={700}
         sx={{
-          '& br': { display: { xs: 'none', sm: 'inline' } },
+          "& br": { display: { xs: "none", sm: "inline" } },
         }}
       >
         Lead
-        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+        <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
           Details
         </Box>
       </Typography>
@@ -94,32 +94,36 @@ const AddContactStepper = () => {
     resolver: yupResolver(validationSchema),
     defaultValues: {
       personalInfo: {
-        accountNumber: '',
+        agTaxExemptNumber: "",
+        accountNumber: "",
         sameAccountNumberAsCompany: false,
         sameEmailAsCompany: false,
         samePhoneAsCompany: false,
         sameAddressAsCompany: false,
         sameCoordinatesAsCompany: false,
-        county: '',
-        country: 'US',
+        county: "",
+        country: "US",
         tags: [],
       },
       companyInfo: {
-        associationMode: 'create',
-        existingCompanyId: '',
-        accountNumber: '',
+        associationMode: "create",
+        existingCompanyId: "",
+        existingCompanyIds: [],
+        ein: "",
+        agTaxExemptNumber: "",
+        accountNumber: "",
         sameAccountNumberAsContact: false,
         sameEmailAsContact: false,
         samePhoneAsContact: false,
         sameAddressAsContact: false,
         sameCoordinatesAsContact: false,
-        county: '',
-        country: 'US',
+        county: "",
+        country: "US",
       },
       leadInfo: {
-        accountNumber: '',
-        status: '',
-        priority: '',
+        accountNumber: "",
+        status: "",
+        priority: "",
       },
     },
   });
@@ -130,9 +134,9 @@ const AddContactStepper = () => {
     const fetchCompanies = async () => {
       const supabase = createClient();
       const { data } = await supabase
-        .from('companies')
-        .select('id, name, city, region')
-        .order('name', { ascending: true })
+        .from("companies")
+        .select("id, name, city, region")
+        .order("name", { ascending: true })
         .limit(500);
 
       setCompanies(data || []);
@@ -142,7 +146,7 @@ const AddContactStepper = () => {
   }, []);
 
   const handleNext = async () => {
-    const stepKey = ['personalInfo', 'companyInfo', 'leadInfo'][activeStep];
+    const stepKey = ["personalInfo", "companyInfo", "leadInfo"][activeStep];
     const isValid = await methods.trigger(stepKey);
     if (isValid) {
       setCompletedSteps((prev) => ({ ...prev, [activeStep]: true }));
@@ -163,8 +167,8 @@ const AddContactStepper = () => {
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      enqueueSnackbar('You need to be logged in to add a contact.', {
-        variant: 'error',
+      enqueueSnackbar("You need to be logged in to add a contact.", {
+        variant: "error",
       });
       setIsSaving(false);
       return;
@@ -184,11 +188,12 @@ const AddContactStepper = () => {
         }
       }
 
-      const companyId = await resolveCompanyId(
+      const companyIds = await resolveCompanyIds(
         supabase,
         user.id,
         data.companyInfo,
       );
+      const companyId = companyIds[0] || null;
       const contact = await saveContact(
         supabase,
         user.id,
@@ -202,6 +207,8 @@ const AddContactStepper = () => {
         contact.id,
         data.leadInfo,
       );
+      await saveContactCompanyLinks(supabase, user.id, contact.id, companyIds);
+      await saveContactSensitiveFields(contact.id, data.personalInfo);
       await saveInitialNotes(
         supabase,
         user.id,
@@ -211,14 +218,14 @@ const AddContactStepper = () => {
         data,
       );
 
-      enqueueSnackbar('Contact added successfully', { variant: 'success' });
+      enqueueSnackbar("Contact added successfully", { variant: "success" });
       reset();
       setCompletedSteps({});
       setActiveStep(0);
       setDuplicateConfirmation(null);
     } catch (error) {
-      enqueueSnackbar(error.message || 'Could not add contact.', {
-        variant: 'error',
+      enqueueSnackbar(error.message || "Could not add contact.", {
+        variant: "error",
       });
     } finally {
       setIsSaving(false);
@@ -229,7 +236,7 @@ const AddContactStepper = () => {
   };
 
   const handleSaveContact = async () => {
-    const isValid = await methods.trigger('personalInfo');
+    const isValid = await methods.trigger("personalInfo");
 
     if (!isValid) {
       setActiveStep(0);
@@ -257,7 +264,7 @@ const AddContactStepper = () => {
             <Step key={id} completed={!!completedSteps[index]} sx={{ p: 0 }}>
               <StepLabel
                 onClick={() => handleStepClick(index)}
-                sx={{ cursor: 'pointer' }}
+                sx={{ cursor: "pointer" }}
               >
                 {label}
               </StepLabel>
@@ -276,9 +283,7 @@ const AddContactStepper = () => {
                 companies={companies}
               />
             )}
-            {activeStep === 2 && (
-              <LeadInfoForm label="Lead Information" />
-            )}
+            {activeStep === 2 && <LeadInfoForm label="Lead Information" />}
           </Box>
 
           <Stack gap={2} justifyContent="flex-end">
@@ -306,7 +311,7 @@ const AddContactStepper = () => {
 
             {activeStep < steps.length - 1 && (
               <Button type="submit" variant="soft" disabled={isSaving}>
-                Continue to {activeStep === 0 ? 'Company' : 'Lead'}
+                Continue to {activeStep === 0 ? "Company" : "Lead"}
               </Button>
             )}
           </Stack>
@@ -325,11 +330,11 @@ const AddContactStepper = () => {
 };
 
 function cleanText(value) {
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function cleanNumber(value) {
-  if (value === '' || value === null || typeof value === 'undefined')
+  if (value === "" || value === null || typeof value === "undefined")
     return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
@@ -339,11 +344,11 @@ function duplicateChecksFromForm(data) {
   const checks = [];
 
   if (
-    data.companyInfo?.associationMode === 'create' &&
+    data.companyInfo?.associationMode === "create" &&
     cleanText(data.companyInfo?.name)
   ) {
     checks.push({
-      type: 'company',
+      type: "company",
       record: {
         name: data.companyInfo.name,
         email: data.companyInfo.email,
@@ -353,7 +358,7 @@ function duplicateChecksFromForm(data) {
   }
 
   checks.push({
-    type: 'contact',
+    type: "contact",
     record: {
       firstName: data.personalInfo?.firstName,
       lastName: data.personalInfo?.lastName,
@@ -366,7 +371,7 @@ function duplicateChecksFromForm(data) {
 
   if (hasLeadInfo(data.leadInfo)) {
     checks.push({
-      type: 'lead',
+      type: "lead",
       record: {
         source: data.leadInfo?.source,
         accountNumber: data.leadInfo?.accountNumber,
@@ -393,20 +398,28 @@ function hasLeadInfo(leadInfo) {
   );
 }
 
-async function resolveCompanyId(supabase, ownerId, companyInfo) {
-  if (companyInfo?.associationMode === 'existing') {
-    const companyId = cleanText(companyInfo.existingCompanyId);
-    if (!companyId) {
-      throw new Error('Select an existing company or choose No Company.');
+async function resolveCompanyIds(supabase, ownerId, companyInfo) {
+  if (companyInfo?.associationMode === "existing") {
+    const companyIds = Array.from(
+      new Set(
+        [
+          ...(companyInfo.existingCompanyIds || []),
+          companyInfo.existingCompanyId,
+        ].filter(Boolean),
+      ),
+    );
+    if (!companyIds.length) {
+      throw new Error("Select an existing company or choose No Company.");
     }
-    return companyId;
+    return companyIds;
   }
 
-  if (companyInfo?.associationMode === 'none') {
-    return null;
+  if (companyInfo?.associationMode === "none") {
+    return [];
   }
 
-  return saveCompany(supabase, ownerId, companyInfo);
+  const companyId = await saveCompany(supabase, ownerId, companyInfo);
+  return companyId ? [companyId] : [];
 }
 
 async function saveCompany(supabase, ownerId, companyInfo) {
@@ -428,28 +441,30 @@ async function saveCompany(supabase, ownerId, companyInfo) {
     county: cleanText(companyInfo.county),
     region: cleanText(companyInfo.region),
     postal_code: cleanText(companyInfo.postalCode),
-    country: cleanText(companyInfo.country) || 'US',
+    country: cleanText(companyInfo.country) || "US",
     latitude: cleanNumber(companyInfo.latitude),
     longitude: cleanNumber(companyInfo.longitude),
     notes: cleanText(companyInfo.notes),
   };
 
   const { data, error } = await supabase
-    .from('companies')
-    .upsert(payload, { onConflict: 'owner_id,name' })
-    .select('id')
+    .from("companies")
+    .upsert(payload, { onConflict: "owner_id,name" })
+    .select("id")
     .single();
 
   if (error) {
     throw error;
   }
 
+  await saveCompanySensitiveFields(data.id, companyInfo);
+
   return data.id;
 }
 
 async function saveContact(supabase, ownerId, companyId, personalInfo) {
   const { data, error } = await supabase
-    .from('contacts')
+    .from("contacts")
     .insert({
       owner_id: ownerId,
       company_id: companyId,
@@ -466,13 +481,13 @@ async function saveContact(supabase, ownerId, companyId, personalInfo) {
       county: cleanText(personalInfo.county),
       region: cleanText(personalInfo.region),
       postal_code: cleanText(personalInfo.postalCode),
-      country: cleanText(personalInfo.country) || 'US',
+      country: cleanText(personalInfo.country) || "US",
       latitude: cleanNumber(personalInfo.latitude),
       longitude: cleanNumber(personalInfo.longitude),
       tags: personalInfo.tags || [],
       notes: cleanText(personalInfo.notes),
     })
-    .select('id')
+    .select("id")
     .single();
 
   if (error) {
@@ -480,6 +495,93 @@ async function saveContact(supabase, ownerId, companyId, personalInfo) {
   }
 
   return data;
+}
+
+async function saveContactCompanyLinks(
+  supabase,
+  ownerId,
+  contactId,
+  companyIds,
+) {
+  if (!contactId) return;
+
+  await supabase.from("contact_companies").delete().eq("contact_id", contactId);
+
+  if (!companyIds.length) return;
+
+  const { error } = await supabase.from("contact_companies").insert(
+    companyIds.map((companyId, index) => ({
+      owner_id: ownerId,
+      contact_id: contactId,
+      company_id: companyId,
+      is_primary: index === 0,
+    })),
+  );
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function saveContactSensitiveFields(contactId, personalInfo) {
+  const ssn = cleanText(personalInfo?.socialSecurityNumber);
+  const agTaxExemptNumber = cleanText(personalInfo?.agTaxExemptNumber);
+  const licenseFile = personalInfo?.driverLicenseFile?.[0];
+
+  if (ssn || agTaxExemptNumber) {
+    const response = await fetch(`/api/crm/contact-sensitive/${contactId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...(ssn ? { socialSecurityNumber: ssn } : {}),
+        ...(agTaxExemptNumber ? { agTaxExemptNumber } : {}),
+      }),
+    });
+
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.error || "Could not save sensitive contact data.");
+    }
+  }
+
+  if (licenseFile) {
+    const formData = new FormData();
+    formData.append("file", licenseFile);
+    formData.append("recordType", "contact");
+    formData.append("recordId", contactId);
+    formData.append("fileCategory", "driver_license");
+
+    const response = await fetch("/api/crm/files/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.error || "Could not upload driver's license.");
+    }
+  }
+}
+
+async function saveCompanySensitiveFields(companyId, companyInfo) {
+  const ein = cleanText(companyInfo?.ein);
+  const agTaxExemptNumber = cleanText(companyInfo?.agTaxExemptNumber);
+
+  if (!ein && !agTaxExemptNumber) return;
+
+  const response = await fetch(`/api/crm/company-sensitive/${companyId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...(ein ? { ein } : {}),
+      ...(agTaxExemptNumber ? { agTaxExemptNumber } : {}),
+    }),
+  });
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    throw new Error(result.error || "Could not save sensitive company data.");
+  }
 }
 
 async function saveLead(supabase, ownerId, companyId, contactId, leadInfo) {
@@ -501,14 +603,14 @@ async function saveLead(supabase, ownerId, companyId, contactId, leadInfo) {
   }
 
   const { data, error } = await supabase
-    .from('leads')
+    .from("leads")
     .insert({
       owner_id: ownerId,
       contact_id: contactId,
       company_id: companyId,
       source: cleanText(leadInfo.source),
       account_number: cleanText(leadInfo.accountNumber),
-      status: cleanText(leadInfo.status) || 'not_contacted',
+      status: cleanText(leadInfo.status) || "not_contacted",
       priority: Number(leadInfo.priority) || 3,
       estimated_budget: leadInfo.estimatedBudget || null,
       target_purchase_date: leadInfo.targetPurchaseDate || null,
@@ -518,7 +620,7 @@ async function saveLead(supabase, ownerId, companyId, contactId, leadInfo) {
       longitude: cleanNumber(leadInfo.longitude),
       notes: cleanText(leadInfo.notes),
     })
-    .select('id')
+    .select("id")
     .single();
 
   if (error) {
@@ -556,7 +658,7 @@ async function saveInitialNotes(
   ].filter(Boolean);
 
   if (noteRows.length) {
-    const { error: notesError } = await supabase.from('notes').insert(noteRows);
+    const { error: notesError } = await supabase.from("notes").insert(noteRows);
 
     if (notesError) {
       throw notesError;

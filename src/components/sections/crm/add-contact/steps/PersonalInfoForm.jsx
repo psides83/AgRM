@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Controller, useFormContext } from 'react-hook-form';
+import { useEffect } from "react";
+import { Controller, useFormContext } from "react-hook-form";
 import {
   Autocomplete,
   Box,
@@ -9,31 +9,38 @@ import {
   Stack,
   TextField,
   Typography,
-} from '@mui/material';
-import Grid from '@mui/material/Grid';
-import * as yup from 'yup';
-import ContactFormSection from 'components/sections/crm/add-contact/ContactFormSection';
+} from "@mui/material";
+import Grid from "@mui/material/Grid";
+import * as yup from "yup";
+import ContactFormSection from "components/sections/crm/add-contact/ContactFormSection";
 import {
   formatPhone,
   registerPhoneInput,
-} from 'components/sections/crm/shared/phoneFormat';
+} from "components/sections/crm/shared/phoneFormat";
 
 export const personalInfoSchema = yup.object({
   personalInfo: yup.object({
-    firstName: yup.string().required('First name is required'),
-    lastName: yup.string().required('Last name is required'),
+    firstName: yup.string().required("First name is required"),
+    lastName: yup.string().required("Last name is required"),
     title: yup.string().optional(),
     accountNumber: yup.string().optional(),
     sameAccountNumberAsCompany: yup.boolean().default(false),
     email: yup
       .string()
-      .transform((value) => (value === '' ? undefined : value))
-      .email('Invalid email format')
+      .transform((value) => (value === "" ? undefined : value))
+      .email("Invalid email format")
       .optional(),
     sameEmailAsCompany: yup.boolean().default(false),
     phone: yup.string().optional(),
     samePhoneAsCompany: yup.boolean().default(false),
     mobilePhone: yup.string().optional(),
+    socialSecurityNumber: yup
+      .string()
+      .transform((value) => (value || "").replace(/\D/g, ""))
+      .matches(/^$|^\d{9}$/, "SSN must have 9 digits")
+      .optional(),
+    agTaxExemptNumber: yup.string().optional(),
+    driverLicenseFile: yup.mixed().optional(),
     sameAddressAsCompany: yup.boolean().default(false),
     addressLine1: yup.string().optional(),
     addressLine2: yup.string().optional(),
@@ -41,25 +48,25 @@ export const personalInfoSchema = yup.object({
     county: yup.string().optional(),
     region: yup.string().optional(),
     postalCode: yup.string().optional(),
-    country: yup.string().default('US'),
+    country: yup.string().default("US"),
     sameCoordinatesAsCompany: yup.boolean().default(false),
     latitude: yup
       .number()
-      .typeError('Latitude must be a number')
+      .typeError("Latitude must be a number")
       .min(-90)
       .max(90)
       .nullable()
       .transform((value, originalValue) =>
-        originalValue === '' ? null : value,
+        originalValue === "" ? null : value,
       ),
     longitude: yup
       .number()
-      .typeError('Longitude must be a number')
+      .typeError("Longitude must be a number")
       .min(-180)
       .max(180)
       .nullable()
       .transform((value, originalValue) =>
-        originalValue === '' ? null : value,
+        originalValue === "" ? null : value,
       ),
     tags: yup.array().of(yup.string()).default([]),
     notes: yup.string().optional(),
@@ -67,12 +74,12 @@ export const personalInfoSchema = yup.object({
 });
 
 const tagSuggestions = [
-  'Customer',
-  'Prospect',
-  'Farm',
-  'Contractor',
-  'High Priority',
-  'Trade-in',
+  "Customer",
+  "Prospect",
+  "Farm",
+  "Contractor",
+  "High Priority",
+  "Trade-in",
 ];
 
 const PersonalInfoForm = ({ label }) => {
@@ -83,20 +90,20 @@ const PersonalInfoForm = ({ label }) => {
     setValue,
     formState: { errors },
   } = useFormContext();
-  const companyInfo = watch('companyInfo');
+  const companyInfo = watch("companyInfo");
   const sameAccountNumberAsCompany = watch(
-    'personalInfo.sameAccountNumberAsCompany',
+    "personalInfo.sameAccountNumberAsCompany",
   );
-  const sameEmailAsCompany = watch('personalInfo.sameEmailAsCompany');
-  const samePhoneAsCompany = watch('personalInfo.samePhoneAsCompany');
-  const sameAddressAsCompany = watch('personalInfo.sameAddressAsCompany');
+  const sameEmailAsCompany = watch("personalInfo.sameEmailAsCompany");
+  const samePhoneAsCompany = watch("personalInfo.samePhoneAsCompany");
+  const sameAddressAsCompany = watch("personalInfo.sameAddressAsCompany");
   const sameCoordinatesAsCompany = watch(
-    'personalInfo.sameCoordinatesAsCompany',
+    "personalInfo.sameCoordinatesAsCompany",
   );
 
   useEffect(() => {
     if (sameAccountNumberAsCompany) {
-      setValue('personalInfo.accountNumber', companyInfo?.accountNumber || '', {
+      setValue("personalInfo.accountNumber", companyInfo?.accountNumber || "", {
         shouldDirty: true,
       });
     }
@@ -104,7 +111,7 @@ const PersonalInfoForm = ({ label }) => {
 
   useEffect(() => {
     if (sameEmailAsCompany) {
-      setValue('personalInfo.email', companyInfo?.email || '', {
+      setValue("personalInfo.email", companyInfo?.email || "", {
         shouldDirty: true,
       });
     }
@@ -112,7 +119,7 @@ const PersonalInfoForm = ({ label }) => {
 
   useEffect(() => {
     if (samePhoneAsCompany) {
-      setValue('personalInfo.phone', formatPhone(companyInfo?.phone) || '', {
+      setValue("personalInfo.phone", formatPhone(companyInfo?.phone) || "", {
         shouldDirty: true,
       });
     }
@@ -120,7 +127,7 @@ const PersonalInfoForm = ({ label }) => {
 
   useEffect(() => {
     if (sameAddressAsCompany) {
-      copyFields(setValue, 'personalInfo', companyInfo, addressFields);
+      copyFields(setValue, "personalInfo", companyInfo, addressFields);
     }
   }, [
     companyInfo?.addressLine1,
@@ -136,7 +143,7 @@ const PersonalInfoForm = ({ label }) => {
 
   useEffect(() => {
     if (sameCoordinatesAsCompany) {
-      copyFields(setValue, 'personalInfo', companyInfo, coordinateFields);
+      copyFields(setValue, "personalInfo", companyInfo, coordinateFields);
     }
   }, [
     companyInfo?.latitude,
@@ -162,7 +169,7 @@ const PersonalInfoForm = ({ label }) => {
                 label="First Name"
                 error={!!errors.personalInfo?.firstName}
                 helperText={errors.personalInfo?.firstName?.message}
-                {...register('personalInfo.firstName')}
+                {...register("personalInfo.firstName")}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -171,7 +178,7 @@ const PersonalInfoForm = ({ label }) => {
                 label="Last Name"
                 error={!!errors.personalInfo?.lastName}
                 helperText={errors.personalInfo?.lastName?.message}
-                {...register('personalInfo.lastName')}
+                {...register("personalInfo.lastName")}
               />
             </Grid>
             <Grid size={12}>
@@ -180,14 +187,14 @@ const PersonalInfoForm = ({ label }) => {
                 label="Title / Role"
                 error={!!errors.personalInfo?.title}
                 helperText={errors.personalInfo?.title?.message}
-                {...register('personalInfo.title')}
+                {...register("personalInfo.title")}
               />
             </Grid>
             <Grid size={12}>
               <FormControlLabel
                 control={
                   <Checkbox
-                    {...register('personalInfo.sameAccountNumberAsCompany')}
+                    {...register("personalInfo.sameAccountNumberAsCompany")}
                   />
                 }
                 label="Use company account number"
@@ -197,13 +204,13 @@ const PersonalInfoForm = ({ label }) => {
                 label="Account Number"
                 error={!!errors.personalInfo?.accountNumber}
                 helperText={errors.personalInfo?.accountNumber?.message}
-                {...register('personalInfo.accountNumber')}
+                {...register("personalInfo.accountNumber")}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControlLabel
                 control={
-                  <Checkbox {...register('personalInfo.sameEmailAsCompany')} />
+                  <Checkbox {...register("personalInfo.sameEmailAsCompany")} />
                 }
                 label="Use company email"
               />
@@ -211,7 +218,7 @@ const PersonalInfoForm = ({ label }) => {
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControlLabel
                 control={
-                  <Checkbox {...register('personalInfo.samePhoneAsCompany')} />
+                  <Checkbox {...register("personalInfo.samePhoneAsCompany")} />
                 }
                 label="Use company phone"
               />
@@ -223,7 +230,7 @@ const PersonalInfoForm = ({ label }) => {
                 type="email"
                 error={!!errors.personalInfo?.email}
                 helperText={errors.personalInfo?.email?.message}
-                {...register('personalInfo.email')}
+                {...register("personalInfo.email")}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -232,7 +239,7 @@ const PersonalInfoForm = ({ label }) => {
                 label="Phone"
                 error={!!errors.personalInfo?.phone}
                 helperText={errors.personalInfo?.phone?.message}
-                {...registerPhoneInput(register, 'personalInfo.phone')}
+                {...registerPhoneInput(register, "personalInfo.phone")}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -241,7 +248,50 @@ const PersonalInfoForm = ({ label }) => {
                 label="Mobile Phone"
                 error={!!errors.personalInfo?.mobilePhone}
                 helperText={errors.personalInfo?.mobilePhone?.message}
-                {...registerPhoneInput(register, 'personalInfo.mobilePhone')}
+                {...registerPhoneInput(register, "personalInfo.mobilePhone")}
+              />
+            </Grid>
+          </Grid>
+        </ContactFormSection>
+
+        <ContactFormSection title="Finance Application">
+          <Grid container spacing={2} sx={{ width: 1 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Social Security Number"
+                type="password"
+                autoComplete="off"
+                error={!!errors.personalInfo?.socialSecurityNumber}
+                helperText={
+                  errors.personalInfo?.socialSecurityNumber?.message ||
+                  "Stored encrypted; only last four is shown later."
+                }
+                {...register("personalInfo.socialSecurityNumber")}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Ag Tax-Exempt Number"
+                type="password"
+                autoComplete="off"
+                helperText="Stored encrypted; only the last four is shown later."
+                {...register("personalInfo.agTaxExemptNumber")}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Driver's License"
+                type="file"
+                error={!!errors.personalInfo?.driverLicenseFile}
+                helperText={
+                  errors.personalInfo?.driverLicenseFile?.message ||
+                  "Uploaded to private encrypted CRM file storage."
+                }
+                slotProps={{ inputLabel: { shrink: true } }}
+                {...register("personalInfo.driverLicenseFile")}
               />
             </Grid>
           </Grid>
@@ -253,7 +303,7 @@ const PersonalInfoForm = ({ label }) => {
               <FormControlLabel
                 control={
                   <Checkbox
-                    {...register('personalInfo.sameAddressAsCompany')}
+                    {...register("personalInfo.sameAddressAsCompany")}
                   />
                 }
                 label="Use company address"
@@ -263,56 +313,56 @@ const PersonalInfoForm = ({ label }) => {
               <TextField
                 fullWidth
                 label="Address Line 1"
-                {...register('personalInfo.addressLine1')}
+                {...register("personalInfo.addressLine1")}
               />
             </Grid>
             <Grid size={12}>
               <TextField
                 fullWidth
                 label="Address Line 2"
-                {...register('personalInfo.addressLine2')}
+                {...register("personalInfo.addressLine2")}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="City"
-                {...register('personalInfo.city')}
+                {...register("personalInfo.city")}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="County"
-                {...register('personalInfo.county')}
+                {...register("personalInfo.county")}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="State / Region"
-                {...register('personalInfo.region')}
+                {...register("personalInfo.region")}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Postal Code"
-                {...register('personalInfo.postalCode')}
+                {...register("personalInfo.postalCode")}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Country"
-                {...register('personalInfo.country')}
+                {...register("personalInfo.country")}
               />
             </Grid>
             <Grid size={12}>
               <FormControlLabel
                 control={
                   <Checkbox
-                    {...register('personalInfo.sameCoordinatesAsCompany')}
+                    {...register("personalInfo.sameCoordinatesAsCompany")}
                   />
                 }
                 label="Use company coordinates"
@@ -325,7 +375,7 @@ const PersonalInfoForm = ({ label }) => {
                 type="number"
                 error={!!errors.personalInfo?.latitude}
                 helperText={errors.personalInfo?.latitude?.message}
-                {...register('personalInfo.latitude')}
+                {...register("personalInfo.latitude")}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -335,7 +385,7 @@ const PersonalInfoForm = ({ label }) => {
                 type="number"
                 error={!!errors.personalInfo?.longitude}
                 helperText={errors.personalInfo?.longitude?.message}
-                {...register('personalInfo.longitude')}
+                {...register("personalInfo.longitude")}
               />
             </Grid>
           </Grid>
@@ -362,7 +412,7 @@ const PersonalInfoForm = ({ label }) => {
             label="Contact Notes"
             multiline
             rows={3}
-            {...register('personalInfo.notes')}
+            {...register("personalInfo.notes")}
           />
         </ContactFormSection>
       </Stack>
@@ -371,19 +421,19 @@ const PersonalInfoForm = ({ label }) => {
 };
 
 const addressFields = [
-  'addressLine1',
-  'addressLine2',
-  'city',
-  'county',
-  'region',
-  'postalCode',
-  'country',
+  "addressLine1",
+  "addressLine2",
+  "city",
+  "county",
+  "region",
+  "postalCode",
+  "country",
 ];
-const coordinateFields = ['latitude', 'longitude'];
+const coordinateFields = ["latitude", "longitude"];
 
 function copyFields(setValue, targetPrefix, source, fields) {
   fields.forEach((field) => {
-    setValue(`${targetPrefix}.${field}`, source?.[field] ?? '', {
+    setValue(`${targetPrefix}.${field}`, source?.[field] ?? "", {
       shouldDirty: true,
     });
   });

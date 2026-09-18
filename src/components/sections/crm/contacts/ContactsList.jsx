@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
@@ -19,28 +19,28 @@ import {
   TableSortLabel,
   TextField,
   Typography,
-} from '@mui/material';
-import Grid from '@mui/material/Grid';
-import paths from 'routes/paths';
-import { createClient } from 'lib/supabase/client';
-import IconifyIcon from 'components/base/IconifyIcon';
-import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
-import { formatPhone } from 'components/sections/crm/shared/phoneFormat';
+} from "@mui/material";
+import Grid from "@mui/material/Grid";
+import paths from "routes/paths";
+import { createClient } from "lib/supabase/client";
+import IconifyIcon from "components/base/IconifyIcon";
+import PageHeader from "components/sections/ecommerce/admin/common/PageHeader";
+import { formatPhone } from "components/sections/crm/shared/phoneFormat";
 
 const ContactsList = () => {
   const supabase = useMemo(() => createClient(), []);
   const [contacts, setContacts] = useState([]);
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState({ key: 'createdAt', direction: 'desc' });
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState({ key: "createdAt", direction: "desc" });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetchContacts = async () => {
     setError(null);
 
-    const [contactsResult, activitiesResult] = await Promise.all([
+    const [contactsResult, linksResult, activitiesResult] = await Promise.all([
       supabase
-        .from('contacts')
+        .from("contacts")
         .select(
           `
         id,
@@ -62,15 +62,22 @@ const ContactsList = () => {
         )
       `,
         )
-        .order('created_at', { ascending: false }),
+        .order("created_at", { ascending: false }),
       supabase
-        .from('activities')
-        .select('id, contact_id, type, subject, occurred_at, created_at')
-        .not('contact_id', 'is', null)
-        .order('occurred_at', { ascending: false }),
+        .from("contact_companies")
+        .select(
+          "id, contact_id, company_id, is_primary, companies(id, name, company_type)",
+        )
+        .order("is_primary", { ascending: false }),
+      supabase
+        .from("activities")
+        .select("id, contact_id, type, subject, occurred_at, created_at")
+        .not("contact_id", "is", null)
+        .order("occurred_at", { ascending: false }),
     ]);
 
-    const queryError = contactsResult.error || activitiesResult.error;
+    const queryError =
+      contactsResult.error || linksResult.error || activitiesResult.error;
 
     if (queryError) {
       setError(queryError.message);
@@ -78,9 +85,13 @@ const ContactsList = () => {
       const latestActivityByContact = latestActivitiesByContact(
         activitiesResult.data || [],
       );
+      const companiesByContact = linkedCompaniesByContact(
+        linksResult.data || [],
+      );
       setContacts(
         (contactsResult.data || []).map((contact) => ({
           ...contact,
+          linkedCompanies: companiesByContact.get(contact.id) || [],
           latestActivity: latestActivityByContact.get(contact.id) || null,
         })),
       );
@@ -93,20 +104,25 @@ const ContactsList = () => {
     fetchContacts();
 
     const channel = supabase
-      .channel('agrm-contacts-list')
+      .channel("agrm-contacts-list")
       .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'contacts' },
+        "postgres_changes",
+        { event: "*", schema: "public", table: "contacts" },
         () => fetchContacts(),
       )
       .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'companies' },
+        "postgres_changes",
+        { event: "*", schema: "public", table: "companies" },
         () => fetchContacts(),
       )
       .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'activities' },
+        "postgres_changes",
+        { event: "*", schema: "public", table: "contact_companies" },
+        () => fetchContacts(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "activities" },
         () => fetchContacts(),
       )
       .subscribe();
@@ -136,6 +152,10 @@ const ContactsList = () => {
         contact.region,
         contact.companies?.name,
         contact.companies?.company_type,
+        ...contact.linkedCompanies.flatMap((company) => [
+          company.name,
+          company.company_type,
+        ]),
         contact.latestActivity?.type,
         contact.latestActivity?.subject,
         ...(contact.tags || []),
@@ -143,7 +163,7 @@ const ContactsList = () => {
 
       return values
         .filter(Boolean)
-        .join(' ')
+        .join(" ")
         .toLowerCase()
         .includes(normalizedSearch);
     });
@@ -157,7 +177,7 @@ const ContactsList = () => {
   const handleSort = (key) => {
     setSort((prev) => ({
       key,
-      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
   };
 
@@ -167,8 +187,8 @@ const ContactsList = () => {
         <PageHeader
           title="Contacts"
           breadcrumb={[
-            { label: 'Home', url: paths.crm },
-            { label: 'Contacts', active: true },
+            { label: "Home", url: paths.crm },
+            { label: "Contacts", active: true },
           ]}
           actionComponent={
             <Stack direction="row" spacing={1}>
@@ -203,18 +223,18 @@ const ContactsList = () => {
       <Grid size={12}>
         <Paper sx={{ p: { xs: 3, md: 4 } }}>
           <Stack
-            direction={{ xs: 'column', md: 'row' }}
+            direction={{ xs: "column", md: "row" }}
             spacing={2}
             sx={{
-              justifyContent: 'space-between',
-              alignItems: { xs: 'stretch', md: 'center' },
+              justifyContent: "space-between",
+              alignItems: { xs: "stretch", md: "center" },
             }}
           >
             <Box>
               <Typography variant="h6">Customer relationships</Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
                 {contacts.length} total contact
-                {contacts.length === 1 ? '' : 's'}
+                {contacts.length === 1 ? "" : "s"}
               </Typography>
             </Box>
             <TextField
@@ -298,14 +318,14 @@ const ContactsList = () => {
                         <Link
                           href={paths.contactDetails(contact.id)}
                           underline="hover"
-                          sx={{ color: 'text.primary', fontWeight: 700 }}
+                          sx={{ color: "text.primary", fontWeight: 700 }}
                         >
                           {contact.first_name} {contact.last_name}
                         </Link>
                         {contact.title && (
                           <Typography
                             variant="caption"
-                            sx={{ color: 'text.secondary', display: 'block' }}
+                            sx={{ color: "text.secondary", display: "block" }}
                           >
                             {contact.title}
                           </Typography>
@@ -313,46 +333,72 @@ const ContactsList = () => {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
-                          {contact.account_number || '-'}
+                          {contact.account_number || "-"}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        {contact.companies?.id ? (
+                        {contact.linkedCompanies.length ? (
+                          <Stack spacing={0.25}>
+                            {contact.linkedCompanies.map((company) => (
+                              <Box key={company.id}>
+                                <Link
+                                  href={paths.companyDetails(company.id)}
+                                  underline="hover"
+                                  sx={{
+                                    color: "text.primary",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {company.name}
+                                </Link>
+                                {company.is_primary && (
+                                  <Chip
+                                    label="Primary"
+                                    size="small"
+                                    variant="soft"
+                                    sx={{ ml: 0.75 }}
+                                  />
+                                )}
+                              </Box>
+                            ))}
+                          </Stack>
+                        ) : contact.companies?.id ? (
                           <Link
                             href={paths.companyDetails(contact.companies.id)}
                             underline="hover"
-                            sx={{ color: 'text.primary', fontWeight: 600 }}
+                            sx={{ color: "text.primary", fontWeight: 600 }}
                           >
                             {contact.companies.name}
                           </Link>
                         ) : (
                           <Typography variant="body2">-</Typography>
                         )}
-                        {contact.companies?.company_type && (
-                          <Typography
-                            variant="caption"
-                            sx={{ color: 'text.secondary', display: 'block' }}
-                          >
-                            {contact.companies.company_type}
-                          </Typography>
-                        )}
+                        {!contact.linkedCompanies.length &&
+                          contact.companies?.company_type && (
+                            <Typography
+                              variant="caption"
+                              sx={{ color: "text.secondary", display: "block" }}
+                            >
+                              {contact.companies.company_type}
+                            </Typography>
+                          )}
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
-                          {contact.email || '-'}
+                          {contact.email || "-"}
                         </Typography>
                         <Typography
                           variant="caption"
-                          sx={{ color: 'text.secondary' }}
+                          sx={{ color: "text.secondary" }}
                         >
                           {formatPhone(contact.mobile_phone || contact.phone) ||
-                            'No phone'}
+                            "No phone"}
                         </Typography>
                       </TableCell>
                       <TableCell>
                         {[contact.city, contact.region]
                           .filter(Boolean)
-                          .join(', ') || '-'}
+                          .join(", ") || "-"}
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
@@ -364,14 +410,14 @@ const ContactsList = () => {
                         {contact.latestActivity && (
                           <Typography
                             variant="caption"
-                            sx={{ color: 'text.secondary' }}
+                            sx={{ color: "text.secondary" }}
                           >
                             {[
                               formatEnum(contact.latestActivity.type),
                               contact.latestActivity.subject,
                             ]
                               .filter(Boolean)
-                              .join(' - ')}
+                              .join(" - ")}
                           </Typography>
                         )}
                       </TableCell>
@@ -380,7 +426,7 @@ const ContactsList = () => {
                           direction="row"
                           spacing={0.5}
                           useFlexGap
-                          sx={{ flexWrap: 'wrap' }}
+                          sx={{ flexWrap: "wrap" }}
                         >
                           {(contact.tags || []).length ? (
                             contact.tags.map((tag) => (
@@ -394,7 +440,7 @@ const ContactsList = () => {
                           ) : (
                             <Typography
                               variant="caption"
-                              sx={{ color: 'text.secondary' }}
+                              sx={{ color: "text.secondary" }}
                             >
                               No tags
                             </Typography>
@@ -405,7 +451,7 @@ const ContactsList = () => {
                   ))
                 ) : (
                   <EmptyRow
-                    label={search ? 'No matching contacts' : 'No contacts yet'}
+                    label={search ? "No matching contacts" : "No contacts yet"}
                   />
                 )}
               </TableBody>
@@ -423,7 +469,7 @@ function EmptyRow({ label }) {
       <TableCell colSpan={7}>
         <Typography
           variant="body2"
-          sx={{ color: 'text.secondary', textAlign: 'center', py: 5 }}
+          sx={{ color: "text.secondary", textAlign: "center", py: 5 }}
         >
           {label}
         </Typography>
@@ -439,7 +485,7 @@ function SortableHeader({ label, sortKey, activeSort, onSort }) {
     >
       <TableSortLabel
         active={activeSort.key === sortKey}
-        direction={activeSort.key === sortKey ? activeSort.direction : 'asc'}
+        direction={activeSort.key === sortKey ? activeSort.direction : "asc"}
         onClick={() => onSort(sortKey)}
       >
         {label}
@@ -459,45 +505,61 @@ function latestActivitiesByContact(activities) {
   }, new Map());
 }
 
+function linkedCompaniesByContact(links) {
+  return links.reduce((companiesByContact, link) => {
+    if (!link.contact_id || !link.companies) return companiesByContact;
+
+    const companies = companiesByContact.get(link.contact_id) || [];
+    companies.push({ ...link.companies, is_primary: link.is_primary });
+    companiesByContact.set(link.contact_id, companies);
+    return companiesByContact;
+  }, new Map());
+}
+
 function compareContacts(a, b, sort) {
-  const direction = sort.direction === 'asc' ? 1 : -1;
+  const direction = sort.direction === "asc" ? 1 : -1;
   const aValue = sortValue(a, sort.key);
   const bValue = sortValue(b, sort.key);
 
-  if (sort.key === 'lastActivity' || sort.key === 'createdAt') {
+  if (sort.key === "lastActivity" || sort.key === "createdAt") {
     return (dateValue(aValue) - dateValue(bValue)) * direction;
   }
 
   return (
-    String(aValue || '').localeCompare(String(bValue || ''), undefined, {
+    String(aValue || "").localeCompare(String(bValue || ""), undefined, {
       numeric: true,
-      sensitivity: 'base',
+      sensitivity: "base",
     }) * direction
   );
 }
 
 function sortValue(contact, key) {
-  if (key === 'name') {
-    return [contact.last_name, contact.first_name].filter(Boolean).join(' ');
+  if (key === "name") {
+    return [contact.last_name, contact.first_name].filter(Boolean).join(" ");
   }
-  if (key === 'account') return contact.account_number;
-  if (key === 'company') return contact.companies?.name;
-  if (key === 'contact') {
+  if (key === "account") return contact.account_number;
+  if (key === "company") {
+    return (
+      contact.linkedCompanies?.map((company) => company.name).join(" ") ||
+      contact.companies?.name
+    );
+  }
+  if (key === "contact") {
     return [contact.email, formatPhone(contact.mobile_phone || contact.phone)]
       .filter(Boolean)
-      .join(' ');
+      .join(" ");
   }
-  if (key === 'location') {
-    return [contact.city, contact.region].filter(Boolean).join(' ');
+  if (key === "location") {
+    return [contact.city, contact.region].filter(Boolean).join(" ");
   }
-  if (key === 'lastActivity') {
+  if (key === "lastActivity") {
     return (
       contact.latestActivity?.occurred_at ||
       contact.latestActivity?.created_at ||
       null
     );
   }
-  if (key === 'tags') return (contact.tags || []).join(' ');
+  if (key === "tags") return (contact.tags || []).join(" ");
   return contact.created_at;
 }
 
@@ -508,20 +570,20 @@ function dateValue(value) {
 }
 
 function formatDateTime(value) {
-  if (!value) return '-';
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
+  if (!value) return "-";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   }).format(new Date(value));
 }
 
 function formatEnum(value) {
-  if (!value) return '';
+  if (!value) return "";
   return String(value)
-    .replace(/_/g, ' ')
+    .replace(/_/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 

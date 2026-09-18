@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { useEffect } from "react";
+import { Controller, useFormContext } from "react-hook-form";
 import {
+  Autocomplete,
   Box,
   Checkbox,
   Divider,
@@ -9,37 +10,44 @@ import {
   Stack,
   TextField,
   Typography,
-} from '@mui/material';
-import Grid from '@mui/material/Grid';
-import * as yup from 'yup';
-import ContactFormSection from 'components/sections/crm/add-contact/ContactFormSection';
+} from "@mui/material";
+import Grid from "@mui/material/Grid";
+import * as yup from "yup";
+import ContactFormSection from "components/sections/crm/add-contact/ContactFormSection";
 import {
   formatPhone,
   registerPhoneInput,
-} from 'components/sections/crm/shared/phoneFormat';
+} from "components/sections/crm/shared/phoneFormat";
 
 export const companyInfoSchema = yup.object({
   companyInfo: yup.object({
     associationMode: yup
       .string()
-      .oneOf(['create', 'existing', 'none'])
-      .default('create'),
+      .oneOf(["create", "existing", "none"])
+      .default("create"),
     existingCompanyId: yup.string().optional(),
+    existingCompanyIds: yup.array().of(yup.string()).default([]),
     name: yup.string().optional(),
     companyType: yup.string().optional(),
+    ein: yup
+      .string()
+      .transform((value) => (value || "").replace(/\D/g, ""))
+      .matches(/^$|^\d{9}$/, "EIN must have 9 digits")
+      .optional(),
+    agTaxExemptNumber: yup.string().optional(),
     accountNumber: yup.string().optional(),
     sameAccountNumberAsContact: yup.boolean().default(false),
     website: yup
       .string()
-      .transform((value) => (value === '' ? undefined : value))
-      .url('Invalid website URL')
+      .transform((value) => (value === "" ? undefined : value))
+      .url("Invalid website URL")
       .optional(),
     phone: yup.string().optional(),
     samePhoneAsContact: yup.boolean().default(false),
     email: yup
       .string()
-      .transform((value) => (value === '' ? undefined : value))
-      .email('Invalid email format')
+      .transform((value) => (value === "" ? undefined : value))
+      .email("Invalid email format")
       .optional(),
     sameEmailAsContact: yup.boolean().default(false),
     sameAddressAsContact: yup.boolean().default(false),
@@ -49,25 +57,25 @@ export const companyInfoSchema = yup.object({
     county: yup.string().optional(),
     region: yup.string().optional(),
     postalCode: yup.string().optional(),
-    country: yup.string().default('US'),
+    country: yup.string().default("US"),
     sameCoordinatesAsContact: yup.boolean().default(false),
     latitude: yup
       .number()
-      .typeError('Latitude must be a number')
+      .typeError("Latitude must be a number")
       .min(-90)
       .max(90)
       .nullable()
       .transform((value, originalValue) =>
-        originalValue === '' ? null : value,
+        originalValue === "" ? null : value,
       ),
     longitude: yup
       .number()
-      .typeError('Longitude must be a number')
+      .typeError("Longitude must be a number")
       .min(-180)
       .max(180)
       .nullable()
       .transform((value, originalValue) =>
-        originalValue === '' ? null : value,
+        originalValue === "" ? null : value,
       ),
     notes: yup.string().optional(),
   }),
@@ -76,25 +84,26 @@ export const companyInfoSchema = yup.object({
 const CompanyInfoForm = ({ label, companies = [] }) => {
   const {
     register,
+    control,
     watch,
     setValue,
     formState: { errors },
   } = useFormContext();
-  const personalInfo = watch('personalInfo');
-  const associationMode = watch('companyInfo.associationMode') || 'create';
+  const personalInfo = watch("personalInfo");
+  const associationMode = watch("companyInfo.associationMode") || "create";
   const sameAccountNumberAsContact = watch(
-    'companyInfo.sameAccountNumberAsContact',
+    "companyInfo.sameAccountNumberAsContact",
   );
-  const sameEmailAsContact = watch('companyInfo.sameEmailAsContact');
-  const samePhoneAsContact = watch('companyInfo.samePhoneAsContact');
-  const sameAddressAsContact = watch('companyInfo.sameAddressAsContact');
+  const sameEmailAsContact = watch("companyInfo.sameEmailAsContact");
+  const samePhoneAsContact = watch("companyInfo.samePhoneAsContact");
+  const sameAddressAsContact = watch("companyInfo.sameAddressAsContact");
   const sameCoordinatesAsContact = watch(
-    'companyInfo.sameCoordinatesAsContact',
+    "companyInfo.sameCoordinatesAsContact",
   );
 
   useEffect(() => {
     if (sameAccountNumberAsContact) {
-      setValue('companyInfo.accountNumber', personalInfo?.accountNumber || '', {
+      setValue("companyInfo.accountNumber", personalInfo?.accountNumber || "", {
         shouldDirty: true,
       });
     }
@@ -102,7 +111,7 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
 
   useEffect(() => {
     if (sameEmailAsContact) {
-      setValue('companyInfo.email', personalInfo?.email || '', {
+      setValue("companyInfo.email", personalInfo?.email || "", {
         shouldDirty: true,
       });
     }
@@ -110,7 +119,7 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
 
   useEffect(() => {
     if (samePhoneAsContact) {
-      setValue('companyInfo.phone', formatPhone(personalInfo?.phone) || '', {
+      setValue("companyInfo.phone", formatPhone(personalInfo?.phone) || "", {
         shouldDirty: true,
       });
     }
@@ -118,7 +127,7 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
 
   useEffect(() => {
     if (sameAddressAsContact) {
-      copyFields(setValue, 'companyInfo', personalInfo, addressFields);
+      copyFields(setValue, "companyInfo", personalInfo, addressFields);
     }
   }, [
     personalInfo?.addressLine1,
@@ -134,7 +143,7 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
 
   useEffect(() => {
     if (sameCoordinatesAsContact) {
-      copyFields(setValue, 'companyInfo', personalInfo, coordinateFields);
+      copyFields(setValue, "companyInfo", personalInfo, coordinateFields);
     }
   }, [
     personalInfo?.latitude,
@@ -161,35 +170,50 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
                 fullWidth
                 label="Company"
                 defaultValue="create"
-                {...register('companyInfo.associationMode')}
+                {...register("companyInfo.associationMode")}
               >
                 <MenuItem value="create">Create New Company</MenuItem>
                 <MenuItem value="existing">Use Existing Company</MenuItem>
                 <MenuItem value="none">No Company</MenuItem>
               </TextField>
             </Grid>
-            {associationMode === 'existing' && (
+            {associationMode === "existing" && (
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  select
-                  fullWidth
-                  label="Existing Company"
-                  defaultValue=""
-                  {...register('companyInfo.existingCompanyId')}
-                >
-                  <MenuItem value="">Select a company</MenuItem>
-                  {companies.map((company) => (
-                    <MenuItem key={company.id} value={company.id}>
-                      {companyLabel(company)}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                <Controller
+                  name="companyInfo.existingCompanyIds"
+                  control={control}
+                  render={({ field }) => (
+                    <Autocomplete
+                      multiple
+                      options={companies}
+                      value={companies.filter((company) =>
+                        (field.value || []).includes(company.id),
+                      )}
+                      getOptionLabel={companyLabel}
+                      isOptionEqualToValue={(option, value) =>
+                        option.id === value.id
+                      }
+                      onChange={(_, value) => {
+                        const ids = value.map((company) => company.id);
+                        field.onChange(ids);
+                        setValue("companyInfo.existingCompanyId", ids[0] || "");
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Existing Companies"
+                          placeholder="Select companies"
+                        />
+                      )}
+                    />
+                  )}
+                />
               </Grid>
             )}
           </Grid>
         </ContactFormSection>
 
-        {associationMode === 'create' && (
+        {associationMode === "create" && (
           <>
             <ContactFormSection title="Company Details">
               <Grid container spacing={2} sx={{ width: 1 }}>
@@ -199,7 +223,7 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
                     label="Company / Farm Name"
                     error={!!errors.companyInfo?.name}
                     helperText={errors.companyInfo?.name?.message}
-                    {...register('companyInfo.name')}
+                    {...register("companyInfo.name")}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -207,14 +231,38 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
                     fullWidth
                     label="Company Type"
                     placeholder="Farm, contractor, municipality..."
-                    {...register('companyInfo.companyType')}
+                    {...register("companyInfo.companyType")}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Employer Identification Number (EIN)"
+                    type="password"
+                    autoComplete="off"
+                    error={!!errors.companyInfo?.ein}
+                    helperText={
+                      errors.companyInfo?.ein?.message ||
+                      "Stored encrypted; only the last four is shown later."
+                    }
+                    {...register("companyInfo.ein")}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Ag Tax-Exempt Number"
+                    type="password"
+                    autoComplete="off"
+                    helperText="Stored encrypted; only the last four is shown later."
+                    {...register("companyInfo.agTaxExemptNumber")}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControlLabel
                     control={
                       <Checkbox
-                        {...register('companyInfo.sameAccountNumberAsContact')}
+                        {...register("companyInfo.sameAccountNumberAsContact")}
                       />
                     }
                     label="Use contact account number"
@@ -222,21 +270,21 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
                   <TextField
                     fullWidth
                     label="Account Number"
-                    {...register('companyInfo.accountNumber')}
+                    {...register("companyInfo.accountNumber")}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Website"
-                    {...register('companyInfo.website')}
+                    {...register("companyInfo.website")}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControlLabel
                     control={
                       <Checkbox
-                        {...register('companyInfo.samePhoneAsContact')}
+                        {...register("companyInfo.samePhoneAsContact")}
                       />
                     }
                     label="Use contact phone"
@@ -246,7 +294,7 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
                   <FormControlLabel
                     control={
                       <Checkbox
-                        {...register('companyInfo.sameEmailAsContact')}
+                        {...register("companyInfo.sameEmailAsContact")}
                       />
                     }
                     label="Use contact email"
@@ -256,7 +304,7 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
                   <TextField
                     fullWidth
                     label="Company Phone"
-                    {...registerPhoneInput(register, 'companyInfo.phone')}
+                    {...registerPhoneInput(register, "companyInfo.phone")}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -266,7 +314,7 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
                     type="email"
                     error={!!errors.companyInfo?.email}
                     helperText={errors.companyInfo?.email?.message}
-                    {...register('companyInfo.email')}
+                    {...register("companyInfo.email")}
                   />
                 </Grid>
               </Grid>
@@ -278,7 +326,7 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
                   <FormControlLabel
                     control={
                       <Checkbox
-                        {...register('companyInfo.sameAddressAsContact')}
+                        {...register("companyInfo.sameAddressAsContact")}
                       />
                     }
                     label="Use contact address"
@@ -288,56 +336,56 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
                   <TextField
                     fullWidth
                     label="Address Line 1"
-                    {...register('companyInfo.addressLine1')}
+                    {...register("companyInfo.addressLine1")}
                   />
                 </Grid>
                 <Grid size={12}>
                   <TextField
                     fullWidth
                     label="Address Line 2"
-                    {...register('companyInfo.addressLine2')}
+                    {...register("companyInfo.addressLine2")}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="City"
-                    {...register('companyInfo.city')}
+                    {...register("companyInfo.city")}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="County"
-                    {...register('companyInfo.county')}
+                    {...register("companyInfo.county")}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="State / Region"
-                    {...register('companyInfo.region')}
+                    {...register("companyInfo.region")}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Postal Code"
-                    {...register('companyInfo.postalCode')}
+                    {...register("companyInfo.postalCode")}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Country"
-                    {...register('companyInfo.country')}
+                    {...register("companyInfo.country")}
                   />
                 </Grid>
                 <Grid size={12}>
                   <FormControlLabel
                     control={
                       <Checkbox
-                        {...register('companyInfo.sameCoordinatesAsContact')}
+                        {...register("companyInfo.sameCoordinatesAsContact")}
                       />
                     }
                     label="Use contact coordinates"
@@ -350,7 +398,7 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
                     type="number"
                     error={!!errors.companyInfo?.latitude}
                     helperText={errors.companyInfo?.latitude?.message}
-                    {...register('companyInfo.latitude')}
+                    {...register("companyInfo.latitude")}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -360,7 +408,7 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
                     type="number"
                     error={!!errors.companyInfo?.longitude}
                     helperText={errors.companyInfo?.longitude?.message}
-                    {...register('companyInfo.longitude')}
+                    {...register("companyInfo.longitude")}
                   />
                 </Grid>
               </Grid>
@@ -372,7 +420,7 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
                 label="Company Notes"
                 multiline
                 rows={3}
-                {...register('companyInfo.notes')}
+                {...register("companyInfo.notes")}
               />
             </ContactFormSection>
           </>
@@ -383,19 +431,19 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
 };
 
 const addressFields = [
-  'addressLine1',
-  'addressLine2',
-  'city',
-  'county',
-  'region',
-  'postalCode',
-  'country',
+  "addressLine1",
+  "addressLine2",
+  "city",
+  "county",
+  "region",
+  "postalCode",
+  "country",
 ];
-const coordinateFields = ['latitude', 'longitude'];
+const coordinateFields = ["latitude", "longitude"];
 
 function copyFields(setValue, targetPrefix, source, fields) {
   fields.forEach((field) => {
-    setValue(`${targetPrefix}.${field}`, source?.[field] ?? '', {
+    setValue(`${targetPrefix}.${field}`, source?.[field] ?? "", {
       shouldDirty: true,
     });
   });
@@ -404,7 +452,7 @@ function copyFields(setValue, targetPrefix, source, fields) {
 function companyLabel(company) {
   return [company.name, company.city, company.region]
     .filter(Boolean)
-    .join(' - ');
+    .join(" - ");
 }
 
 export default CompanyInfoForm;

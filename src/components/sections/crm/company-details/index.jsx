@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
@@ -20,16 +20,16 @@ import {
   Stack,
   TextField,
   Typography,
-} from '@mui/material';
-import Grid from '@mui/material/Grid';
-import { useRouter } from 'next/navigation';
-import paths from 'routes/paths';
-import { createClient } from 'lib/supabase/client';
-import { useAuth } from 'providers/AuthProvider';
-import IconifyIcon from 'components/base/IconifyIcon';
-import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
-import CrmFilesPanel from 'components/sections/crm/shared/CrmFilesPanel';
-import { calculateCommission } from 'components/sections/crm/shared/commission';
+} from "@mui/material";
+import Grid from "@mui/material/Grid";
+import { useRouter } from "next/navigation";
+import paths from "routes/paths";
+import { createClient } from "lib/supabase/client";
+import { useAuth } from "providers/AuthProvider";
+import IconifyIcon from "components/base/IconifyIcon";
+import PageHeader from "components/sections/ecommerce/admin/common/PageHeader";
+import CrmFilesPanel from "components/sections/crm/shared/CrmFilesPanel";
+import { calculateCommission } from "components/sections/crm/shared/commission";
 import {
   activityDirections,
   activityTypes,
@@ -37,21 +37,21 @@ import {
   equipmentStatuses,
   formatLeadStatus,
   leadStatuses,
-} from 'components/sections/crm/constants';
-import DuplicateRecordDialog from 'components/sections/crm/shared/DuplicateRecordDialog';
-import { findPotentialDuplicates } from 'components/sections/crm/shared/duplicateRecords';
+} from "components/sections/crm/constants";
+import DuplicateRecordDialog from "components/sections/crm/shared/DuplicateRecordDialog";
+import { findPotentialDuplicates } from "components/sections/crm/shared/duplicateRecords";
 import {
   cleanPhone,
   formatPhone,
   handlePhoneChange,
-} from 'components/sections/crm/shared/phoneFormat';
+} from "components/sections/crm/shared/phoneFormat";
 
-const equipmentConditions = ['new', 'used', 'either'];
+const equipmentConditions = ["new", "used", "either"];
 const equipmentAvailability = [
-  'availability_unknown',
-  'in_stock',
-  'pending',
-  'unavailable',
+  "availability_unknown",
+  "in_stock",
+  "pending",
+  "unavailable",
 ];
 
 const CompanyDetails = ({ companyId }) => {
@@ -73,7 +73,7 @@ const CompanyDetails = ({ companyId }) => {
 
   const fetchDetails = async () => {
     if (!companyId) {
-      setError('Company ID is missing.');
+      setError("Company ID is missing.");
       setIsLoading(false);
       return;
     }
@@ -89,38 +89,38 @@ const CompanyDetails = ({ companyId }) => {
       notesResult,
       locationsResult,
     ] = await Promise.all([
-      supabase.from('companies').select('*').eq('id', companyId).single(),
+      supabase.from("companies").select("*").eq("id", companyId).single(),
       supabase
-        .from('contacts')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('last_name', { ascending: true }),
+        .from("contacts")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("last_name", { ascending: true }),
       supabase
-        .from('leads')
-        .select('*, contacts(id, first_name, last_name)')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false }),
+        .from("leads")
+        .select("*, contacts(id, first_name, last_name)")
+        .eq("company_id", companyId)
+        .order("created_at", { ascending: false }),
       supabase
-        .from('deals')
+        .from("deals")
         .select(
-          '*, contacts(id, first_name, last_name), leads(id, status, source)',
+          "*, contacts(id, first_name, last_name), leads(id, status, source)",
         )
-        .eq('company_id', companyId)
-        .order('updated_at', { ascending: false }),
+        .eq("company_id", companyId)
+        .order("updated_at", { ascending: false }),
       supabase
-        .from('activities')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('occurred_at', { ascending: false }),
+        .from("activities")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("occurred_at", { ascending: false }),
       supabase
-        .from('notes')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false }),
+        .from("notes")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("created_at", { ascending: false }),
       supabase
-        .from('equipment_locations')
-        .select('id, name, city, region')
-        .order('name', { ascending: true }),
+        .from("equipment_locations")
+        .select("id, name, city, region")
+        .order("name", { ascending: true }),
     ]);
 
     const queryError = [
@@ -143,18 +143,18 @@ const CompanyDetails = ({ companyId }) => {
     const leadIds = (leadsResult.data || []).map((lead) => lead.id);
     const dealIds = (dealsResult.data || []).map((deal) => deal.id);
     const equipmentFilters = [
-      contactIds.length ? `contact_id.in.(${contactIds.join(',')})` : null,
-      leadIds.length ? `lead_id.in.(${leadIds.join(',')})` : null,
-      dealIds.length ? `deal_id.in.(${dealIds.join(',')})` : null,
+      contactIds.length ? `contact_id.in.(${contactIds.join(",")})` : null,
+      leadIds.length ? `lead_id.in.(${leadIds.join(",")})` : null,
+      dealIds.length ? `deal_id.in.(${dealIds.join(",")})` : null,
     ].filter(Boolean);
 
     let equipmentResult = { data: [], error: null };
     if (equipmentFilters.length) {
       equipmentResult = await supabase
-        .from('equipment_interests')
-        .select('*, equipment_locations(id, name, city, region)')
-        .or(equipmentFilters.join(','))
-        .order('created_at', { ascending: false });
+        .from("equipment_interests")
+        .select("*, equipment_locations(id, name, city, region)")
+        .or(equipmentFilters.join(","))
+        .order("created_at", { ascending: false });
     }
 
     if (equipmentResult.error) {
@@ -181,61 +181,61 @@ const CompanyDetails = ({ companyId }) => {
     const channel = supabase
       .channel(`agrm-company-${companyId}`)
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'companies',
+          event: "*",
+          schema: "public",
+          table: "companies",
           filter: `id=eq.${companyId}`,
         },
         () => fetchDetails(),
       )
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'contacts',
+          event: "*",
+          schema: "public",
+          table: "contacts",
           filter: `company_id=eq.${companyId}`,
         },
         () => fetchDetails(),
       )
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'leads',
+          event: "*",
+          schema: "public",
+          table: "leads",
           filter: `company_id=eq.${companyId}`,
         },
         () => fetchDetails(),
       )
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'deals',
+          event: "*",
+          schema: "public",
+          table: "deals",
           filter: `company_id=eq.${companyId}`,
         },
         () => fetchDetails(),
       )
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'activities',
+          event: "*",
+          schema: "public",
+          table: "activities",
           filter: `company_id=eq.${companyId}`,
         },
         () => fetchDetails(),
       )
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'notes',
+          event: "*",
+          schema: "public",
+          table: "notes",
           filter: `company_id=eq.${companyId}`,
         },
         () => fetchDetails(),
@@ -263,8 +263,8 @@ const CompanyDetails = ({ companyId }) => {
         ...notes.map((note) => ({
           id: `note-${note.id}`,
           noteId: note.id,
-          type: 'note',
-          title: note.pinned ? 'Pinned note' : 'Note',
+          type: "note",
+          title: note.pinned ? "Pinned note" : "Note",
           body: note.body,
           date: note.created_at,
         })),
@@ -273,7 +273,7 @@ const CompanyDetails = ({ companyId }) => {
   );
 
   const openDeals = deals.filter(
-    (deal) => deal.stage !== 'closed' && deal.stage !== 'lost',
+    (deal) => deal.stage !== "closed" && deal.stage !== "lost",
   );
   const pipelineValue = openDeals.reduce(
     (sum, deal) => sum + Number(deal.amount || 0),
@@ -284,10 +284,11 @@ const CompanyDetails = ({ companyId }) => {
     0,
   );
   const pipelineCommission = openDeals.reduce(
-    (sum, deal) => sum + calculateCommission(deal.margin, profile?.commission_rate),
+    (sum, deal) =>
+      sum + calculateCommission(deal.margin, profile?.commission_rate),
     0,
   );
-  const companyInitial = (company?.name || 'Company')
+  const companyInitial = (company?.name || "Company")
     .trim()
     .charAt(0)
     .toUpperCase();
@@ -308,9 +309,9 @@ const CompanyDetails = ({ companyId }) => {
         <PageHeader
           title={null}
           breadcrumb={[
-            { label: 'Home', url: paths.crm },
-            { label: 'Contacts', url: paths.contacts },
-            { label: 'Company detail', active: true },
+            { label: "Home", url: paths.crm },
+            { label: "Contacts", url: paths.contacts },
+            { label: "Company detail", active: true },
           ]}
         />
       </Grid>
@@ -318,38 +319,38 @@ const CompanyDetails = ({ companyId }) => {
       <Grid size={12}>
         <Paper sx={{ p: { xs: 3, md: 4 } }}>
           <Stack
-            direction={{ xs: 'column', lg: 'row' }}
+            direction={{ xs: "column", lg: "row" }}
             spacing={3}
             sx={{
-              justifyContent: 'space-between',
-              alignItems: { xs: 'flex-start', lg: 'center' },
+              justifyContent: "space-between",
+              alignItems: { xs: "flex-start", lg: "center" },
             }}
           >
             <Stack direction="column" spacing={2} sx={{ minWidth: 0 }}>
               <Stack
-                direction={{ xs: 'column', sm: 'row' }}
+                direction={{ xs: "column", sm: "row" }}
                 spacing={2}
-                sx={{ alignItems: { sm: 'center' } }}
+                sx={{ alignItems: { sm: "center" } }}
               >
                 <Box
                   sx={{
                     width: 64,
                     height: 64,
-                    borderRadius: '50%',
-                    bgcolor: 'primary.lighter',
-                    color: 'primary.main',
-                    display: 'grid',
-                    placeItems: 'center',
+                    borderRadius: "50%",
+                    bgcolor: "primary.lighter",
+                    color: "primary.main",
+                    display: "grid",
+                    placeItems: "center",
                     flexShrink: 0,
                   }}
                 >
                   <Typography variant="h5">{companyInitial}</Typography>
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="h4" sx={{ overflowWrap: 'anywhere' }}>
+                  <Typography variant="h4" sx={{ overflowWrap: "anywhere" }}>
                     {company.name}
                   </Typography>
-                  <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                  <Typography variant="body1" sx={{ color: "text.secondary" }}>
                     {[
                       company.city,
                       company.county,
@@ -357,13 +358,13 @@ const CompanyDetails = ({ companyId }) => {
                       company.postal_code,
                     ]
                       .filter(Boolean)
-                      .join(', ') || 'Company account'}
+                      .join(", ") || "Company account"}
                   </Typography>
                   <Stack
                     direction="row"
                     spacing={1}
                     useFlexGap
-                    sx={{ flexWrap: 'wrap', mt: 1 }}
+                    sx={{ flexWrap: "wrap", mt: 1 }}
                   >
                     {company.company_type && (
                       <Chip
@@ -404,16 +405,16 @@ const CompanyDetails = ({ companyId }) => {
                 direction="row"
                 spacing={0.75}
                 useFlexGap
-                sx={{ flexWrap: 'wrap' }}
+                sx={{ flexWrap: "wrap" }}
               >
                 <Chip
-                  label={`${contacts.length} contact${contacts.length === 1 ? '' : 's'}`}
+                  label={`${contacts.length} contact${contacts.length === 1 ? "" : "s"}`}
                   size="small"
                   variant="soft"
                   color="neutral"
                 />
                 <Chip
-                  label={`${openDeals.length} open deal${openDeals.length === 1 ? '' : 's'}`}
+                  label={`${openDeals.length} open deal${openDeals.length === 1 ? "" : "s"}`}
                   size="small"
                   variant="soft"
                   color="neutral"
@@ -443,7 +444,7 @@ const CompanyDetails = ({ companyId }) => {
               direction="row"
               spacing={1}
               useFlexGap
-              sx={{ flexWrap: 'wrap' }}
+              sx={{ flexWrap: "wrap" }}
             >
               {company.website && (
                 <Button
@@ -461,7 +462,7 @@ const CompanyDetails = ({ companyId }) => {
               )}
               <Button
                 variant="contained"
-                onClick={() => setDialog('equipment')}
+                onClick={() => setDialog("equipment")}
                 startIcon={
                   <IconifyIcon icon="material-symbols:agriculture-outline-rounded" />
                 }
@@ -471,7 +472,7 @@ const CompanyDetails = ({ companyId }) => {
               <Button
                 variant="soft"
                 color="neutral"
-                onClick={() => setDialog('activity')}
+                onClick={() => setDialog("activity")}
                 startIcon={
                   <IconifyIcon icon="material-symbols:add-call-outline-rounded" />
                 }
@@ -492,60 +493,60 @@ const CompanyDetails = ({ companyId }) => {
                 anchorEl={actionMenuAnchor}
                 open={Boolean(actionMenuAnchor)}
                 onClose={() => setActionMenuAnchor(null)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
               >
-                <MenuItem onClick={() => handleMoreAction('contact')}>
+                <MenuItem onClick={() => handleMoreAction("contact")}>
                   <Stack
                     direction="row"
                     spacing={1}
-                    sx={{ alignItems: 'center' }}
+                    sx={{ alignItems: "center" }}
                   >
                     <IconifyIcon icon="material-symbols:person-add-outline-rounded" />
                     <span>Add Contact</span>
                   </Stack>
                 </MenuItem>
-                <MenuItem onClick={() => handleMoreAction('lead')}>
+                <MenuItem onClick={() => handleMoreAction("lead")}>
                   <Stack
                     direction="row"
                     spacing={1}
-                    sx={{ alignItems: 'center' }}
+                    sx={{ alignItems: "center" }}
                   >
                     <IconifyIcon icon="material-symbols:add-notes-outline-rounded" />
                     <span>Add Lead</span>
                   </Stack>
                 </MenuItem>
-                <MenuItem onClick={() => handleMoreAction('note')}>
+                <MenuItem onClick={() => handleMoreAction("note")}>
                   <Stack
                     direction="row"
                     spacing={1}
-                    sx={{ alignItems: 'center' }}
+                    sx={{ alignItems: "center" }}
                   >
                     <IconifyIcon icon="material-symbols:note-add-outline-rounded" />
                     <span>Add Note</span>
                   </Stack>
                 </MenuItem>
-                <MenuItem onClick={() => handleMoreAction('edit')}>
+                <MenuItem onClick={() => handleMoreAction("edit")}>
                   <Stack
                     direction="row"
                     spacing={1}
-                    sx={{ alignItems: 'center' }}
+                    sx={{ alignItems: "center" }}
                   >
                     <IconifyIcon icon="material-symbols:edit-outline-rounded" />
                     <span>Edit</span>
                   </Stack>
                 </MenuItem>
-                <MenuItem onClick={() => handleMoreAction('delete')}>
+                <MenuItem onClick={() => handleMoreAction("delete")}>
                   <Stack
                     direction="row"
                     spacing={1}
-                    sx={{ alignItems: 'center' }}
+                    sx={{ alignItems: "center" }}
                   >
                     <IconifyIcon
                       icon="material-symbols:delete-outline-rounded"
-                      sx={{ color: 'error.main' }}
+                      sx={{ color: "error.main" }}
                     />
-                    <Box component="span" sx={{ color: 'error.main' }}>
+                    <Box component="span" sx={{ color: "error.main" }}>
                       Delete
                     </Box>
                   </Stack>
@@ -564,6 +565,22 @@ const CompanyDetails = ({ companyId }) => {
           >
             <InfoRow label="Type" value={formatEnum(company.company_type)} />
             <InfoRow label="Account Number" value={company.account_number} />
+            <InfoRow
+              label="EIN"
+              value={
+                company.ein_last4
+                  ? `Encrypted, ending ${company.ein_last4}`
+                  : null
+              }
+            />
+            <InfoRow
+              label="Ag Tax-Exempt Number"
+              value={
+                company.ag_tax_exempt_last4
+                  ? `Encrypted, ending ${company.ag_tax_exempt_last4}`
+                  : null
+              }
+            />
             <InfoRow label="Email" value={company.email} />
             <InfoRow label="Phone" value={formatPhone(company.phone)} />
             <InfoRow label="Website" value={company.website} />
@@ -571,7 +588,7 @@ const CompanyDetails = ({ companyId }) => {
               label="Address"
               value={[company.address_line1, company.address_line2]
                 .filter(Boolean)
-                .join(', ')}
+                .join(", ")}
             />
             <InfoRow
               label="Location"
@@ -582,17 +599,17 @@ const CompanyDetails = ({ companyId }) => {
                 company.postal_code,
               ]
                 .filter(Boolean)
-                .join(', ')}
+                .join(", ")}
             />
             <InfoRow label="Country" value={company.country} />
             {company.notes && (
               <Typography
                 variant="body2"
                 sx={{
-                  color: 'text.secondary',
+                  color: "text.secondary",
                   mt: 2,
-                  whiteSpace: 'pre-wrap',
-                  overflowWrap: 'anywhere',
+                  whiteSpace: "pre-wrap",
+                  overflowWrap: "anywhere",
                 }}
               >
                 {company.notes}
@@ -619,14 +636,14 @@ const CompanyDetails = ({ companyId }) => {
       </Grid>
 
       <AddContactDialog
-        open={dialog === 'contact'}
+        open={dialog === "contact"}
         company={company}
         onClose={() => setDialog(null)}
         onSaved={fetchDetails}
         supabase={supabase}
       />
       <EditCompanyDialog
-        open={dialog === 'edit'}
+        open={dialog === "edit"}
         company={company}
         contacts={contacts}
         onClose={() => setDialog(null)}
@@ -634,7 +651,7 @@ const CompanyDetails = ({ companyId }) => {
         supabase={supabase}
       />
       <AddLeadDialog
-        open={dialog === 'lead'}
+        open={dialog === "lead"}
         company={company}
         contacts={contacts}
         onClose={() => setDialog(null)}
@@ -642,21 +659,21 @@ const CompanyDetails = ({ companyId }) => {
         supabase={supabase}
       />
       <AddNoteDialog
-        open={dialog === 'note'}
+        open={dialog === "note"}
         company={company}
         onClose={() => setDialog(null)}
         onSaved={fetchDetails}
         supabase={supabase}
       />
       <AddActivityDialog
-        open={dialog === 'activity'}
+        open={dialog === "activity"}
         company={company}
         onClose={() => setDialog(null)}
         onSaved={fetchDetails}
         supabase={supabase}
       />
       <AddEquipmentDialog
-        open={dialog === 'equipment'}
+        open={dialog === "equipment"}
         contacts={contacts}
         leads={leads}
         deals={deals}
@@ -666,7 +683,7 @@ const CompanyDetails = ({ companyId }) => {
         supabase={supabase}
       />
       <DeleteCompanyDialog
-        open={dialog === 'delete'}
+        open={dialog === "delete"}
         company={company}
         supabase={supabase}
         onClose={() => setDialog(null)}
@@ -689,8 +706,8 @@ function InfoCard({ title, icon, children }) {
 
 function SectionTitle({ title, icon }) {
   return (
-    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
-      <IconifyIcon icon={icon} sx={{ color: 'text.secondary', fontSize: 22 }} />
+    <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 2 }}>
+      <IconifyIcon icon={icon} sx={{ color: "text.secondary", fontSize: 22 }} />
       <Typography variant="h6">{title}</Typography>
     </Stack>
   );
@@ -701,16 +718,16 @@ function InfoRow({ label, value }) {
     <Stack
       direction="row"
       spacing={2}
-      sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}
+      sx={{ justifyContent: "space-between", alignItems: "flex-start" }}
     >
-      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+      <Typography variant="body2" sx={{ color: "text.secondary" }}>
         {label}
       </Typography>
       <Typography
         variant="body2"
-        sx={{ textAlign: 'right', fontWeight: 600, overflowWrap: 'anywhere' }}
+        sx={{ textAlign: "right", fontWeight: 600, overflowWrap: "anywhere" }}
       >
-        {value || '-'}
+        {value || "-"}
       </Typography>
     </Stack>
   );
@@ -737,7 +754,7 @@ function ContactsCard({ contacts }) {
                 formatPhone(contact.mobile_phone || contact.phone),
               ]
                 .filter(Boolean)
-                .join(' · ')}
+                .join(" · ")}
             />
           ))
         ) : (
@@ -762,7 +779,7 @@ function LeadsCard({ leads }) {
               key={lead.id}
               href={paths.leadDetails(lead.id)}
               title={leadDisplayName(lead)}
-              subtitle={`${lead.source || 'No source'} · Budget ${formatCurrency(lead.estimated_budget)} · Follow-up ${formatDateTime(lead.next_follow_up_at)}`}
+              subtitle={`${lead.source || "No source"} · Budget ${formatCurrency(lead.estimated_budget)} · Follow-up ${formatDateTime(lead.next_follow_up_at)}`}
               chip={formatLeadStatus(lead.status)}
             />
           ))
@@ -816,14 +833,14 @@ function EquipmentCard({ equipmentInterests }) {
               interest.model,
             ]
               .filter(Boolean)
-              .join(' ');
+              .join(" ");
             const budget =
               [
                 formatCurrency(interest.price_min),
                 formatCurrency(interest.price_max),
               ]
-                .filter((value) => value !== '-')
-                .join(' - ') || '-';
+                .filter((value) => value !== "-")
+                .join(" - ") || "-";
             return (
               <RecordRow
                 key={interest.id}
@@ -834,9 +851,9 @@ function EquipmentCard({ equipmentInterests }) {
                   locationLabel(interest.equipment_locations),
                   `Budget ${budget}`,
                 ]
-                  .filter((value) => value && value !== 'No Location')
-                  .join(' · ')}
-                chip={interest.trade_in ? 'Trade-in' : null}
+                  .filter((value) => value && value !== "No Location")
+                  .join(" · ")}
+                chip={interest.trade_in ? "Trade-in" : null}
               />
             );
           })
@@ -853,9 +870,9 @@ function TimelineCard({ items, supabase, onSaved }) {
 
   const handleComplete = async (activityId) => {
     const { error } = await supabase
-      .from('activities')
+      .from("activities")
       .update({ completed_at: new Date().toISOString() })
-      .eq('id', activityId);
+      .eq("id", activityId);
     if (!error) onSaved();
   };
 
@@ -871,15 +888,15 @@ function TimelineCard({ items, supabase, onSaved }) {
             items.map((item) => (
               <Box key={item.id}>
                 <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
+                  direction={{ xs: "column", sm: "row" }}
                   spacing={1}
-                  sx={{ justifyContent: 'space-between', mb: 0.5 }}
+                  sx={{ justifyContent: "space-between", mb: 0.5 }}
                 >
                   <Stack
                     direction="row"
                     spacing={1}
                     useFlexGap
-                    sx={{ flexWrap: 'wrap', alignItems: 'center' }}
+                    sx={{ flexWrap: "wrap", alignItems: "center" }}
                   >
                     <Typography variant="subtitle2">{item.title}</Typography>
                     {item.completedAt && (
@@ -894,7 +911,7 @@ function TimelineCard({ items, supabase, onSaved }) {
                   <Stack
                     direction="row"
                     spacing={1}
-                    sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+                    sx={{ alignSelf: { xs: "flex-start", sm: "center" } }}
                   >
                     <Chip
                       label={formatEnum(item.type)}
@@ -925,18 +942,18 @@ function TimelineCard({ items, supabase, onSaved }) {
                   <Typography
                     variant="body2"
                     sx={{
-                      color: 'text.secondary',
+                      color: "text.secondary",
                       mb: 0.5,
-                      whiteSpace: 'pre-wrap',
-                      overflowWrap: 'anywhere',
+                      whiteSpace: "pre-wrap",
+                      overflowWrap: "anywhere",
                     }}
                   >
                     {item.body}
                   </Typography>
                 )}
-                <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                <Typography variant="caption" sx={{ color: "text.disabled" }}>
                   {formatDateTime(item.date)}
-                  {item.dueAt ? ` · Due ${formatDateTime(item.dueAt)}` : ''}
+                  {item.dueAt ? ` · Due ${formatDateTime(item.dueAt)}` : ""}
                 </Typography>
               </Box>
             ))
@@ -970,12 +987,12 @@ function TimelineCard({ items, supabase, onSaved }) {
 }
 
 function EditNoteDialog({ open, note, onClose, onSaved, supabase }) {
-  const [body, setBody] = useState('');
+  const [body, setBody] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    if (open) setBody(note?.body || '');
+    if (open) setBody(note?.body || "");
   }, [note, open]);
 
   const handleSave = async () => {
@@ -983,22 +1000,22 @@ function EditNoteDialog({ open, note, onClose, onSaved, supabase }) {
 
     setIsSaving(true);
     const { error } = await supabase
-      .from('notes')
+      .from("notes")
       .update({ body })
-      .eq('id', note.noteId);
+      .eq("id", note.noteId);
     setIsSaving(false);
 
     if (!error) onSaved();
   };
 
   const handleDelete = async () => {
-    if (!note?.noteId || !window.confirm('Delete this note?')) return;
+    if (!note?.noteId || !window.confirm("Delete this note?")) return;
 
     setIsDeleting(true);
     const { error } = await supabase
-      .from('notes')
+      .from("notes")
       .delete()
-      .eq('id', note.noteId);
+      .eq("id", note.noteId);
     setIsDeleting(false);
 
     if (!error) onSaved();
@@ -1018,7 +1035,7 @@ function EditNoteDialog({ open, note, onClose, onSaved, supabase }) {
           sx={{ mt: 1 }}
         />
       </DialogContent>
-      <DialogActions sx={{ justifyContent: 'space-between' }}>
+      <DialogActions sx={{ justifyContent: "space-between" }}>
         <Button
           color="error"
           variant="soft"
@@ -1042,12 +1059,12 @@ function EditNoteDialog({ open, note, onClose, onSaved, supabase }) {
 
 function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
   const [form, setForm] = useState({
-    type: 'call',
-    direction: 'outbound',
-    subject: '',
-    body: '',
-    occurredAt: '',
-    dueAt: '',
+    type: "call",
+    direction: "outbound",
+    subject: "",
+    body: "",
+    occurredAt: "",
+    dueAt: "",
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -1055,10 +1072,10 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
   useEffect(() => {
     if (open) {
       setForm({
-        type: activity?.type || 'call',
-        direction: activity?.direction || 'outbound',
-        subject: activity?.title || '',
-        body: activity?.body || '',
+        type: activity?.type || "call",
+        direction: activity?.direction || "outbound",
+        subject: activity?.title || "",
+        body: activity?.body || "",
         occurredAt: toDateTimeLocal(activity?.date),
         dueAt: toDateTimeLocal(activity?.dueAt),
       });
@@ -1070,7 +1087,7 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
 
     setIsSaving(true);
     const { error } = await supabase
-      .from('activities')
+      .from("activities")
       .update({
         type: form.type,
         direction: form.direction,
@@ -1081,21 +1098,21 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
           : new Date().toISOString(),
         due_at: form.dueAt ? new Date(form.dueAt).toISOString() : null,
       })
-      .eq('id', activity.activityId);
+      .eq("id", activity.activityId);
     setIsSaving(false);
 
     if (!error) onSaved();
   };
 
   const handleDelete = async () => {
-    if (!activity?.activityId || !window.confirm('Delete this activity?'))
+    if (!activity?.activityId || !window.confirm("Delete this activity?"))
       return;
 
     setIsDeleting(true);
     const { error } = await supabase
-      .from('activities')
+      .from("activities")
       .delete()
-      .eq('id', activity.activityId);
+      .eq("id", activity.activityId);
     setIsDeleting(false);
 
     if (!error) onSaved();
@@ -1106,12 +1123,12 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
       <DialogTitle>Edit Activity</DialogTitle>
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               select
               label="Type"
               value={form.type}
-              onChange={handleField(setForm, 'type')}
+              onChange={handleField(setForm, "type")}
               fullWidth
             >
               {activityTypes.map((type) => (
@@ -1124,7 +1141,7 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
               select
               label="Direction"
               value={form.direction}
-              onChange={handleField(setForm, 'direction')}
+              onChange={handleField(setForm, "direction")}
               fullWidth
             >
               {activityDirections.map((direction) => (
@@ -1137,23 +1154,23 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
           <TextField
             label="Subject"
             value={form.subject}
-            onChange={handleField(setForm, 'subject')}
+            onChange={handleField(setForm, "subject")}
             fullWidth
           />
           <TextField
             label="Details"
             value={form.body}
-            onChange={handleField(setForm, 'body')}
+            onChange={handleField(setForm, "body")}
             fullWidth
             multiline
             rows={3}
           />
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Occurred At"
               type="datetime-local"
               value={form.occurredAt}
-              onChange={handleField(setForm, 'occurredAt')}
+              onChange={handleField(setForm, "occurredAt")}
               slotProps={{ inputLabel: { shrink: true } }}
               fullWidth
             />
@@ -1161,14 +1178,14 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
               label="Due At"
               type="datetime-local"
               value={form.dueAt}
-              onChange={handleField(setForm, 'dueAt')}
+              onChange={handleField(setForm, "dueAt")}
               slotProps={{ inputLabel: { shrink: true } }}
               fullWidth
             />
           </Stack>
         </Stack>
       </DialogContent>
-      <DialogActions sx={{ justifyContent: 'space-between' }}>
+      <DialogActions sx={{ justifyContent: "space-between" }}>
         <Button
           color="error"
           variant="soft"
@@ -1192,14 +1209,14 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
 
 function RecordRow({ title, subtitle, chip, href }) {
   return (
-    <Box sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 2 }}>
+    <Box sx={{ p: 2, border: 1, borderColor: "divider", borderRadius: 2 }}>
       <Stack
-        direction={{ xs: 'column', sm: 'row' }}
+        direction={{ xs: "column", sm: "row" }}
         spacing={1}
-        sx={{ justifyContent: 'space-between' }}
+        sx={{ justifyContent: "space-between" }}
       >
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
+          <Typography variant="subtitle2" sx={{ overflowWrap: "anywhere" }}>
             {href ? (
               <Link href={href} underline="hover" color="text.primary">
                 {title}
@@ -1210,9 +1227,9 @@ function RecordRow({ title, subtitle, chip, href }) {
           </Typography>
           <Typography
             variant="body2"
-            sx={{ color: 'text.secondary', overflowWrap: 'anywhere' }}
+            sx={{ color: "text.secondary", overflowWrap: "anywhere" }}
           >
-            {subtitle || '-'}
+            {subtitle || "-"}
           </Typography>
         </Box>
         {chip && (
@@ -1221,7 +1238,7 @@ function RecordRow({ title, subtitle, chip, href }) {
             size="small"
             variant="soft"
             color="primary"
-            sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+            sx={{ alignSelf: { xs: "flex-start", sm: "center" } }}
           />
         )}
       </Stack>
@@ -1249,7 +1266,7 @@ function EditCompanyDialog({
     if (open) {
       setForm({
         ...companyToForm(company),
-        copyContactId: contacts[0]?.id || '',
+        copyContactId: contacts[0]?.id || "",
       });
       setError(null);
     }
@@ -1257,7 +1274,7 @@ function EditCompanyDialog({
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      setError('Company name is required.');
+      setError("Company name is required.");
       return;
     }
 
@@ -1265,7 +1282,7 @@ function EditCompanyDialog({
     setError(null);
 
     const { error: updateError } = await supabase
-      .from('companies')
+      .from("companies")
       .update({
         name: form.name.trim(),
         company_type: cleanText(form.companyType),
@@ -1279,19 +1296,28 @@ function EditCompanyDialog({
         county: cleanText(form.county),
         region: cleanText(form.region),
         postal_code: cleanText(form.postalCode),
-        country: cleanText(form.country) || 'US',
+        country: cleanText(form.country) || "US",
         latitude: cleanNumber(form.latitude),
         longitude: cleanNumber(form.longitude),
         notes: cleanText(form.notes),
       })
-      .eq('id', company.id);
-
-    setIsSaving(false);
+      .eq("id", company.id);
 
     if (updateError) {
+      setIsSaving(false);
       setError(updateError.message);
       return;
     }
+
+    try {
+      await saveCompanySensitiveFields(company.id, form);
+    } catch (sensitiveError) {
+      setIsSaving(false);
+      setError(sensitiveError.message);
+      return;
+    }
+
+    setIsSaving(false);
 
     onSaved();
     onClose();
@@ -1307,13 +1333,13 @@ function EditCompanyDialog({
       ...prev,
       copyContactId,
       ...(prev.sameAccountNumberAsContact
-        ? fieldsFromContact(nextContact, ['accountNumber'])
+        ? fieldsFromContact(nextContact, ["accountNumber"])
         : {}),
       ...(prev.sameEmailAsContact
-        ? fieldsFromContact(nextContact, ['email'])
+        ? fieldsFromContact(nextContact, ["email"])
         : {}),
       ...(prev.samePhoneAsContact
-        ? fieldsFromContact(nextContact, ['phone'])
+        ? fieldsFromContact(nextContact, ["phone"])
         : {}),
       ...(prev.sameAddressAsContact
         ? fieldsFromContact(nextContact, addressFields)
@@ -1339,18 +1365,18 @@ function EditCompanyDialog({
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Company Name"
               value={form.name}
-              onChange={handleField(setForm, 'name')}
+              onChange={handleField(setForm, "name")}
               fullWidth
               required
             />
             <TextField
               label="Company Type"
               value={form.companyType}
-              onChange={handleField(setForm, 'companyType')}
+              onChange={handleField(setForm, "companyType")}
               fullWidth
             />
           </Stack>
@@ -1373,8 +1399,8 @@ function EditCompanyDialog({
             control={
               <Checkbox
                 checked={form.sameAccountNumberAsContact}
-                onChange={handleUseContactField('sameAccountNumberAsContact', [
-                  'accountNumber',
+                onChange={handleUseContactField("sameAccountNumberAsContact", [
+                  "accountNumber",
                 ])}
                 disabled={!selectedCopyContact}
               />
@@ -1384,16 +1410,42 @@ function EditCompanyDialog({
           <TextField
             label="Account Number"
             value={form.accountNumber}
-            onChange={handleField(setForm, 'accountNumber')}
+            onChange={handleField(setForm, "accountNumber")}
             fullWidth
           />
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              label="Employer Identification Number (EIN)"
+              type="password"
+              value={form.ein}
+              onChange={handleField(setForm, "ein")}
+              helperText={
+                company?.ein_last4
+                  ? `Currently encrypted, ending ${company.ein_last4}. Enter a new EIN to replace it.`
+                  : "Stored encrypted; enter 9 digits."
+              }
+              fullWidth
+            />
+            <TextField
+              label="Ag Tax-Exempt Number"
+              type="password"
+              value={form.agTaxExemptNumber}
+              onChange={handleField(setForm, "agTaxExemptNumber")}
+              helperText={
+                company?.ag_tax_exempt_last4
+                  ? `Currently encrypted, ending ${company.ag_tax_exempt_last4}. Enter a new number to replace it.`
+                  : "Stored encrypted; only the last four is shown later."
+              }
+              fullWidth
+            />
+          </Stack>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <FormControlLabel
               control={
                 <Checkbox
                   checked={form.samePhoneAsContact}
-                  onChange={handleUseContactField('samePhoneAsContact', [
-                    'phone',
+                  onChange={handleUseContactField("samePhoneAsContact", [
+                    "phone",
                   ])}
                   disabled={!selectedCopyContact}
                 />
@@ -1404,8 +1456,8 @@ function EditCompanyDialog({
               control={
                 <Checkbox
                   checked={form.sameEmailAsContact}
-                  onChange={handleUseContactField('sameEmailAsContact', [
-                    'email',
+                  onChange={handleUseContactField("sameEmailAsContact", [
+                    "email",
                   ])}
                   disabled={!selectedCopyContact}
                 />
@@ -1413,25 +1465,25 @@ function EditCompanyDialog({
               label="Use contact email"
             />
           </Stack>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Website"
               value={form.website}
-              onChange={handleField(setForm, 'website')}
+              onChange={handleField(setForm, "website")}
               fullWidth
             />
             <TextField
               label="Email"
               type="email"
               value={form.email}
-              onChange={handleField(setForm, 'email')}
+              onChange={handleField(setForm, "email")}
               fullWidth
             />
           </Stack>
           <TextField
             label="Phone"
             value={form.phone}
-            onChange={handlePhoneChange(setForm, 'phone')}
+            onChange={handlePhoneChange(setForm, "phone")}
             fullWidth
           />
           <FormControlLabel
@@ -1439,7 +1491,7 @@ function EditCompanyDialog({
               <Checkbox
                 checked={form.sameAddressAsContact}
                 onChange={handleUseContactField(
-                  'sameAddressAsContact',
+                  "sameAddressAsContact",
                   addressFields,
                 )}
                 disabled={!selectedCopyContact}
@@ -1447,17 +1499,17 @@ function EditCompanyDialog({
             }
             label="Use contact address"
           />
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Address Line 1"
               value={form.addressLine1}
-              onChange={handleField(setForm, 'addressLine1')}
+              onChange={handleField(setForm, "addressLine1")}
               fullWidth
             />
             <TextField
               label="Address Line 2"
               value={form.addressLine2}
-              onChange={handleField(setForm, 'addressLine2')}
+              onChange={handleField(setForm, "addressLine2")}
               fullWidth
             />
           </Stack>
@@ -1466,7 +1518,7 @@ function EditCompanyDialog({
               <Checkbox
                 checked={form.sameCoordinatesAsContact}
                 onChange={handleUseContactField(
-                  'sameCoordinatesAsContact',
+                  "sameCoordinatesAsContact",
                   coordinateFields,
                 )}
                 disabled={!selectedCopyContact}
@@ -1474,60 +1526,60 @@ function EditCompanyDialog({
             }
             label="Use contact coordinates"
           />
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="City"
               value={form.city}
-              onChange={handleField(setForm, 'city')}
+              onChange={handleField(setForm, "city")}
               fullWidth
             />
             <TextField
               label="County"
               value={form.county}
-              onChange={handleField(setForm, 'county')}
+              onChange={handleField(setForm, "county")}
               fullWidth
             />
             <TextField
               label="State / Region"
               value={form.region}
-              onChange={handleField(setForm, 'region')}
+              onChange={handleField(setForm, "region")}
               fullWidth
             />
           </Stack>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Postal Code"
               value={form.postalCode}
-              onChange={handleField(setForm, 'postalCode')}
+              onChange={handleField(setForm, "postalCode")}
               fullWidth
             />
             <TextField
               label="Country"
               value={form.country}
-              onChange={handleField(setForm, 'country')}
+              onChange={handleField(setForm, "country")}
               fullWidth
             />
           </Stack>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Latitude"
               type="number"
               value={form.latitude}
-              onChange={handleField(setForm, 'latitude')}
+              onChange={handleField(setForm, "latitude")}
               fullWidth
             />
             <TextField
               label="Longitude"
               type="number"
               value={form.longitude}
-              onChange={handleField(setForm, 'longitude')}
+              onChange={handleField(setForm, "longitude")}
               fullWidth
             />
           </Stack>
           <TextField
             label="Notes"
             value={form.notes}
-            onChange={handleField(setForm, 'notes')}
+            onChange={handleField(setForm, "notes")}
             fullWidth
             multiline
             rows={4}
@@ -1561,9 +1613,9 @@ function DeleteCompanyDialog({ open, company, supabase, onClose, onDeleted }) {
     setError(null);
 
     const { error: deleteError } = await supabase
-      .from('companies')
+      .from("companies")
       .delete()
-      .eq('id', company.id);
+      .eq("id", company.id);
 
     setIsDeleting(false);
 
@@ -1581,7 +1633,7 @@ function DeleteCompanyDialog({ open, company, supabase, onClose, onDeleted }) {
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
             This will delete the company and company-level activity history.
             Contacts, leads, and deals linked to this company will remain, but
             their company link will be removed where the database allows it.
@@ -1607,28 +1659,30 @@ function DeleteCompanyDialog({ open, company, supabase, onClose, onDeleted }) {
 
 function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    title: '',
-    accountNumber: '',
+    firstName: "",
+    lastName: "",
+    title: "",
+    accountNumber: "",
+    socialSecurityNumber: "",
+    agTaxExemptNumber: "",
     sameAccountNumberAsCompany: false,
-    email: '',
+    email: "",
     sameEmailAsCompany: false,
-    phone: '',
+    phone: "",
     samePhoneAsCompany: false,
-    mobilePhone: '',
+    mobilePhone: "",
     sameAddressAsCompany: false,
-    addressLine1: '',
-    addressLine2: '',
-    city: '',
-    county: '',
-    region: '',
-    postalCode: '',
-    country: 'US',
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    county: "",
+    region: "",
+    postalCode: "",
+    country: "US",
     sameCoordinatesAsCompany: false,
-    latitude: '',
-    longitude: '',
-    notes: '',
+    latitude: "",
+    longitude: "",
+    notes: "",
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -1637,28 +1691,30 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
   useEffect(() => {
     if (open) {
       setForm({
-        firstName: '',
-        lastName: '',
-        title: '',
-        accountNumber: '',
+        firstName: "",
+        lastName: "",
+        title: "",
+        accountNumber: "",
+        socialSecurityNumber: "",
+        agTaxExemptNumber: "",
         sameAccountNumberAsCompany: false,
-        email: '',
+        email: "",
         sameEmailAsCompany: false,
-        phone: '',
+        phone: "",
         samePhoneAsCompany: false,
-        mobilePhone: '',
+        mobilePhone: "",
         sameAddressAsCompany: false,
-        addressLine1: '',
-        addressLine2: '',
-        city: '',
-        county: '',
-        region: '',
-        postalCode: '',
-        country: 'US',
+        addressLine1: "",
+        addressLine2: "",
+        city: "",
+        county: "",
+        region: "",
+        postalCode: "",
+        country: "US",
         sameCoordinatesAsCompany: false,
-        latitude: '',
-        longitude: '',
-        notes: '',
+        latitude: "",
+        longitude: "",
+        notes: "",
       });
       setError(null);
     }
@@ -1675,7 +1731,7 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
 
   const handleSave = async (options = {}) => {
     if (!form.firstName.trim() || !form.lastName.trim()) {
-      setError('First name and last name are required.');
+      setError("First name and last name are required.");
       return;
     }
 
@@ -1686,7 +1742,7 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
     if (!options.skipDuplicateCheck) {
       const matches = await findPotentialDuplicates(supabase, [
         {
-          type: 'contact',
+          type: "contact",
           record: {
             firstName: form.firstName,
             lastName: form.lastName,
@@ -1705,33 +1761,57 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
       }
     }
 
-    const { error: insertError } = await supabase.from('contacts').insert({
-      owner_id: userResult.user.id,
-      company_id: company.id,
-      first_name: form.firstName.trim(),
-      last_name: form.lastName.trim(),
-      title: cleanText(form.title),
-      account_number: cleanText(form.accountNumber),
-      email: cleanText(form.email),
-      phone: cleanPhone(form.phone),
-      mobile_phone: cleanPhone(form.mobilePhone),
-      address_line1: cleanText(form.addressLine1),
-      address_line2: cleanText(form.addressLine2),
-      city: cleanText(form.city),
-      county: cleanText(form.county),
-      region: cleanText(form.region),
-      postal_code: cleanText(form.postalCode),
-      country: cleanText(form.country) || 'US',
-      latitude: cleanNumber(form.latitude),
-      longitude: cleanNumber(form.longitude),
-      notes: cleanText(form.notes),
-    });
-    setIsSaving(false);
+    const { data: contact, error: insertError } = await supabase
+      .from("contacts")
+      .insert({
+        owner_id: userResult.user.id,
+        company_id: company.id,
+        first_name: form.firstName.trim(),
+        last_name: form.lastName.trim(),
+        title: cleanText(form.title),
+        account_number: cleanText(form.accountNumber),
+        email: cleanText(form.email),
+        phone: cleanPhone(form.phone),
+        mobile_phone: cleanPhone(form.mobilePhone),
+        address_line1: cleanText(form.addressLine1),
+        address_line2: cleanText(form.addressLine2),
+        city: cleanText(form.city),
+        county: cleanText(form.county),
+        region: cleanText(form.region),
+        postal_code: cleanText(form.postalCode),
+        country: cleanText(form.country) || "US",
+        latitude: cleanNumber(form.latitude),
+        longitude: cleanNumber(form.longitude),
+        notes: cleanText(form.notes),
+      })
+      .select("id")
+      .single();
 
     if (insertError) {
+      setIsSaving(false);
       setError(insertError.message);
       return;
     }
+
+    try {
+      const { error: linkError } = await supabase
+        .from("contact_companies")
+        .insert({
+          owner_id: userResult.user.id,
+          contact_id: contact.id,
+          company_id: company.id,
+          is_primary: true,
+        });
+
+      if (linkError) throw linkError;
+      await saveContactSensitiveFields(contact.id, form);
+    } catch (sensitiveError) {
+      setIsSaving(false);
+      setError(sensitiveError.message);
+      return;
+    }
+
+    setIsSaving(false);
 
     onSaved();
     setDuplicateConfirmation(null);
@@ -1745,18 +1825,18 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
         <DialogContent>
           <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
             {error && <Alert severity="error">{error}</Alert>}
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 label="First Name"
                 value={form.firstName}
-                onChange={handleField(setForm, 'firstName')}
+                onChange={handleField(setForm, "firstName")}
                 fullWidth
                 required
               />
               <TextField
                 label="Last Name"
                 value={form.lastName}
-                onChange={handleField(setForm, 'lastName')}
+                onChange={handleField(setForm, "lastName")}
                 fullWidth
                 required
               />
@@ -1764,7 +1844,7 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
             <TextField
               label="Title"
               value={form.title}
-              onChange={handleField(setForm, 'title')}
+              onChange={handleField(setForm, "title")}
               fullWidth
             />
             <FormControlLabel
@@ -1772,8 +1852,8 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
                 <Checkbox
                   checked={form.sameAccountNumberAsCompany}
                   onChange={handleUseCompanyField(
-                    'sameAccountNumberAsCompany',
-                    ['accountNumber'],
+                    "sameAccountNumberAsCompany",
+                    ["accountNumber"],
                   )}
                 />
               }
@@ -1782,16 +1862,34 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
             <TextField
               label="Account Number"
               value={form.accountNumber}
-              onChange={handleField(setForm, 'accountNumber')}
+              onChange={handleField(setForm, "accountNumber")}
               fullWidth
             />
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                label="Social Security Number"
+                type="password"
+                value={form.socialSecurityNumber}
+                onChange={handleField(setForm, "socialSecurityNumber")}
+                helperText="Stored encrypted; enter 9 digits."
+                fullWidth
+              />
+              <TextField
+                label="Ag Tax-Exempt Number"
+                type="password"
+                value={form.agTaxExemptNumber}
+                onChange={handleField(setForm, "agTaxExemptNumber")}
+                helperText="Stored encrypted."
+                fullWidth
+              />
+            </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <FormControlLabel
                 control={
                   <Checkbox
                     checked={form.sameEmailAsCompany}
-                    onChange={handleUseCompanyField('sameEmailAsCompany', [
-                      'email',
+                    onChange={handleUseCompanyField("sameEmailAsCompany", [
+                      "email",
                     ])}
                   />
                 }
@@ -1801,33 +1899,33 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
                 control={
                   <Checkbox
                     checked={form.samePhoneAsCompany}
-                    onChange={handleUseCompanyField('samePhoneAsCompany', [
-                      'phone',
+                    onChange={handleUseCompanyField("samePhoneAsCompany", [
+                      "phone",
                     ])}
                   />
                 }
                 label="Use company phone"
               />
             </Stack>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 label="Email"
                 type="email"
                 value={form.email}
-                onChange={handleField(setForm, 'email')}
+                onChange={handleField(setForm, "email")}
                 fullWidth
               />
               <TextField
                 label="Mobile Phone"
                 value={form.mobilePhone}
-                onChange={handlePhoneChange(setForm, 'mobilePhone')}
+                onChange={handlePhoneChange(setForm, "mobilePhone")}
                 fullWidth
               />
             </Stack>
             <TextField
               label="Phone"
               value={form.phone}
-              onChange={handlePhoneChange(setForm, 'phone')}
+              onChange={handlePhoneChange(setForm, "phone")}
               fullWidth
             />
             <FormControlLabel
@@ -1835,7 +1933,7 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
                 <Checkbox
                   checked={form.sameAddressAsCompany}
                   onChange={handleUseCompanyField(
-                    'sameAddressAsCompany',
+                    "sameAddressAsCompany",
                     addressFields,
                   )}
                 />
@@ -1845,46 +1943,46 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
             <TextField
               label="Address Line 1"
               value={form.addressLine1}
-              onChange={handleField(setForm, 'addressLine1')}
+              onChange={handleField(setForm, "addressLine1")}
               fullWidth
             />
             <TextField
               label="Address Line 2"
               value={form.addressLine2}
-              onChange={handleField(setForm, 'addressLine2')}
+              onChange={handleField(setForm, "addressLine2")}
               fullWidth
             />
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 label="City"
                 value={form.city}
-                onChange={handleField(setForm, 'city')}
+                onChange={handleField(setForm, "city")}
                 fullWidth
               />
               <TextField
                 label="County"
                 value={form.county}
-                onChange={handleField(setForm, 'county')}
+                onChange={handleField(setForm, "county")}
                 fullWidth
               />
               <TextField
                 label="State / Region"
                 value={form.region}
-                onChange={handleField(setForm, 'region')}
+                onChange={handleField(setForm, "region")}
                 fullWidth
               />
             </Stack>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 label="Postal Code"
                 value={form.postalCode}
-                onChange={handleField(setForm, 'postalCode')}
+                onChange={handleField(setForm, "postalCode")}
                 fullWidth
               />
               <TextField
                 label="Country"
                 value={form.country}
-                onChange={handleField(setForm, 'country')}
+                onChange={handleField(setForm, "country")}
                 fullWidth
               />
             </Stack>
@@ -1893,33 +1991,33 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
                 <Checkbox
                   checked={form.sameCoordinatesAsCompany}
                   onChange={handleUseCompanyField(
-                    'sameCoordinatesAsCompany',
+                    "sameCoordinatesAsCompany",
                     coordinateFields,
                   )}
                 />
               }
               label="Use company coordinates"
             />
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 label="Latitude"
                 type="number"
                 value={form.latitude}
-                onChange={handleField(setForm, 'latitude')}
+                onChange={handleField(setForm, "latitude")}
                 fullWidth
               />
               <TextField
                 label="Longitude"
                 type="number"
                 value={form.longitude}
-                onChange={handleField(setForm, 'longitude')}
+                onChange={handleField(setForm, "longitude")}
                 fullWidth
               />
             </Stack>
             <TextField
               label="Notes"
               value={form.notes}
-              onChange={handleField(setForm, 'notes')}
+              onChange={handleField(setForm, "notes")}
               fullWidth
               multiline
               rows={3}
@@ -1958,17 +2056,17 @@ function AddLeadDialog({
   supabase,
 }) {
   const [form, setForm] = useState({
-    contactId: '',
-    source: '',
-    accountNumber: '',
-    status: 'new',
+    contactId: "",
+    source: "",
+    accountNumber: "",
+    status: "new",
     priority: 3,
-    estimatedBudget: '',
-    targetPurchaseDate: '',
-    nextFollowUpAt: '',
-    latitude: '',
-    longitude: '',
-    notes: '',
+    estimatedBudget: "",
+    targetPurchaseDate: "",
+    nextFollowUpAt: "",
+    latitude: "",
+    longitude: "",
+    notes: "",
   });
   const [isSaving, setIsSaving] = useState(false);
   const [duplicateConfirmation, setDuplicateConfirmation] = useState(null);
@@ -1976,17 +2074,17 @@ function AddLeadDialog({
   useEffect(() => {
     if (open)
       setForm({
-        contactId: contacts[0]?.id || '',
-        source: '',
-        accountNumber: '',
-        status: 'new',
+        contactId: contacts[0]?.id || "",
+        source: "",
+        accountNumber: "",
+        status: "new",
         priority: 3,
-        estimatedBudget: '',
-        targetPurchaseDate: '',
-        nextFollowUpAt: '',
-        latitude: '',
-        longitude: '',
-        notes: '',
+        estimatedBudget: "",
+        targetPurchaseDate: "",
+        nextFollowUpAt: "",
+        latitude: "",
+        longitude: "",
+        notes: "",
       });
   }, [contacts, open]);
 
@@ -1997,7 +2095,7 @@ function AddLeadDialog({
     if (!options.skipDuplicateCheck) {
       const matches = await findPotentialDuplicates(supabase, [
         {
-          type: 'lead',
+          type: "lead",
           record: {
             source: form.source,
             accountNumber: form.accountNumber,
@@ -2014,7 +2112,7 @@ function AddLeadDialog({
       }
     }
 
-    const { error } = await supabase.from('leads').insert({
+    const { error } = await supabase.from("leads").insert({
       owner_id: userResult.user.id,
       company_id: company.id,
       contact_id: form.contactId || null,
@@ -2049,7 +2147,7 @@ function AddLeadDialog({
               select
               label="Contact"
               value={form.contactId}
-              onChange={handleField(setForm, 'contactId')}
+              onChange={handleField(setForm, "contactId")}
               fullWidth
             >
               <MenuItem value="">No contact</MenuItem>
@@ -2062,21 +2160,21 @@ function AddLeadDialog({
             <TextField
               label="Source"
               value={form.source}
-              onChange={handleField(setForm, 'source')}
+              onChange={handleField(setForm, "source")}
               fullWidth
             />
             <TextField
               label="Account Number"
               value={form.accountNumber}
-              onChange={handleField(setForm, 'accountNumber')}
+              onChange={handleField(setForm, "accountNumber")}
               fullWidth
             />
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 select
                 label="Status"
                 value={form.status}
-                onChange={handleField(setForm, 'status')}
+                onChange={handleField(setForm, "status")}
                 fullWidth
               >
                 {leadStatuses.map((status) => (
@@ -2089,7 +2187,7 @@ function AddLeadDialog({
                 label="Priority"
                 type="number"
                 value={form.priority}
-                onChange={handleField(setForm, 'priority')}
+                onChange={handleField(setForm, "priority")}
                 fullWidth
               />
             </Stack>
@@ -2097,15 +2195,15 @@ function AddLeadDialog({
               label="Estimated Budget"
               type="number"
               value={form.estimatedBudget}
-              onChange={handleField(setForm, 'estimatedBudget')}
+              onChange={handleField(setForm, "estimatedBudget")}
               fullWidth
             />
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 label="Target Purchase Date"
                 type="date"
                 value={form.targetPurchaseDate}
-                onChange={handleField(setForm, 'targetPurchaseDate')}
+                onChange={handleField(setForm, "targetPurchaseDate")}
                 slotProps={{ inputLabel: { shrink: true } }}
                 fullWidth
               />
@@ -2113,31 +2211,31 @@ function AddLeadDialog({
                 label="Next Follow-up"
                 type="datetime-local"
                 value={form.nextFollowUpAt}
-                onChange={handleField(setForm, 'nextFollowUpAt')}
+                onChange={handleField(setForm, "nextFollowUpAt")}
                 slotProps={{ inputLabel: { shrink: true } }}
                 fullWidth
               />
             </Stack>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 label="Latitude"
                 type="number"
                 value={form.latitude}
-                onChange={handleField(setForm, 'latitude')}
+                onChange={handleField(setForm, "latitude")}
                 fullWidth
               />
               <TextField
                 label="Longitude"
                 type="number"
                 value={form.longitude}
-                onChange={handleField(setForm, 'longitude')}
+                onChange={handleField(setForm, "longitude")}
                 fullWidth
               />
             </Stack>
             <TextField
               label="Notes"
               value={form.notes}
-              onChange={handleField(setForm, 'notes')}
+              onChange={handleField(setForm, "notes")}
               fullWidth
               multiline
               rows={3}
@@ -2168,21 +2266,21 @@ function AddLeadDialog({
 }
 
 function AddNoteDialog({ open, company, onClose, onSaved, supabase }) {
-  const [body, setBody] = useState('');
+  const [body, setBody] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
     if (!body.trim()) return;
     setIsSaving(true);
     const { data: userResult } = await supabase.auth.getUser();
-    const { error } = await supabase.from('notes').insert({
+    const { error } = await supabase.from("notes").insert({
       owner_id: userResult.user.id,
       company_id: company.id,
       body,
     });
     setIsSaving(false);
     if (!error) {
-      setBody('');
+      setBody("");
       onSaved();
       onClose();
     }
@@ -2216,31 +2314,31 @@ function AddNoteDialog({ open, company, onClose, onSaved, supabase }) {
 
 function AddActivityDialog({ open, company, onClose, onSaved, supabase }) {
   const [form, setForm] = useState({
-    type: 'call',
-    direction: 'outbound',
-    subject: '',
-    body: '',
+    type: "call",
+    direction: "outbound",
+    subject: "",
+    body: "",
     occurredAt: toDateTimeLocal(new Date().toISOString()),
-    dueAt: '',
+    dueAt: "",
   });
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (open)
       setForm({
-        type: 'call',
-        direction: 'outbound',
-        subject: '',
-        body: '',
+        type: "call",
+        direction: "outbound",
+        subject: "",
+        body: "",
         occurredAt: toDateTimeLocal(new Date().toISOString()),
-        dueAt: '',
+        dueAt: "",
       });
   }, [open]);
 
   const handleSave = async () => {
     setIsSaving(true);
     const { data: userResult } = await supabase.auth.getUser();
-    const { error } = await supabase.from('activities').insert({
+    const { error } = await supabase.from("activities").insert({
       owner_id: userResult.user.id,
       company_id: company.id,
       type: form.type,
@@ -2264,12 +2362,12 @@ function AddActivityDialog({ open, company, onClose, onSaved, supabase }) {
       <DialogTitle>Add Activity</DialogTitle>
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               select
               label="Type"
               value={form.type}
-              onChange={handleField(setForm, 'type')}
+              onChange={handleField(setForm, "type")}
               fullWidth
             >
               {activityTypes.map((type) => (
@@ -2282,7 +2380,7 @@ function AddActivityDialog({ open, company, onClose, onSaved, supabase }) {
               select
               label="Direction"
               value={form.direction}
-              onChange={handleField(setForm, 'direction')}
+              onChange={handleField(setForm, "direction")}
               fullWidth
             >
               {activityDirections.map((direction) => (
@@ -2295,23 +2393,23 @@ function AddActivityDialog({ open, company, onClose, onSaved, supabase }) {
           <TextField
             label="Subject"
             value={form.subject}
-            onChange={handleField(setForm, 'subject')}
+            onChange={handleField(setForm, "subject")}
             fullWidth
           />
           <TextField
             label="Details"
             value={form.body}
-            onChange={handleField(setForm, 'body')}
+            onChange={handleField(setForm, "body")}
             fullWidth
             multiline
             rows={3}
           />
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Occurred At"
               type="datetime-local"
               value={form.occurredAt}
-              onChange={handleField(setForm, 'occurredAt')}
+              onChange={handleField(setForm, "occurredAt")}
               slotProps={{ inputLabel: { shrink: true } }}
               fullWidth
             />
@@ -2319,7 +2417,7 @@ function AddActivityDialog({ open, company, onClose, onSaved, supabase }) {
               label="Due At"
               type="datetime-local"
               value={form.dueAt}
-              onChange={handleField(setForm, 'dueAt')}
+              onChange={handleField(setForm, "dueAt")}
               slotProps={{ inputLabel: { shrink: true } }}
               fullWidth
             />
@@ -2349,46 +2447,46 @@ function AddEquipmentDialog({
   supabase,
 }) {
   const [form, setForm] = useState({
-    relatedType: 'contact',
-    relatedId: '',
-    category: 'tractor',
-    make: '',
-    model: '',
-    stockNumber: '',
-    serialNumber: '',
-    condition: 'either',
-    availability: 'availability_unknown',
-    locationId: '',
-    status: 'not_started',
-    quotePrice: '',
-    priceMin: '',
-    priceMax: '',
-    tradeIn: 'false',
-    notes: '',
+    relatedType: "contact",
+    relatedId: "",
+    category: "tractor",
+    make: "",
+    model: "",
+    stockNumber: "",
+    serialNumber: "",
+    condition: "either",
+    availability: "availability_unknown",
+    locationId: "",
+    status: "not_started",
+    quotePrice: "",
+    priceMin: "",
+    priceMax: "",
+    tradeIn: "false",
+    notes: "",
   });
   const [isSaving, setIsSaving] = useState(false);
 
   const relatedOptions =
-    form.relatedType === 'lead'
+    form.relatedType === "lead"
       ? leads
-      : form.relatedType === 'deal'
+      : form.relatedType === "deal"
         ? deals
         : contacts;
 
   useEffect(() => {
     if (open)
-      setForm((prev) => ({ ...prev, relatedId: contacts[0]?.id || '' }));
+      setForm((prev) => ({ ...prev, relatedId: contacts[0]?.id || "" }));
   }, [contacts, open]);
 
   const handleSave = async () => {
     setIsSaving(true);
     const { data: userResult } = await supabase.auth.getUser();
-    const { error } = await supabase.from('equipment_interests').insert({
+    const { error } = await supabase.from("equipment_interests").insert({
       owner_id: userResult.user.id,
       contact_id:
-        form.relatedType === 'contact' ? form.relatedId || null : null,
-      lead_id: form.relatedType === 'lead' ? form.relatedId || null : null,
-      deal_id: form.relatedType === 'deal' ? form.relatedId || null : null,
+        form.relatedType === "contact" ? form.relatedId || null : null,
+      lead_id: form.relatedType === "lead" ? form.relatedId || null : null,
+      deal_id: form.relatedType === "deal" ? form.relatedId || null : null,
       category: form.category,
       make: cleanText(form.make),
       model: cleanText(form.model),
@@ -2401,7 +2499,7 @@ function AddEquipmentDialog({
       quote_price: form.quotePrice || null,
       price_min: form.priceMin || null,
       price_max: form.priceMax || null,
-      trade_in: form.tradeIn === 'true',
+      trade_in: form.tradeIn === "true",
       notes: cleanText(form.notes),
     });
     setIsSaving(false);
@@ -2416,7 +2514,7 @@ function AddEquipmentDialog({
       <DialogTitle>Add Equipment Interest</DialogTitle>
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               select
               label="Link To"
@@ -2425,7 +2523,7 @@ function AddEquipmentDialog({
                 setForm((prev) => ({
                   ...prev,
                   relatedType: event.target.value,
-                  relatedId: '',
+                  relatedId: "",
                 }))
               }
               fullWidth
@@ -2438,7 +2536,7 @@ function AddEquipmentDialog({
               select
               label="Related Record"
               value={form.relatedId}
-              onChange={handleField(setForm, 'relatedId')}
+              onChange={handleField(setForm, "relatedId")}
               fullWidth
             >
               {relatedOptions.map((option) => (
@@ -2452,7 +2550,7 @@ function AddEquipmentDialog({
             select
             label="Category"
             value={form.category}
-            onChange={handleField(setForm, 'category')}
+            onChange={handleField(setForm, "category")}
             fullWidth
           >
             {equipmentCategories.map((category) => (
@@ -2464,16 +2562,16 @@ function AddEquipmentDialog({
           <TextField
             label="Make"
             value={form.make}
-            onChange={handleField(setForm, 'make')}
+            onChange={handleField(setForm, "make")}
             fullWidth
           />
           <TextField
             label="Model"
             value={form.model}
-            onChange={handleField(setForm, 'model')}
+            onChange={handleField(setForm, "model")}
             fullWidth
           />
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Stock Number"
               value={form.stockNumber}
@@ -2484,7 +2582,7 @@ function AddEquipmentDialog({
             <TextField
               label="Serial Number"
               value={form.serialNumber}
-              onChange={handleUppercaseField(setForm, 'serialNumber')}
+              onChange={handleUppercaseField(setForm, "serialNumber")}
               fullWidth
             />
           </Stack>
@@ -2492,7 +2590,7 @@ function AddEquipmentDialog({
             select
             label="Condition"
             value={form.condition}
-            onChange={handleField(setForm, 'condition')}
+            onChange={handleField(setForm, "condition")}
             fullWidth
           >
             {equipmentConditions.map((condition) => (
@@ -2501,12 +2599,12 @@ function AddEquipmentDialog({
               </MenuItem>
             ))}
           </TextField>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               select
               label="Availability"
               value={normalizeAvailability(form.availability)}
-              onChange={handleField(setForm, 'availability')}
+              onChange={handleField(setForm, "availability")}
               fullWidth
             >
               {equipmentAvailability.map((availability) => (
@@ -2518,16 +2616,16 @@ function AddEquipmentDialog({
             <LocationSelect
               label="Location"
               value={form.locationId}
-              onChange={handleField(setForm, 'locationId')}
+              onChange={handleField(setForm, "locationId")}
               locations={locations}
             />
           </Stack>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               select
               label="Status"
               value={form.status}
-              onChange={handleField(setForm, 'status')}
+              onChange={handleField(setForm, "status")}
               fullWidth
             >
               {equipmentStatuses.map((status) => (
@@ -2537,26 +2635,26 @@ function AddEquipmentDialog({
               ))}
             </TextField>
           </Stack>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Quote Price"
               type="number"
               value={form.quotePrice}
-              onChange={handleField(setForm, 'quotePrice')}
+              onChange={handleField(setForm, "quotePrice")}
               fullWidth
             />
             <TextField
               label="Price Min"
               type="number"
               value={form.priceMin}
-              onChange={handleField(setForm, 'priceMin')}
+              onChange={handleField(setForm, "priceMin")}
               fullWidth
             />
             <TextField
               label="Price Max"
               type="number"
               value={form.priceMax}
-              onChange={handleField(setForm, 'priceMax')}
+              onChange={handleField(setForm, "priceMax")}
               fullWidth
             />
           </Stack>
@@ -2564,7 +2662,7 @@ function AddEquipmentDialog({
             select
             label="Trade-in"
             value={form.tradeIn}
-            onChange={handleField(setForm, 'tradeIn')}
+            onChange={handleField(setForm, "tradeIn")}
             fullWidth
           >
             <MenuItem value="false">No</MenuItem>
@@ -2573,7 +2671,7 @@ function AddEquipmentDialog({
           <TextField
             label="Notes"
             value={form.notes}
-            onChange={handleField(setForm, 'notes')}
+            onChange={handleField(setForm, "notes")}
             fullWidth
             multiline
             rows={3}
@@ -2601,7 +2699,7 @@ function EmptyState({ label }) {
   return (
     <Typography
       variant="body2"
-      sx={{ color: 'text.secondary', py: 2, textAlign: 'center' }}
+      sx={{ color: "text.secondary", py: 2, textAlign: "center" }}
     >
       {label}
     </Typography>
@@ -2612,7 +2710,7 @@ function handleField(setForm, key) {
   return (event) => setForm((prev) => ({ ...prev, [key]: event.target.value }));
 }
 
-function LocationSelect({ label = 'Location', value, onChange, locations }) {
+function LocationSelect({ label = "Location", value, onChange, locations }) {
   return (
     <TextField select label={label} value={value} onChange={onChange} fullWidth>
       <MenuItem value="">No Location</MenuItem>
@@ -2626,7 +2724,7 @@ function LocationSelect({ label = 'Location', value, onChange, locations }) {
 }
 
 function locationLabel(location) {
-  if (!location) return 'No Location';
+  if (!location) return "No Location";
   return [
     location.name,
     location.city && location.region
@@ -2634,40 +2732,40 @@ function locationLabel(location) {
       : null,
   ]
     .filter(Boolean)
-    .join(' - ');
+    .join(" - ");
 }
 
 function normalizeAvailability(value) {
-  if (['in_stock_auburn', 'in_stock_transfer'].includes(value))
-    return 'in_stock';
-  return value || 'availability_unknown';
+  if (["in_stock_auburn", "in_stock_transfer"].includes(value))
+    return "in_stock";
+  return value || "availability_unknown";
 }
 
 const addressFields = [
-  'addressLine1',
-  'addressLine2',
-  'city',
-  'county',
-  'region',
-  'postalCode',
-  'country',
+  "addressLine1",
+  "addressLine2",
+  "city",
+  "county",
+  "region",
+  "postalCode",
+  "country",
 ];
-const coordinateFields = ['latitude', 'longitude'];
+const coordinateFields = ["latitude", "longitude"];
 
 function fieldsFromCompany(company, fields) {
   const values = {
-    accountNumber: company?.account_number || '',
-    email: company?.email || '',
-    phone: formatPhone(company?.phone) || '',
-    addressLine1: company?.address_line1 || '',
-    addressLine2: company?.address_line2 || '',
-    city: company?.city || '',
-    county: company?.county || '',
-    region: company?.region || '',
-    postalCode: company?.postal_code || '',
-    country: company?.country || 'US',
-    latitude: company?.latitude ?? '',
-    longitude: company?.longitude ?? '',
+    accountNumber: company?.account_number || "",
+    email: company?.email || "",
+    phone: formatPhone(company?.phone) || "",
+    addressLine1: company?.address_line1 || "",
+    addressLine2: company?.address_line2 || "",
+    city: company?.city || "",
+    county: company?.county || "",
+    region: company?.region || "",
+    postalCode: company?.postal_code || "",
+    country: company?.country || "US",
+    latitude: company?.latitude ?? "",
+    longitude: company?.longitude ?? "",
   };
 
   return fields.reduce(
@@ -2678,18 +2776,18 @@ function fieldsFromCompany(company, fields) {
 
 function fieldsFromContact(contact, fields) {
   const values = {
-    accountNumber: contact?.account_number || '',
-    email: contact?.email || '',
-    phone: formatPhone(contact?.phone || contact?.mobile_phone) || '',
-    addressLine1: contact?.address_line1 || '',
-    addressLine2: contact?.address_line2 || '',
-    city: contact?.city || '',
-    county: contact?.county || '',
-    region: contact?.region || '',
-    postalCode: contact?.postal_code || '',
-    country: contact?.country || 'US',
-    latitude: contact?.latitude ?? '',
-    longitude: contact?.longitude ?? '',
+    accountNumber: contact?.account_number || "",
+    email: contact?.email || "",
+    phone: formatPhone(contact?.phone || contact?.mobile_phone) || "",
+    addressLine1: contact?.address_line1 || "",
+    addressLine2: contact?.address_line2 || "",
+    city: contact?.city || "",
+    county: contact?.county || "",
+    region: contact?.region || "",
+    postalCode: contact?.postal_code || "",
+    country: contact?.country || "US",
+    latitude: contact?.latitude ?? "",
+    longitude: contact?.longitude ?? "",
   };
 
   return fields.reduce(
@@ -2702,7 +2800,7 @@ function handleStockField(setForm) {
   return (event) =>
     setForm((prev) => ({
       ...prev,
-      stockNumber: event.target.value.replace(/\D/g, '').slice(0, 6),
+      stockNumber: event.target.value.replace(/\D/g, "").slice(0, 6),
     }));
 }
 
@@ -2713,108 +2811,156 @@ function handleUppercaseField(setForm, key) {
 
 function contactName(contact) {
   return (
-    [contact?.first_name, contact?.last_name].filter(Boolean).join(' ') || ''
+    [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || ""
   );
 }
 
 function leadDisplayName(lead) {
   return (
     contactName(lead.contacts) ||
-    (lead.account_number ? `Account ${lead.account_number}` : '') ||
+    (lead.account_number ? `Account ${lead.account_number}` : "") ||
     lead.source ||
-    'Lead'
+    "Lead"
   );
 }
 
 function relatedOptionLabel(option, type) {
-  if (type === 'deal') return option.name;
-  if (type === 'lead')
-    return [leadDisplayName(option), option.source, formatLeadStatus(option.status)]
+  if (type === "deal") return option.name;
+  if (type === "lead")
+    return [
+      leadDisplayName(option),
+      option.source,
+      formatLeadStatus(option.status),
+    ]
       .filter(Boolean)
-      .join(' · ');
+      .join(" · ");
   return contactName(option);
 }
 
 function companyToForm(company) {
   return {
-    name: company?.name || '',
-    companyType: company?.company_type || '',
-    accountNumber: company?.account_number || '',
+    name: company?.name || "",
+    companyType: company?.company_type || "",
+    accountNumber: company?.account_number || "",
+    ein: "",
+    agTaxExemptNumber: "",
     sameAccountNumberAsContact: false,
-    website: company?.website || '',
-    phone: formatPhone(company?.phone) || '',
+    website: company?.website || "",
+    phone: formatPhone(company?.phone) || "",
     samePhoneAsContact: false,
-    email: company?.email || '',
+    email: company?.email || "",
     sameEmailAsContact: false,
     sameAddressAsContact: false,
-    addressLine1: company?.address_line1 || '',
-    addressLine2: company?.address_line2 || '',
-    city: company?.city || '',
-    county: company?.county || '',
-    region: company?.region || '',
-    postalCode: company?.postal_code || '',
-    country: company?.country || 'US',
+    addressLine1: company?.address_line1 || "",
+    addressLine2: company?.address_line2 || "",
+    city: company?.city || "",
+    county: company?.county || "",
+    region: company?.region || "",
+    postalCode: company?.postal_code || "",
+    country: company?.country || "US",
     sameCoordinatesAsContact: false,
-    latitude: company?.latitude ?? '',
-    longitude: company?.longitude ?? '',
-    notes: company?.notes || '',
+    latitude: company?.latitude ?? "",
+    longitude: company?.longitude ?? "",
+    notes: company?.notes || "",
   };
 }
 
+async function saveCompanySensitiveFields(companyId, form) {
+  const ein = cleanText(form.ein);
+  const agTaxExemptNumber = cleanText(form.agTaxExemptNumber);
+
+  if (!ein && !agTaxExemptNumber) return;
+
+  const response = await fetch(`/api/crm/company-sensitive/${companyId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...(ein ? { ein } : {}),
+      ...(agTaxExemptNumber ? { agTaxExemptNumber } : {}),
+    }),
+  });
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    throw new Error(result.error || "Could not save sensitive company data.");
+  }
+}
+
+async function saveContactSensitiveFields(contactId, form) {
+  const socialSecurityNumber = cleanText(form.socialSecurityNumber);
+  const agTaxExemptNumber = cleanText(form.agTaxExemptNumber);
+
+  if (!socialSecurityNumber && !agTaxExemptNumber) return;
+
+  const response = await fetch(`/api/crm/contact-sensitive/${contactId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...(socialSecurityNumber ? { socialSecurityNumber } : {}),
+      ...(agTaxExemptNumber ? { agTaxExemptNumber } : {}),
+    }),
+  });
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    throw new Error(result.error || "Could not save sensitive contact data.");
+  }
+}
+
 function cleanText(value) {
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function preserveText(value) {
-  return typeof value === 'string' && value.trim() ? value : null;
+  return typeof value === "string" && value.trim() ? value : null;
 }
 
 function cleanNumber(value) {
-  if (value === '' || value === null || typeof value === 'undefined')
+  if (value === "" || value === null || typeof value === "undefined")
     return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
 
 function formatCurrency(value) {
-  if (!value) return '-';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  if (!value) return "-";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     maximumFractionDigits: 0,
   }).format(Number(value));
 }
 
 function formatDate(value) {
-  if (!value) return '-';
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+  if (!value) return "-";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   }).format(new Date(value));
 }
 
 function formatDateTime(value) {
-  if (!value) return '-';
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
+  if (!value) return "-";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   }).format(new Date(value));
 }
 
 function formatEnum(value) {
-  if (!value) return '-';
-  if (value === 'fit_confirmed') return 'Equipment Fit Confirmed';
+  if (!value) return "-";
+  if (value === "fit_confirmed") return "Equipment Fit Confirmed";
   return value
-    .replace(/_/g, ' ')
+    .replace(/_/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function toDateTimeLocal(value) {
-  if (!value) return '';
+  if (!value) return "";
   const date = new Date(value);
   const offset = date.getTimezoneOffset();
   const localDate = new Date(date.getTime() - offset * 60000);
