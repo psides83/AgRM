@@ -30,6 +30,7 @@ import { useAuth } from "providers/AuthProvider";
 import IconifyIcon from "components/base/IconifyIcon";
 import PageHeader from "components/sections/ecommerce/admin/common/PageHeader";
 import CrmFilesPanel from "components/sections/crm/shared/CrmFilesPanel";
+import SensitiveInfoRow from "components/sections/crm/shared/SensitiveInfoRow";
 import AddTaskDialog from "components/sections/crm/shared/AddTaskDialog";
 import TasksCard from "components/sections/crm/shared/TasksCard";
 import { calculateCommission } from "components/sections/crm/shared/commission";
@@ -594,22 +595,26 @@ const ContactDetailsClient = ({ contactId }) => {
             >
               <InfoRow label="Role" value={contact.title} />
               <InfoRow label="Account Number" value={contact.account_number} />
-              <InfoRow
-                label="SSN"
-                value={
-                  contact.ssn_last4
-                    ? `Encrypted, ending ${contact.ssn_last4}`
-                    : null
-                }
-              />
-              <InfoRow
-                label="Ag Tax-Exempt Number"
-                value={
-                  contact.ag_tax_exempt_last4
-                    ? `Encrypted, ending ${contact.ag_tax_exempt_last4}`
-                    : null
-                }
-              />
+              {contact.ssn_last4 ? (
+                <SensitiveInfoRow
+                  label="SSN"
+                  maskedValue={`Encrypted, ending ${contact.ssn_last4}`}
+                  endpoint={`/api/crm/contact-sensitive/${contact.id}?field=ssn`}
+                  format="ssn"
+                />
+              ) : (
+                <InfoRow label="SSN" />
+              )}
+              {contact.ag_tax_exempt_last4 ? (
+                <SensitiveInfoRow
+                  label="Ag Tax-Exempt Number"
+                  maskedValue={`Encrypted, ending ${contact.ag_tax_exempt_last4}`}
+                  endpoint={`/api/crm/contact-sensitive/${contact.id}?field=agTaxExemptNumber`}
+                  revealByDefault
+                />
+              ) : (
+                <InfoRow label="Ag Tax-Exempt Number" />
+              )}
               <InfoRow label="Email" value={contact.email} />
               <InfoRow label="Phone" value={formatPhone(contact.phone)} />
               <InfoRow

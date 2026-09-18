@@ -29,6 +29,7 @@ import { useAuth } from "providers/AuthProvider";
 import IconifyIcon from "components/base/IconifyIcon";
 import PageHeader from "components/sections/ecommerce/admin/common/PageHeader";
 import CrmFilesPanel from "components/sections/crm/shared/CrmFilesPanel";
+import SensitiveInfoRow from "components/sections/crm/shared/SensitiveInfoRow";
 import { calculateCommission } from "components/sections/crm/shared/commission";
 import {
   activityDirections,
@@ -565,22 +566,26 @@ const CompanyDetails = ({ companyId }) => {
           >
             <InfoRow label="Type" value={formatEnum(company.company_type)} />
             <InfoRow label="Account Number" value={company.account_number} />
-            <InfoRow
-              label="EIN"
-              value={
-                company.ein_last4
-                  ? `Encrypted, ending ${company.ein_last4}`
-                  : null
-              }
-            />
-            <InfoRow
-              label="Ag Tax-Exempt Number"
-              value={
-                company.ag_tax_exempt_last4
-                  ? `Encrypted, ending ${company.ag_tax_exempt_last4}`
-                  : null
-              }
-            />
+            {company.ein_last4 ? (
+              <SensitiveInfoRow
+                label="EIN"
+                maskedValue={`Encrypted, ending ${company.ein_last4}`}
+                endpoint={`/api/crm/company-sensitive/${company.id}?field=ein`}
+                format="ein"
+              />
+            ) : (
+              <InfoRow label="EIN" />
+            )}
+            {company.ag_tax_exempt_last4 ? (
+              <SensitiveInfoRow
+                label="Ag Tax-Exempt Number"
+                maskedValue={`Encrypted, ending ${company.ag_tax_exempt_last4}`}
+                endpoint={`/api/crm/company-sensitive/${company.id}?field=agTaxExemptNumber`}
+                revealByDefault
+              />
+            ) : (
+              <InfoRow label="Ag Tax-Exempt Number" />
+            )}
             <InfoRow label="Email" value={company.email} />
             <InfoRow label="Phone" value={formatPhone(company.phone)} />
             <InfoRow label="Website" value={company.website} />
