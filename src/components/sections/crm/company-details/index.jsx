@@ -579,7 +579,7 @@ const CompanyDetails = ({ companyId }) => {
             {company.ag_tax_exempt_last4 ? (
               <SensitiveInfoRow
                 label="Ag Tax-Exempt Number"
-                maskedValue={`Encrypted, ending ${company.ag_tax_exempt_last4}`}
+                maskedValue="Loading..."
                 endpoint={`/api/crm/company-sensitive/${company.id}?field=agTaxExemptNumber`}
                 revealByDefault
               />
@@ -1426,7 +1426,7 @@ function EditCompanyDialog({
               onChange={handleField(setForm, "ein")}
               helperText={
                 company?.ein_last4
-                  ? `Currently encrypted, ending ${company.ein_last4}. Enter a new EIN to replace it.`
+                  ? `Current value: *******${company.ein_last4}. Enter a new EIN to replace it.`
                   : "Stored encrypted; enter 9 digits."
               }
               fullWidth
@@ -1438,7 +1438,7 @@ function EditCompanyDialog({
               onChange={handleField(setForm, "agTaxExemptNumber")}
               helperText={
                 company?.ag_tax_exempt_last4
-                  ? `Currently encrypted, ending ${company.ag_tax_exempt_last4}. Enter a new number to replace it.`
+                  ? "The saved number is shown on the company detail page. Enter a new number to replace it."
                   : "Stored encrypted; only the last four is shown later."
               }
               fullWidth

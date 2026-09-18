@@ -608,7 +608,7 @@ const ContactDetailsClient = ({ contactId }) => {
               {contact.ag_tax_exempt_last4 ? (
                 <SensitiveInfoRow
                   label="Ag Tax-Exempt Number"
-                  maskedValue={`Encrypted, ending ${contact.ag_tax_exempt_last4}`}
+                  maskedValue="Loading..."
                   endpoint={`/api/crm/contact-sensitive/${contact.id}?field=agTaxExemptNumber`}
                   revealByDefault
                 />
@@ -1690,7 +1690,7 @@ function EditContactDialog({
             onChange={handleField(setForm, "socialSecurityNumber")}
             helperText={
               contact?.ssn_last4
-                ? `Currently encrypted, ending ${contact.ssn_last4}. Enter a new SSN to replace it.`
+                ? `Current value: *****${contact.ssn_last4}. Enter a new SSN to replace it.`
                 : "Stored encrypted; only last four is shown later."
             }
             fullWidth
@@ -1702,7 +1702,7 @@ function EditContactDialog({
             onChange={handleField(setForm, "agTaxExemptNumber")}
             helperText={
               contact?.ag_tax_exempt_last4
-                ? `Currently encrypted, ending ${contact.ag_tax_exempt_last4}. Enter a new number to replace it.`
+                ? "The saved number is shown on the contact detail page. Enter a new number to replace it."
                 : "Stored encrypted; only the last four is shown later."
             }
             fullWidth
