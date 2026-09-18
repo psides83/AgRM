@@ -35,7 +35,7 @@ create or replace function public.set_contact_social_security_number(
 returns table (contact_id uuid, ssn_last4 text, ssn_updated_at timestamptz)
 language plpgsql
 security invoker
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_clean_ssn text;
@@ -61,7 +61,7 @@ begin
     end if;
 
     update public.contacts
-    set ssn_ciphertext = pgp_sym_encrypt(v_clean_ssn, p_encryption_key, 'compress-algo=1, cipher-algo=aes256'),
+    set ssn_ciphertext = extensions.pgp_sym_encrypt(v_clean_ssn, p_encryption_key, 'compress-algo=1, cipher-algo=aes256'),
         ssn_last4 = right(v_clean_ssn, 4),
         ssn_updated_at = now()
     where id = p_contact_id
@@ -78,6 +78,8 @@ begin
 end;
 $$;
 
+drop trigger if exists set_contact_companies_updated_at on public.contact_companies;
+
 create trigger set_contact_companies_updated_at
 before update on public.contact_companies
 for each row execute function public.set_updated_at();
@@ -89,18 +91,30 @@ create index if not exists files_file_category_idx on public.files(owner_id, fil
 
 alter table public.contact_companies enable row level security;
 
+drop policy if exists "Contact company links are viewable by owner"
+on public.contact_companies;
+
 create policy "Contact company links are viewable by owner"
 on public.contact_companies for select
 using (auth.uid() = owner_id);
+
+drop policy if exists "Contact company links are insertable by owner"
+on public.contact_companies;
 
 create policy "Contact company links are insertable by owner"
 on public.contact_companies for insert
 with check (auth.uid() = owner_id);
 
+drop policy if exists "Contact company links are updatable by owner"
+on public.contact_companies;
+
 create policy "Contact company links are updatable by owner"
 on public.contact_companies for update
 using (auth.uid() = owner_id)
 with check (auth.uid() = owner_id);
+
+drop policy if exists "Contact company links are deletable by owner"
+on public.contact_companies;
 
 create policy "Contact company links are deletable by owner"
 on public.contact_companies for delete

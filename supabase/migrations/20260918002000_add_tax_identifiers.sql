@@ -19,7 +19,7 @@ create or replace function public.set_contact_ag_tax_exempt_number(
 returns table (contact_id uuid, ag_tax_exempt_last4 text, ag_tax_exempt_updated_at timestamptz)
 language plpgsql
 security invoker
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_value text;
@@ -33,7 +33,7 @@ begin
   update public.contacts
   set ag_tax_exempt_ciphertext = case
         when v_value is null then null
-        else pgp_sym_encrypt(v_value, p_encryption_key, 'compress-algo=1, cipher-algo=aes256')
+        else extensions.pgp_sym_encrypt(v_value, p_encryption_key, 'compress-algo=1, cipher-algo=aes256')
       end,
       ag_tax_exempt_last4 = case when v_value is null then null else right(v_value, 4) end,
       ag_tax_exempt_updated_at = case when v_value is null then null else now() end
@@ -66,7 +66,7 @@ returns table (
 )
 language plpgsql
 security invoker
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_ein text;
@@ -87,7 +87,7 @@ begin
   set ein_ciphertext = case
         when not p_update_ein then companies.ein_ciphertext
         when v_ein = '' then null
-        else pgp_sym_encrypt(v_ein, p_encryption_key, 'compress-algo=1, cipher-algo=aes256')
+        else extensions.pgp_sym_encrypt(v_ein, p_encryption_key, 'compress-algo=1, cipher-algo=aes256')
       end,
       ein_last4 = case
         when not p_update_ein then companies.ein_last4
@@ -102,7 +102,7 @@ begin
       ag_tax_exempt_ciphertext = case
         when not p_update_ag_tax_exempt then companies.ag_tax_exempt_ciphertext
         when v_ag_tax_exempt is null then null
-        else pgp_sym_encrypt(v_ag_tax_exempt, p_encryption_key, 'compress-algo=1, cipher-algo=aes256')
+        else extensions.pgp_sym_encrypt(v_ag_tax_exempt, p_encryption_key, 'compress-algo=1, cipher-algo=aes256')
       end,
       ag_tax_exempt_last4 = case
         when not p_update_ag_tax_exempt then companies.ag_tax_exempt_last4
