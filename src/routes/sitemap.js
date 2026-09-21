@@ -64,6 +64,14 @@ const sitemap = [
         active: true,
       },
       {
+        name: 'AOR Maps',
+        key: 'aor_maps',
+        path: paths.aorMaps,
+        pathName: 'aor-maps',
+        icon: 'material-symbols:map-search-outline-rounded',
+        active: true,
+      },
+      {
         name: 'Search',
         key: 'crm_search',
         path: paths.crmSearch,
