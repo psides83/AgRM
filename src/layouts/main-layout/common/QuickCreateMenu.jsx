@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Alert,
@@ -54,7 +54,7 @@ const emptyContactForm = { firstName: '', lastName: '', title: '', email: '', ph
 const emptyLeadForm = { contactId: '', companyId: '', source: '', status: 'new', priority: 3, estimatedBudget: '', nextFollowUpAt: '', notes: '' };
 const emptyDealForm = { leadId: '', contactId: '', companyId: '', name: '', stage: 'needs_discovery', amount: '', margin: '', probability: 25, expectedCloseDate: '', notes: '' };
 const emptyTaskForm = { relatedType: 'contact', relatedId: '', title: '', body: '', dueAt: '' };
-const emptyActivityForm = { relatedType: 'contact', relatedId: '', type: 'call', direction: 'outbound', subject: '', body: '', occurredAt: '', dueAt: '' };
+const emptyActivityForm = { relatedType: 'contact', relatedId: '', companyId: '', type: 'call', direction: 'outbound', subject: '', body: '', occurredAt: '', dueAt: '' };
 const emptyEquipmentForm = {
   relatedType: 'contact',
   relatedId: '',
@@ -485,21 +485,68 @@ function CreateDealDialog({ open, onClose, supabase, contacts, companies, leads,
 }
 
 function CreateActivityDialog({ open, onClose, supabase, contacts, companies, leads, deals, onCreated }) {
+  const companyRequestRef = useRef(0);
   const [form, setForm] = useState(emptyActivityForm);
+  const [contactCompanies, setContactCompanies] = useState([]);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
   const options = form.relatedType === 'deal' ? deals : form.relatedType === 'lead' ? leads : form.relatedType === 'company' ? companies : contacts;
 
   useEffect(() => {
     if (open) {
+      companyRequestRef.current += 1;
       setForm({ ...emptyActivityForm, occurredAt: toDateTimeLocal(new Date().toISOString()) });
+      setContactCompanies([]);
+      setIsLoadingCompanies(false);
       setError(null);
     }
   }, [open]);
 
+  const handleRelatedRecordChange = async (_event, value) => {
+    const requestId = companyRequestRef.current + 1;
+    companyRequestRef.current = requestId;
+    setForm((prev) => ({ ...prev, relatedId: value?.id || '', companyId: '' }));
+    setContactCompanies([]);
+    setError(null);
+
+    if (form.relatedType !== 'contact' || !value) return;
+
+    setIsLoadingCompanies(true);
+    const { data, error: companyError } = await supabase
+      .from('contact_companies')
+      .select('company_id, is_primary, companies(id, name)')
+      .eq('contact_id', value.id)
+      .order('is_primary', { ascending: false });
+
+    if (requestId !== companyRequestRef.current) return;
+
+    if (companyError) {
+      setError(companyError.message);
+      setIsLoadingCompanies(false);
+      return;
+    }
+
+    const linkedCompanies = contactCompanyOptions(value, data || []);
+    setContactCompanies(linkedCompanies);
+    setForm((prev) => ({
+      ...prev,
+      companyId: linkedCompanies.length === 1 ? linkedCompanies[0].id : '',
+    }));
+    setIsLoadingCompanies(false);
+  };
+
   const handleSave = async () => {
     if (!form.relatedId) {
       setError('Choose a related record.');
+      return;
+    }
+    if (isLoadingCompanies) {
+      setError('Company links are still loading.');
+      return;
+    }
+    if (form.relatedType === 'contact' && contactCompanies.length > 1 && !form.companyId) {
+      setError('Choose the company for this activity.');
       return;
     }
 
@@ -510,7 +557,7 @@ function CreateActivityDialog({ open, onClose, supabase, contacts, companies, le
     const payload = {
       owner_id: user.id,
       contact_id: form.relatedType === 'contact' ? form.relatedId : related?.contact_id || null,
-      company_id: form.relatedType === 'company' ? form.relatedId : related?.company_id || null,
+      company_id: form.relatedType === 'company' ? form.relatedId : form.relatedType === 'contact' ? form.companyId || null : related?.company_id || null,
       lead_id: form.relatedType === 'lead' ? form.relatedId : related?.lead_id || null,
       deal_id: form.relatedType === 'deal' ? form.relatedId : null,
       type: form.type,
@@ -538,14 +585,19 @@ function CreateActivityDialog({ open, onClose, supabase, contacts, companies, le
         <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField select label="Related Type" value={form.relatedType} onChange={(event) => setForm((prev) => ({ ...prev, relatedType: event.target.value, relatedId: '' }))} fullWidth>
+            <TextField select label="Related Type" value={form.relatedType} onChange={(event) => { companyRequestRef.current += 1; setForm((prev) => ({ ...prev, relatedType: event.target.value, relatedId: '', companyId: '' })); setContactCompanies([]); setIsLoadingCompanies(false); }} fullWidth>
               <MenuItem value="contact">Contact</MenuItem>
               <MenuItem value="company">Company</MenuItem>
               <MenuItem value="lead">Lead</MenuItem>
               <MenuItem value="deal">Deal</MenuItem>
             </TextField>
-            <Autocomplete options={options} value={options.find((item) => item.id === form.relatedId) || null} onChange={(_event, value) => setForm((prev) => ({ ...prev, relatedId: value?.id || '' }))} getOptionLabel={(option) => relatedOptionLabel(option, form.relatedType)} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <TextField {...params} label="Record" placeholder="Search" />} />
+            <Autocomplete options={options} value={options.find((item) => item.id === form.relatedId) || null} onChange={handleRelatedRecordChange} getOptionLabel={(option) => relatedOptionLabel(option, form.relatedType)} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <TextField {...params} label="Record" placeholder="Search" />} />
           </Stack>
+          {form.relatedType === 'contact' && contactCompanies.length > 1 && (
+            <TextField select label="Company" value={form.companyId} onChange={handleField(setForm, 'companyId')} helperText="Choose which linked company should receive this activity." fullWidth required>
+              {contactCompanies.map((company) => <MenuItem key={company.id} value={company.id}>{company.name}{company.is_primary ? ' (Primary)' : ''}</MenuItem>)}
+            </TextField>
+          )}
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField select label="Type" value={form.type} onChange={handleField(setForm, 'type')} fullWidth>{activityTypes.map((item) => <MenuItem key={item} value={item}>{formatEnum(item)}</MenuItem>)}</TextField>
             <TextField select label="Direction" value={form.direction} onChange={handleField(setForm, 'direction')} fullWidth>{activityDirections.map((item) => <MenuItem key={item} value={item}>{formatEnum(item)}</MenuItem>)}</TextField>
@@ -775,6 +827,21 @@ function contactName(contact) {
 
 function contactOptionLabel(contact) {
   return [contactName(contact), contact?.companies?.name].filter(Boolean).join(' - ');
+}
+
+function contactCompanyOptions(contact, links) {
+  const companies = links
+    .filter((link) => link.companies)
+    .map((link) => ({ ...link.companies, is_primary: link.is_primary }));
+
+  if (
+    contact?.companies?.id &&
+    !companies.some((company) => company.id === contact.companies.id)
+  ) {
+    companies.push({ ...contact.companies, is_primary: true });
+  }
+
+  return companies;
 }
 
 function entityName(record) {

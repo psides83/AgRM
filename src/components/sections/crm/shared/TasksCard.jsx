@@ -1,17 +1,29 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import {
+  Alert,
   Box,
+  Button,
   Checkbox,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
+  IconButton,
   Paper,
   Stack,
+  TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import IconifyIcon from 'components/base/IconifyIcon';
 
 function TasksCard({ tasks, supabase, onSaved }) {
+  const [editingTask, setEditingTask] = useState(null);
+
   const handleComplete = async (taskId) => {
     const { error } = await supabase
       .from('tasks')
@@ -104,6 +116,15 @@ function TasksCard({ tasks, supabase, onSaved }) {
                   </Typography>
                 )}
               </Box>
+              <Tooltip title="Edit task">
+                <IconButton
+                  size="small"
+                  aria-label={`Edit ${task.title}`}
+                  onClick={() => setEditingTask(task)}
+                >
+                  <IconifyIcon icon="material-symbols:edit-outline" />
+                </IconButton>
+              </Tooltip>
             </Stack>
           ))
         ) : (
@@ -112,7 +133,105 @@ function TasksCard({ tasks, supabase, onSaved }) {
           </Typography>
         )}
       </Stack>
+
+      <EditTaskDialog
+        open={Boolean(editingTask)}
+        task={editingTask}
+        supabase={supabase}
+        onClose={() => setEditingTask(null)}
+        onSaved={() => {
+          setEditingTask(null);
+          onSaved();
+        }}
+      />
     </Paper>
+  );
+}
+
+function EditTaskDialog({ open, task, supabase, onClose, onSaved }) {
+  const [form, setForm] = useState({ title: '', body: '', dueAt: '' });
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!open || !task) return;
+
+    setForm({
+      title: task.title || '',
+      body: task.body || '',
+      dueAt: toDateTimeLocal(task.due_at),
+    });
+    setError(null);
+  }, [open, task]);
+
+  const handleChange = (field) => (event) => {
+    setForm((current) => ({ ...current, [field]: event.target.value }));
+  };
+
+  const handleSave = async () => {
+    if (!task?.id) return;
+
+    setIsSaving(true);
+    setError(null);
+
+    const { error: saveError } = await supabase
+      .from('tasks')
+      .update({
+        title: cleanText(form.title) || 'Task',
+        body: preserveText(form.body),
+        due_at: form.dueAt ? new Date(form.dueAt).toISOString() : null,
+      })
+      .eq('id', task.id);
+
+    setIsSaving(false);
+    if (saveError) {
+      setError(saveError.message);
+      return;
+    }
+
+    onSaved();
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Edit Task</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          {error && <Alert severity="error">{error}</Alert>}
+          <TextField
+            label="Task"
+            value={form.title}
+            onChange={handleChange('title')}
+            fullWidth
+            autoFocus
+          />
+          <TextField
+            label="Details"
+            value={form.body}
+            onChange={handleChange('body')}
+            fullWidth
+            multiline
+            rows={4}
+          />
+          <TextField
+            label="Due At"
+            type="datetime-local"
+            value={form.dueAt}
+            onChange={handleChange('dueAt')}
+            slotProps={{ inputLabel: { shrink: true } }}
+            fullWidth
+          />
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button color="neutral" onClick={onClose} disabled={isSaving}>
+          Cancel
+        </Button>
+        <Button variant="contained" onClick={handleSave} loading={isSaving}>
+          Save Task
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
@@ -129,6 +248,22 @@ function formatDateTime(value) {
 
 function isPastDue(value) {
   return value ? new Date(value).getTime() < Date.now() : false;
+}
+
+function toDateTimeLocal(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset();
+  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16);
+}
+
+function cleanText(value) {
+  return value?.trim() || null;
+}
+
+function preserveText(value) {
+  const text = value?.trimEnd();
+  return text ? text : null;
 }
 
 export default TasksCard;

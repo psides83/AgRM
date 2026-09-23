@@ -24,6 +24,14 @@ const sitemap = [
         active: true,
       },
       {
+        name: 'Companies',
+        key: 'companies',
+        path: paths.companies,
+        pathName: 'companies',
+        icon: 'material-symbols:business-center-outline-rounded',
+        active: true,
+      },
+      {
         name: 'Leads',
         key: 'leads',
         path: paths.leads,

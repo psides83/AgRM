@@ -311,7 +311,7 @@ const CompanyDetails = ({ companyId }) => {
           title={null}
           breadcrumb={[
             { label: "Home", url: paths.crm },
-            { label: "Contacts", url: paths.contacts },
+            { label: "Companies", url: paths.companies },
             { label: "Company detail", active: true },
           ]}
         />
@@ -692,7 +692,7 @@ const CompanyDetails = ({ companyId }) => {
         company={company}
         supabase={supabase}
         onClose={() => setDialog(null)}
-        onDeleted={() => router.push(paths.contacts)}
+        onDeleted={() => router.push(paths.companies)}
       />
     </Grid>
   );
@@ -1539,19 +1539,6 @@ function EditCompanyDialog({
               fullWidth
             />
           </Stack>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={form.sameCoordinatesAsContact}
-                onChange={handleUseContactField(
-                  "sameCoordinatesAsContact",
-                  coordinateFields,
-                )}
-                disabled={!selectedCopyContact}
-              />
-            }
-            label="Use contact coordinates"
-          />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="City"
@@ -1572,20 +1559,25 @@ function EditCompanyDialog({
               fullWidth
             />
           </Stack>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              label="Postal Code"
-              value={form.postalCode}
-              onChange={handleField(setForm, "postalCode")}
-              fullWidth
-            />
-            <TextField
-              label="Country"
-              value={form.country}
-              onChange={handleField(setForm, "country")}
-              fullWidth
-            />
-          </Stack>
+          <TextField
+            label="Postal Code"
+            value={form.postalCode}
+            onChange={handleField(setForm, "postalCode")}
+            fullWidth
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={form.sameCoordinatesAsContact}
+                onChange={handleUseContactField(
+                  "sameCoordinatesAsContact",
+                  coordinateFields,
+                )}
+                disabled={!selectedCopyContact}
+              />
+            }
+            label="Use contact coordinates"
+          />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Latitude"
@@ -2019,20 +2011,12 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
                 fullWidth
               />
             </Stack>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField
-                label="Postal Code"
-                value={form.postalCode}
-                onChange={handleField(setForm, "postalCode")}
-                fullWidth
-              />
-              <TextField
-                label="Country"
-                value={form.country}
-                onChange={handleField(setForm, "country")}
-                fullWidth
-              />
-            </Stack>
+            <TextField
+              label="Postal Code"
+              value={form.postalCode}
+              onChange={handleField(setForm, "postalCode")}
+              fullWidth
+            />
             <FormControlLabel
               control={
                 <Checkbox

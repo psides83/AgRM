@@ -1853,6 +1853,12 @@ function EditContactDialog({
               fullWidth
             />
           </Stack>
+          <TextField
+            label="Postal Code"
+            value={form.postalCode}
+            onChange={handleField(setForm, "postalCode")}
+            fullWidth
+          />
           <FormControlLabel
             control={
               <Checkbox
@@ -1866,24 +1872,6 @@ function EditContactDialog({
             }
             label="Use company coordinates"
           />
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            sx={{ minWidth: 0 }}
-          >
-            <TextField
-              label="Postal Code"
-              value={form.postalCode}
-              onChange={handleField(setForm, "postalCode")}
-              fullWidth
-            />
-            <TextField
-              label="Country"
-              value={form.country}
-              onChange={handleField(setForm, "country")}
-              fullWidth
-            />
-          </Stack>
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={2}
@@ -2290,7 +2278,9 @@ function AddNoteDialog({ open, contact, onClose, onSaved, supabase }) {
 }
 
 function AddActivityDialog({ open, contact, onClose, onSaved, supabase }) {
+  const companyOptions = activityCompanyOptions(contact);
   const [form, setForm] = useState({
+    companyId: "",
     type: "call",
     direction: "outbound",
     subject: "",
@@ -2299,10 +2289,12 @@ function AddActivityDialog({ open, contact, onClose, onSaved, supabase }) {
     dueAt: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (open) {
       setForm({
+        companyId: companyOptions.length === 1 ? companyOptions[0].id : "",
         type: "call",
         direction: "outbound",
         subject: "",
@@ -2310,16 +2302,23 @@ function AddActivityDialog({ open, contact, onClose, onSaved, supabase }) {
         occurredAt: toDateTimeLocal(new Date().toISOString()),
         dueAt: "",
       });
+      setError(null);
     }
-  }, [open]);
+  }, [contact, open]);
 
   const handleSave = async () => {
+    if (companyOptions.length > 1 && !form.companyId) {
+      setError("Choose the company for this activity.");
+      return;
+    }
+
     setIsSaving(true);
+    setError(null);
     const { data: userResult } = await supabase.auth.getUser();
     const { error } = await supabase.from("activities").insert({
       owner_id: userResult.user.id,
       contact_id: contact.id,
-      company_id: contact.company_id,
+      company_id: form.companyId || null,
       type: form.type,
       direction: form.direction,
       subject: cleanText(form.subject) || formatEnum(form.type),
@@ -2333,6 +2332,8 @@ function AddActivityDialog({ open, contact, onClose, onSaved, supabase }) {
     if (!error) {
       onSaved();
       onClose();
+    } else {
+      setError(error.message);
     }
   };
 
@@ -2341,6 +2342,25 @@ function AddActivityDialog({ open, contact, onClose, onSaved, supabase }) {
       <DialogTitle>Add Activity</DialogTitle>
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ pt: 1, minWidth: 0 }}>
+          {error && <Alert severity="error">{error}</Alert>}
+          {companyOptions.length > 1 && (
+            <TextField
+              select
+              label="Company"
+              value={form.companyId}
+              onChange={handleField(setForm, "companyId")}
+              helperText="Choose which linked company should receive this activity."
+              fullWidth
+              required
+            >
+              {companyOptions.map((company) => (
+                <MenuItem key={company.id} value={company.id}>
+                  {company.name}
+                  {company.is_primary ? " (Primary)" : ""}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={2}
@@ -2421,6 +2441,17 @@ function AddActivityDialog({ open, contact, onClose, onSaved, supabase }) {
       </DialogActions>
     </Dialog>
   );
+}
+
+function activityCompanyOptions(contact) {
+  const options = [...(contact?.linkedCompanies || [])];
+  if (
+    contact?.companies?.id &&
+    !options.some((company) => company.id === contact.companies.id)
+  ) {
+    options.push(contact.companies);
+  }
+  return options;
 }
 
 function AddEquipmentDialog({

@@ -102,6 +102,7 @@ const paths = {
 
   crmRoot: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}`,
   contacts: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}`,
+  companies: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/companies`,
   publicBusinessCard: (slug) => `/card/${slug || ''}`,
   contactDetails: (contactId) =>
     `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/contacts/${contactId || ''}`,

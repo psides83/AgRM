@@ -370,13 +370,6 @@ const PersonalInfoForm = ({ label }) => {
                 {...register("personalInfo.postalCode")}
               />
             </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Country"
-                {...register("personalInfo.country")}
-              />
-            </Grid>
             <Grid size={12}>
               <FormControlLabel
                 control={
