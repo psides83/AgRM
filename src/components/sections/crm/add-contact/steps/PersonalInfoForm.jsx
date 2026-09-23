@@ -260,13 +260,23 @@ const PersonalInfoForm = ({ label }) => {
               <TextField
                 fullWidth
                 label="Social Security Number"
-                type="password"
-                autoComplete="off"
+                type="text"
                 error={!!errors.personalInfo?.socialSecurityNumber}
                 helperText={
                   errors.personalInfo?.socialSecurityNumber?.message ||
                   "Stored encrypted; only last four is shown later."
                 }
+                slotProps={{
+                  htmlInput: {
+                    autoComplete: "new-password",
+                    inputMode: "numeric",
+                    "data-1p-ignore": "true",
+                    "data-bwignore": "true",
+                    "data-form-type": "other",
+                    "data-lpignore": "true",
+                    style: { WebkitTextSecurity: "disc" },
+                  },
+                }}
                 {...register("personalInfo.socialSecurityNumber")}
               />
             </Grid>
@@ -274,9 +284,18 @@ const PersonalInfoForm = ({ label }) => {
               <TextField
                 fullWidth
                 label="Ag Tax-Exempt Number"
-                type="password"
-                autoComplete="off"
+                type="text"
                 helperText="Stored encrypted; only the last four is shown later."
+                slotProps={{
+                  htmlInput: {
+                    autoComplete: "new-password",
+                    "data-1p-ignore": "true",
+                    "data-bwignore": "true",
+                    "data-form-type": "other",
+                    "data-lpignore": "true",
+                    style: { WebkitTextSecurity: "disc" },
+                  },
+                }}
                 {...register("personalInfo.agTaxExemptNumber")}
               />
             </Grid>

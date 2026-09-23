@@ -1,16 +1,27 @@
 const TextField = {
   defaultProps: {
-    variant: 'filled',
+    autoComplete: "off",
+    slotProps: {
+      htmlInput: {
+        autoComplete: "new-password",
+        "data-1p-ignore": "true",
+        "data-bwignore": "true",
+        "data-form-type": "other",
+        "data-lpignore": "true",
+      },
+    },
+    variant: "filled",
   },
   styleOverrides: {
     root: {
-      '& input::-webkit-contacts-auto-fill-button, & input::-webkit-credentials-auto-fill-button': {
-        visibility: 'hidden',
-        display: 'none !important',
-        pointerEvents: 'none',
-        position: 'absolute',
-        right: 0,
-      },
+      "& input::-webkit-contacts-auto-fill-button, & input::-webkit-credentials-auto-fill-button":
+        {
+          visibility: "hidden",
+          display: "none !important",
+          pointerEvents: "none",
+          position: "absolute",
+          right: 0,
+        },
     },
   },
 };

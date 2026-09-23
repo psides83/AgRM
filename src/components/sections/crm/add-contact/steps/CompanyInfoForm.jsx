@@ -238,13 +238,23 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
                   <TextField
                     fullWidth
                     label="Employer Identification Number (EIN)"
-                    type="password"
-                    autoComplete="off"
+                    type="text"
                     error={!!errors.companyInfo?.ein}
                     helperText={
                       errors.companyInfo?.ein?.message ||
                       "Stored encrypted; only the last four is shown later."
                     }
+                    slotProps={{
+                      htmlInput: {
+                        autoComplete: "new-password",
+                        inputMode: "numeric",
+                        "data-1p-ignore": "true",
+                        "data-bwignore": "true",
+                        "data-form-type": "other",
+                        "data-lpignore": "true",
+                        style: { WebkitTextSecurity: "disc" },
+                      },
+                    }}
                     {...register("companyInfo.ein")}
                   />
                 </Grid>
@@ -252,9 +262,18 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
                   <TextField
                     fullWidth
                     label="Ag Tax-Exempt Number"
-                    type="password"
-                    autoComplete="off"
+                    type="text"
                     helperText="Stored encrypted; only the last four is shown later."
+                    slotProps={{
+                      htmlInput: {
+                        autoComplete: "new-password",
+                        "data-1p-ignore": "true",
+                        "data-bwignore": "true",
+                        "data-form-type": "other",
+                        "data-lpignore": "true",
+                        style: { WebkitTextSecurity: "disc" },
+                      },
+                    }}
                     {...register("companyInfo.agTaxExemptNumber")}
                   />
                 </Grid>

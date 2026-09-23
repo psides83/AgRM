@@ -1421,7 +1421,7 @@ function EditCompanyDialog({
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Employer Identification Number (EIN)"
-              type="password"
+              type="text"
               value={form.ein}
               onChange={handleField(setForm, "ein")}
               helperText={
@@ -1429,11 +1429,22 @@ function EditCompanyDialog({
                   ? `Current value: *******${company.ein_last4}. Enter a new EIN to replace it.`
                   : "Stored encrypted; enter 9 digits."
               }
+              slotProps={{
+                htmlInput: {
+                  autoComplete: "new-password",
+                  inputMode: "numeric",
+                  "data-1p-ignore": "true",
+                  "data-bwignore": "true",
+                  "data-form-type": "other",
+                  "data-lpignore": "true",
+                  style: { WebkitTextSecurity: "disc" },
+                },
+              }}
               fullWidth
             />
             <TextField
               label="Ag Tax-Exempt Number"
-              type="password"
+              type="text"
               value={form.agTaxExemptNumber}
               onChange={handleField(setForm, "agTaxExemptNumber")}
               helperText={
@@ -1441,6 +1452,16 @@ function EditCompanyDialog({
                   ? "The saved number is shown on the company detail page. Enter a new number to replace it."
                   : "Stored encrypted; only the last four is shown later."
               }
+              slotProps={{
+                htmlInput: {
+                  autoComplete: "new-password",
+                  "data-1p-ignore": "true",
+                  "data-bwignore": "true",
+                  "data-form-type": "other",
+                  "data-lpignore": "true",
+                  style: { WebkitTextSecurity: "disc" },
+                },
+              }}
               fullWidth
             />
           </Stack>
@@ -1873,18 +1894,39 @@ function AddContactDialog({ open, company, onClose, onSaved, supabase }) {
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 label="Social Security Number"
-                type="password"
+                type="text"
                 value={form.socialSecurityNumber}
                 onChange={handleField(setForm, "socialSecurityNumber")}
                 helperText="Stored encrypted; enter 9 digits."
+                slotProps={{
+                  htmlInput: {
+                    autoComplete: "new-password",
+                    inputMode: "numeric",
+                    "data-1p-ignore": "true",
+                    "data-bwignore": "true",
+                    "data-form-type": "other",
+                    "data-lpignore": "true",
+                    style: { WebkitTextSecurity: "disc" },
+                  },
+                }}
                 fullWidth
               />
               <TextField
                 label="Ag Tax-Exempt Number"
-                type="password"
+                type="text"
                 value={form.agTaxExemptNumber}
                 onChange={handleField(setForm, "agTaxExemptNumber")}
                 helperText="Stored encrypted."
+                slotProps={{
+                  htmlInput: {
+                    autoComplete: "new-password",
+                    "data-1p-ignore": "true",
+                    "data-bwignore": "true",
+                    "data-form-type": "other",
+                    "data-lpignore": "true",
+                    style: { WebkitTextSecurity: "disc" },
+                  },
+                }}
                 fullWidth
               />
             </Stack>

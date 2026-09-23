@@ -1622,18 +1622,39 @@ function EditContactDialog({
               >
                 <TextField
                   label="Company EIN"
-                  type="password"
+                  type="text"
                   value={form.newCompanyEin}
                   onChange={handleField(setForm, "newCompanyEin")}
                   helperText="Stored encrypted; enter 9 digits."
+                  slotProps={{
+                    htmlInput: {
+                      autoComplete: "new-password",
+                      inputMode: "numeric",
+                      "data-1p-ignore": "true",
+                      "data-bwignore": "true",
+                      "data-form-type": "other",
+                      "data-lpignore": "true",
+                      style: { WebkitTextSecurity: "disc" },
+                    },
+                  }}
                   fullWidth
                 />
                 <TextField
                   label="Company Ag Tax-Exempt Number"
-                  type="password"
+                  type="text"
                   value={form.newCompanyAgTaxExemptNumber}
                   onChange={handleField(setForm, "newCompanyAgTaxExemptNumber")}
                   helperText="Stored encrypted."
+                  slotProps={{
+                    htmlInput: {
+                      autoComplete: "new-password",
+                      "data-1p-ignore": "true",
+                      "data-bwignore": "true",
+                      "data-form-type": "other",
+                      "data-lpignore": "true",
+                      style: { WebkitTextSecurity: "disc" },
+                    },
+                  }}
                   fullWidth
                 />
               </Stack>
@@ -1685,7 +1706,7 @@ function EditContactDialog({
           />
           <TextField
             label="Social Security Number"
-            type="password"
+            type="text"
             value={form.socialSecurityNumber}
             onChange={handleField(setForm, "socialSecurityNumber")}
             helperText={
@@ -1693,11 +1714,22 @@ function EditContactDialog({
                 ? `Current value: *****${contact.ssn_last4}. Enter a new SSN to replace it.`
                 : "Stored encrypted; only last four is shown later."
             }
+            slotProps={{
+              htmlInput: {
+                autoComplete: "new-password",
+                inputMode: "numeric",
+                "data-1p-ignore": "true",
+                "data-bwignore": "true",
+                "data-form-type": "other",
+                "data-lpignore": "true",
+                style: { WebkitTextSecurity: "disc" },
+              },
+            }}
             fullWidth
           />
           <TextField
             label="Ag Tax-Exempt Number"
-            type="password"
+            type="text"
             value={form.agTaxExemptNumber}
             onChange={handleField(setForm, "agTaxExemptNumber")}
             helperText={
@@ -1705,6 +1737,16 @@ function EditContactDialog({
                 ? "The saved number is shown on the contact detail page. Enter a new number to replace it."
                 : "Stored encrypted; only the last four is shown later."
             }
+            slotProps={{
+              htmlInput: {
+                autoComplete: "new-password",
+                "data-1p-ignore": "true",
+                "data-bwignore": "true",
+                "data-form-type": "other",
+                "data-lpignore": "true",
+                style: { WebkitTextSecurity: "disc" },
+              },
+            }}
             fullWidth
           />
           <Stack

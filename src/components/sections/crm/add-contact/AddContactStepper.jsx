@@ -272,7 +272,7 @@ const AddContactStepper = () => {
           ))}
         </Stepper>
 
-        <Box component="form" onSubmit={handleFormSubmit}>
+        <Box component="form" autoComplete="off" onSubmit={handleFormSubmit}>
           <Box sx={{ mb: 7 }}>
             {activeStep === 0 && (
               <PersonalInfoForm label="Personal Information" />

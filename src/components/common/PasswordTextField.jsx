@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { IconButton, InputAdornment, TextField } from '@mui/material';
-import IconifyIcon from 'components/base/IconifyIcon';
+import { useState } from "react";
+import { IconButton, InputAdornment, TextField } from "@mui/material";
+import IconifyIcon from "components/base/IconifyIcon";
 
-const PasswordTextField = ({ ref, ...props }) => {
+const PasswordTextField = ({ ref, slotProps, ...props }) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const handlePasswordVisibilty = (event) => {
@@ -12,10 +12,20 @@ const PasswordTextField = ({ ref, ...props }) => {
 
   return (
     <TextField
-      type={isPasswordVisible ? 'text' : 'password'}
+      type={isPasswordVisible ? "text" : "password"}
       ref={ref}
       slotProps={{
+        ...slotProps,
+        htmlInput: {
+          autoComplete: "new-password",
+          "data-1p-ignore": "true",
+          "data-bwignore": "true",
+          "data-form-type": "other",
+          "data-lpignore": "true",
+          ...slotProps?.htmlInput,
+        },
         input: {
+          ...slotProps?.input,
           endAdornment: (
             <InputAdornment position="end">
               <IconButton onClick={handlePasswordVisibilty}>
