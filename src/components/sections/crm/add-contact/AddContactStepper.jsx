@@ -405,7 +405,9 @@ async function resolveCompanyIds(supabase, ownerId, companyInfo) {
         [
           ...(companyInfo.existingCompanyIds || []),
           companyInfo.existingCompanyId,
-        ].filter(Boolean),
+        ]
+          .map(companyIdFromValue)
+          .filter(Boolean),
       ),
     );
     if (!companyIds.length) {
@@ -420,6 +422,11 @@ async function resolveCompanyIds(supabase, ownerId, companyInfo) {
 
   const companyId = await saveCompany(supabase, ownerId, companyInfo);
   return companyId ? [companyId] : [];
+}
+
+function companyIdFromValue(value) {
+  if (typeof value === "string") return value;
+  return value?.id || "";
 }
 
 async function saveCompany(supabase, ownerId, companyInfo) {

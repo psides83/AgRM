@@ -9,6 +9,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   InputAdornment,
   Link,
   Paper,
@@ -38,12 +39,22 @@ import paths from "routes/paths";
 const emptyCompanyForm = {
   name: "",
   companyType: "",
+  ein: "",
+  agTaxExemptNumber: "",
   accountNumber: "",
   website: "",
   email: "",
   phone: "",
+  addressLine1: "",
+  addressLine2: "",
   city: "",
+  county: "",
   region: "",
+  postalCode: "",
+  country: "US",
+  latitude: "",
+  longitude: "",
+  notes: "",
 };
 
 const CompaniesList = () => {
@@ -452,6 +463,12 @@ function CreateCompanyDialog({ open, onClose, onCreated, supabase }) {
       return;
     }
 
+    const ein = form.ein.replace(/\D/g, "");
+    if (ein && ein.length !== 9) {
+      setError("EIN must have 9 digits.");
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
 
@@ -474,40 +491,68 @@ function CreateCompanyDialog({ open, onClose, onCreated, supabase }) {
         website: cleanText(form.website),
         email: cleanText(form.email),
         phone: cleanPhone(form.phone),
+        address_line1: cleanText(form.addressLine1),
+        address_line2: cleanText(form.addressLine2),
         city: cleanText(form.city),
+        county: cleanText(form.county),
         region: cleanText(form.region),
-        country: "US",
+        postal_code: cleanText(form.postalCode),
+        country: cleanText(form.country) || "US",
+        latitude: cleanNumber(form.latitude),
+        longitude: cleanNumber(form.longitude),
+        notes: cleanText(form.notes),
       })
       .select("id")
       .single();
 
-    setIsSaving(false);
     if (insertError) {
+      setIsSaving(false);
       setError(insertError.message);
       return;
     }
+
+    try {
+      await saveCompanySensitiveFields(data.id, {
+        ein,
+        agTaxExemptNumber: form.agTaxExemptNumber,
+      });
+    } catch (sensitiveError) {
+      setIsSaving(false);
+      setError(sensitiveError.message);
+      return;
+    }
+
+    setIsSaving(false);
 
     onClose();
     onCreated(data.id);
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="md"
+      scroll="paper"
+    >
       <DialogTitle>Add Company</DialogTitle>
       <DialogContent>
-        <Stack spacing={2} sx={{ pt: 1 }}>
+        <Stack spacing={3} sx={{ pt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
-          <TextField
-            label="Company Name"
-            value={form.name}
-            onChange={handleField(setForm, "name")}
-            fullWidth
-            required
-            autoFocus
-          />
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+
+          <CompanyFormSection title="Company Details">
+            <TextField
+              label="Company Name"
+              value={form.name}
+              onChange={handleField(setForm, "name")}
+              fullWidth
+              required
+              autoFocus
+            />
             <TextField
               label="Company Type"
+              placeholder="Farm, contractor, municipality..."
               value={form.companyType}
               onChange={handleField(setForm, "companyType")}
               fullWidth
@@ -518,33 +563,85 @@ function CreateCompanyDialog({ open, onClose, onCreated, supabase }) {
               onChange={handleField(setForm, "accountNumber")}
               fullWidth
             />
-          </Stack>
-          <TextField
-            label="Website"
-            value={form.website}
-            onChange={handleField(setForm, "website")}
-            fullWidth
-          />
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
-              label="Email"
+              label="Employer Identification Number (EIN)"
+              value={form.ein}
+              onChange={handleField(setForm, "ein")}
+              helperText="Stored encrypted; only the last four is shown later."
+              slotProps={{
+                htmlInput: {
+                  autoComplete: "new-password",
+                  inputMode: "numeric",
+                  "data-1p-ignore": "true",
+                  "data-bwignore": "true",
+                  "data-form-type": "other",
+                  "data-lpignore": "true",
+                  style: { WebkitTextSecurity: "disc" },
+                },
+              }}
+              fullWidth
+            />
+            <TextField
+              label="Ag Tax-Exempt Number"
+              value={form.agTaxExemptNumber}
+              onChange={handleField(setForm, "agTaxExemptNumber")}
+              helperText="Stored encrypted; only the last four is shown later."
+              slotProps={{
+                htmlInput: {
+                  autoComplete: "new-password",
+                  "data-1p-ignore": "true",
+                  "data-bwignore": "true",
+                  "data-form-type": "other",
+                  "data-lpignore": "true",
+                  style: { WebkitTextSecurity: "disc" },
+                },
+              }}
+              fullWidth
+            />
+            <TextField
+              label="Website"
+              value={form.website}
+              onChange={handleField(setForm, "website")}
+              fullWidth
+            />
+            <TextField
+              label="Company Phone"
+              value={form.phone}
+              onChange={handlePhoneChange(setForm, "phone")}
+              fullWidth
+            />
+            <TextField
+              label="Company Email"
               type="email"
               value={form.email}
               onChange={handleField(setForm, "email")}
               fullWidth
             />
+          </CompanyFormSection>
+
+          <CompanyFormSection title="Company Address">
             <TextField
-              label="Phone"
-              value={form.phone}
-              onChange={handlePhoneChange(setForm, "phone")}
+              label="Address Line 1"
+              value={form.addressLine1}
+              onChange={handleField(setForm, "addressLine1")}
               fullWidth
             />
-          </Stack>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              label="Address Line 2"
+              value={form.addressLine2}
+              onChange={handleField(setForm, "addressLine2")}
+              fullWidth
+            />
             <TextField
               label="City"
               value={form.city}
               onChange={handleField(setForm, "city")}
+              fullWidth
+            />
+            <TextField
+              label="County"
+              value={form.county}
+              onChange={handleField(setForm, "county")}
               fullWidth
             />
             <TextField
@@ -553,7 +650,44 @@ function CreateCompanyDialog({ open, onClose, onCreated, supabase }) {
               onChange={handleField(setForm, "region")}
               fullWidth
             />
-          </Stack>
+            <TextField
+              label="Postal Code"
+              value={form.postalCode}
+              onChange={handleField(setForm, "postalCode")}
+              fullWidth
+            />
+            <TextField
+              label="Country"
+              value={form.country}
+              onChange={handleField(setForm, "country")}
+              fullWidth
+            />
+            <TextField
+              label="Latitude"
+              type="number"
+              value={form.latitude}
+              onChange={handleField(setForm, "latitude")}
+              fullWidth
+            />
+            <TextField
+              label="Longitude"
+              type="number"
+              value={form.longitude}
+              onChange={handleField(setForm, "longitude")}
+              fullWidth
+            />
+          </CompanyFormSection>
+
+          <CompanyFormSection title="Company Notes">
+            <TextField
+              label="Company Notes"
+              value={form.notes}
+              onChange={handleField(setForm, "notes")}
+              fullWidth
+              multiline
+              rows={4}
+            />
+          </CompanyFormSection>
         </Stack>
       </DialogContent>
       <DialogActions>
@@ -565,6 +699,20 @@ function CreateCompanyDialog({ open, onClose, onCreated, supabase }) {
         </Button>
       </DialogActions>
     </Dialog>
+  );
+}
+
+function CompanyFormSection({ title, children }) {
+  return (
+    <Stack spacing={2}>
+      <Box>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+          {title}
+        </Typography>
+        <Divider />
+      </Box>
+      {children}
+    </Stack>
   );
 }
 
@@ -703,6 +851,33 @@ function handleField(setter, field) {
 function cleanText(value) {
   const cleaned = String(value || "").trim();
   return cleaned || null;
+}
+
+function cleanNumber(value) {
+  if (value === "" || value === null || value === undefined) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+async function saveCompanySensitiveFields(companyId, form) {
+  const ein = cleanText(form.ein);
+  const agTaxExemptNumber = cleanText(form.agTaxExemptNumber);
+
+  if (!ein && !agTaxExemptNumber) return;
+
+  const response = await fetch(`/api/crm/company-sensitive/${companyId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...(ein ? { ein } : {}),
+      ...(agTaxExemptNumber ? { agTaxExemptNumber } : {}),
+    }),
+  });
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    throw new Error(result.error || "Could not save sensitive company data.");
+  }
 }
 
 export default CompaniesList;

@@ -186,18 +186,17 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
                     <Autocomplete
                       multiple
                       options={companies}
-                      value={companies.filter((company) =>
-                        (field.value || []).includes(company.id),
-                      )}
+                      value={selectedCompanies(companies, field.value)}
                       getOptionLabel={companyLabel}
                       isOptionEqualToValue={(option, value) =>
-                        option.id === value.id
+                        companyId(option) === companyId(value)
                       }
                       onChange={(_, value) => {
-                        const ids = value.map((company) => company.id);
+                        const ids = value.map(companyId).filter(Boolean);
                         field.onChange(ids);
                         setValue("companyInfo.existingCompanyId", ids[0] || "");
                       }}
+                      filterSelectedOptions
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -461,8 +460,22 @@ function copyFields(setValue, targetPrefix, source, fields) {
   });
 }
 
+function selectedCompanies(companies, selectedValues) {
+  const selectedIds = new Set(
+    (selectedValues || []).map(companyId).filter(Boolean),
+  );
+  return companies.filter((company) => selectedIds.has(companyId(company)));
+}
+
+function companyId(company) {
+  if (typeof company === "string") return company;
+  return company?.id || "";
+}
+
 function companyLabel(company) {
-  return [company.name, company.city, company.region]
+  if (typeof company === "string") return company;
+
+  return [company?.name, company?.city, company?.region]
     .filter(Boolean)
     .join(" - ");
 }
