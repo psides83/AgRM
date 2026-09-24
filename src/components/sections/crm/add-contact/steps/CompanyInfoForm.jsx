@@ -1,11 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import {
-  Autocomplete,
   Box,
   Checkbox,
   Divider,
   FormControlLabel,
+  List,
+  ListItemButton,
+  ListItemText,
   MenuItem,
   Stack,
   TextField,
@@ -164,7 +166,7 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
       <Stack direction="column" spacing={4}>
         <ContactFormSection title="Company Association">
           <Grid container spacing={2} sx={{ width: 1 }}>
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid size={12}>
               <TextField
                 select
                 fullWidth
@@ -178,32 +180,18 @@ const CompanyInfoForm = ({ label, companies = [] }) => {
               </TextField>
             </Grid>
             {associationMode === "existing" && (
-              <Grid size={{ xs: 12, sm: 6 }}>
+              <Grid size={12}>
                 <Controller
                   name="companyInfo.existingCompanyIds"
                   control={control}
                   render={({ field }) => (
-                    <Autocomplete
-                      multiple
-                      options={companies}
-                      value={selectedCompanies(companies, field.value)}
-                      getOptionLabel={companyLabel}
-                      isOptionEqualToValue={(option, value) =>
-                        companyId(option) === companyId(value)
-                      }
-                      onChange={(_, value) => {
-                        const ids = value.map(companyId).filter(Boolean);
+                    <ExistingCompanyPicker
+                      companies={companies}
+                      value={field.value}
+                      onChange={(ids) => {
                         field.onChange(ids);
                         setValue("companyInfo.existingCompanyId", ids[0] || "");
                       }}
-                      filterSelectedOptions
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Existing Companies"
-                          placeholder="Select companies"
-                        />
-                      )}
                     />
                   )}
                 />
@@ -460,11 +448,92 @@ function copyFields(setValue, targetPrefix, source, fields) {
   });
 }
 
-function selectedCompanies(companies, selectedValues) {
-  const selectedIds = new Set(
-    (selectedValues || []).map(companyId).filter(Boolean),
+function ExistingCompanyPicker({ companies, value, onChange }) {
+  const [search, setSearch] = useState("");
+  const selectedIds = useMemo(
+    () => (value || []).map(companyId).filter(Boolean),
+    [value],
   );
-  return companies.filter((company) => selectedIds.has(companyId(company)));
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const filteredCompanies = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return companies;
+
+    return companies.filter((company) =>
+      companyLabel(company).toLowerCase().includes(query),
+    );
+  }, [companies, search]);
+
+  const toggleCompany = (company) => {
+    const id = companyId(company);
+    if (!id) return;
+
+    const nextIds = selectedIdSet.has(id)
+      ? selectedIds.filter((selectedId) => selectedId !== id)
+      : [...selectedIds, id];
+    onChange(nextIds);
+  };
+
+  return (
+    <Stack spacing={1.5} sx={{ width: 1 }}>
+      <TextField
+        fullWidth
+        label="Search Existing Companies"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder="Search by name or location"
+      />
+      <Box
+        sx={{
+          border: 1,
+          borderColor: "divider",
+          borderRadius: 1,
+          maxHeight: 280,
+          overflowY: "auto",
+        }}
+      >
+        {filteredCompanies.length ? (
+          <List disablePadding>
+            {filteredCompanies.map((company) => {
+              const id = companyId(company);
+              const selected = selectedIdSet.has(id);
+
+              return (
+                <ListItemButton
+                  key={id}
+                  selected={selected}
+                  onClick={() => toggleCompany(company)}
+                  dense
+                >
+                  <Checkbox
+                    checked={selected}
+                    tabIndex={-1}
+                    disableRipple
+                    slotProps={{
+                      input: { "aria-label": companyLabel(company) },
+                    }}
+                  />
+                  <ListItemText primary={companyLabel(company)} />
+                </ListItemButton>
+              );
+            })}
+          </List>
+        ) : (
+          <Typography
+            variant="body2"
+            sx={{ color: "text.secondary", px: 2, py: 3, textAlign: "center" }}
+          >
+            No matching companies
+          </Typography>
+        )}
+      </Box>
+      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+        {selectedIds.length
+          ? `${selectedIds.length} compan${selectedIds.length === 1 ? "y" : "ies"} selected`
+          : "No companies selected"}
+      </Typography>
+    </Stack>
+  );
 }
 
 function companyId(company) {
