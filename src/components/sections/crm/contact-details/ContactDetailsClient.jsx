@@ -33,6 +33,8 @@ import CrmFilesPanel from "components/sections/crm/shared/CrmFilesPanel";
 import SensitiveInfoRow from "components/sections/crm/shared/SensitiveInfoRow";
 import AddTaskDialog from "components/sections/crm/shared/AddTaskDialog";
 import TasksCard from "components/sections/crm/shared/TasksCard";
+import AddressInfoRow from "components/sections/crm/shared/AddressInfoRow";
+import { formatAddress } from "components/sections/crm/shared/addressFormat";
 import { calculateCommission } from "components/sections/crm/shared/commission";
 import {
   activityDirections,
@@ -420,12 +422,16 @@ const ContactDetailsClient = ({ contactId }) => {
                           color="neutral"
                         />
                       )}
-                      {[contact.city, contact.region].filter(Boolean).length >
-                        0 && (
+                      {formatAddress(contact) && (
                         <Chip
-                          label={[contact.city, contact.region]
-                            .filter(Boolean)
-                            .join(", ")}
+                          label={formatAddress(contact)}
+                          sx={{
+                            height: "auto",
+                            "& .MuiChip-label": {
+                              whiteSpace: "normal",
+                              py: 0.5,
+                            },
+                          }}
                           size="small"
                           variant="soft"
                           color="neutral"
@@ -621,12 +627,7 @@ const ContactDetailsClient = ({ contactId }) => {
                 label="Mobile"
                 value={formatPhone(contact.mobile_phone)}
               />
-              <InfoRow
-                label="Location"
-                value={[contact.city, contact.region, contact.postal_code]
-                  .filter(Boolean)
-                  .join(", ")}
-              />
+              <AddressInfoRow record={contact} />
               {contact.notes && (
                 <Typography
                   variant="body2"
@@ -700,12 +701,7 @@ const ContactDetailsClient = ({ contactId }) => {
                   <InfoRow label="Type" value={company.company_type} />
                   <InfoRow label="Email" value={company.email} />
                   <InfoRow label="Phone" value={formatPhone(company.phone)} />
-                  <InfoRow
-                    label="Location"
-                    value={[company.city, company.region, company.postal_code]
-                      .filter(Boolean)
-                      .join(", ")}
-                  />
+                  <AddressInfoRow record={company} />
                   {company.website && (
                     <Link
                       href={company.website}

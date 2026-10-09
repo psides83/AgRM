@@ -30,6 +30,8 @@ import IconifyIcon from "components/base/IconifyIcon";
 import PageHeader from "components/sections/ecommerce/admin/common/PageHeader";
 import CrmFilesPanel from "components/sections/crm/shared/CrmFilesPanel";
 import SensitiveInfoRow from "components/sections/crm/shared/SensitiveInfoRow";
+import AddressInfoRow from "components/sections/crm/shared/AddressInfoRow";
+import { formatAddress } from "components/sections/crm/shared/addressFormat";
 import { calculateCommission } from "components/sections/crm/shared/commission";
 import {
   activityDirections,
@@ -352,14 +354,7 @@ const CompanyDetails = ({ companyId }) => {
                     {company.name}
                   </Typography>
                   <Typography variant="body1" sx={{ color: "text.secondary" }}>
-                    {[
-                      company.city,
-                      company.county,
-                      company.region,
-                      company.postal_code,
-                    ]
-                      .filter(Boolean)
-                      .join(", ") || "Company account"}
+                    {formatAddress(company) || "Company account"}
                   </Typography>
                   <Stack
                     direction="row"
@@ -589,24 +584,7 @@ const CompanyDetails = ({ companyId }) => {
             <InfoRow label="Email" value={company.email} />
             <InfoRow label="Phone" value={formatPhone(company.phone)} />
             <InfoRow label="Website" value={company.website} />
-            <InfoRow
-              label="Address"
-              value={[company.address_line1, company.address_line2]
-                .filter(Boolean)
-                .join(", ")}
-            />
-            <InfoRow
-              label="Location"
-              value={[
-                company.city,
-                company.county,
-                company.region,
-                company.postal_code,
-              ]
-                .filter(Boolean)
-                .join(", ")}
-            />
-            <InfoRow label="Country" value={company.country} />
+            <AddressInfoRow record={company} />
             {company.notes && (
               <Typography
                 variant="body2"
