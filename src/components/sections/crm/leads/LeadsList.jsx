@@ -623,73 +623,81 @@ function LeadRow({ lead, selected, onSelect, onEdit, onLogCall }) {
         <Checkbox checked={selected} onChange={onSelect} />
       </TableCell>
       <TableCell sx={{ minWidth: 220 }}>
-        <Link
-          href={paths.leadDetails(lead.id)}
-          underline="hover"
-          sx={{ color: 'text.primary', fontWeight: 700 }}
-        >
-          {leadDisplayName(lead)}
-        </Link>
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          {[
-            lead.account_number ? `Account ${lead.account_number}` : null,
-            lead.import_source || lead.source,
-            `Created ${formatDate(lead.created_at)}`,
-          ]
-            .filter(Boolean)
-            .join(' · ')}
-        </Typography>
+        <Stack direction="column" spacing={0.5} alignItems="flex-start">
+          <Link
+            href={paths.leadDetails(lead.id)}
+            underline="hover"
+            sx={{ color: 'text.primary', fontWeight: 700 }}
+          >
+            {leadDisplayName(lead)}
+          </Link>
+          {lead.account_number && (
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Account {lead.account_number}
+            </Typography>
+          )}
+          {(lead.import_source || lead.source) && (
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              {lead.import_source || lead.source}
+            </Typography>
+          )}
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            Created {formatDate(lead.created_at)}
+          </Typography>
+        </Stack>
       </TableCell>
       <TableCell sx={{ minWidth: 220 }}>
-        {lead.contacts?.id ? (
-          <Link
-            href={paths.contactDetails(lead.contacts.id)}
-            underline="hover"
-            sx={{ color: 'text.primary', fontWeight: 600 }}
-          >
-            {contactName(lead.contacts)}
-          </Link>
-        ) : (
-          <Typography variant="body2">{prospectName(lead)}</Typography>
-        )}
-        <Typography
-          variant="caption"
-          sx={{ color: 'text.secondary', display: 'block' }}
-        >
-          {lead.companies?.id ? (
+        <Stack direction="column" spacing={0.5} alignItems="flex-start">
+          {lead.contacts?.id ? (
             <Link
-              href={paths.companyDetails(lead.companies.id)}
+              href={paths.contactDetails(lead.contacts.id)}
               underline="hover"
-              sx={{ color: 'text.secondary' }}
+              sx={{ color: 'text.primary', fontWeight: 600 }}
             >
-              {lead.companies.name}
+              {contactName(lead.contacts)}
             </Link>
           ) : (
-            lead.company_name ||
-            lead.branch ||
-            formatPhone(
-              lead.mobile_phone ||
-                lead.phone ||
-                lead.home_phone ||
-                lead.contacts?.mobile_phone ||
-                lead.contacts?.phone,
-            ) ||
-            lead.email ||
-            lead.contacts?.account_number ||
-            lead.contacts?.email ||
-            'No company'
+            <Typography variant="body2">{prospectName(lead)}</Typography>
           )}
-        </Typography>
-        {(lead.call_result || lead.visited) && (
           <Typography
             variant="caption"
             sx={{ color: 'text.secondary', display: 'block' }}
           >
-            {[lead.call_result, lead.visited ? 'Visited' : null]
-              .filter(Boolean)
-              .join(' · ')}
+            {lead.companies?.id ? (
+              <Link
+                href={paths.companyDetails(lead.companies.id)}
+                underline="hover"
+                sx={{ color: 'text.secondary' }}
+              >
+                {lead.companies.name}
+              </Link>
+            ) : (
+              lead.company_name ||
+              lead.branch ||
+              formatPhone(
+                lead.mobile_phone ||
+                  lead.phone ||
+                  lead.home_phone ||
+                  lead.contacts?.mobile_phone ||
+                  lead.contacts?.phone,
+              ) ||
+              lead.email ||
+              lead.contacts?.account_number ||
+              lead.contacts?.email ||
+              'No company'
+            )}
           </Typography>
-        )}
+          {(lead.call_result || lead.visited) && (
+            <Typography
+              variant="caption"
+              sx={{ color: 'text.secondary', display: 'block' }}
+            >
+              {[lead.call_result, lead.visited ? 'Visited' : null]
+                .filter(Boolean)
+                .join(' · ')}
+            </Typography>
+          )}
+        </Stack>
       </TableCell>
       <TableCell sx={{ minWidth: 150 }}>
         <Stack direction="column" spacing={0.75} alignItems="flex-start">
