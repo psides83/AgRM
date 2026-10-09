@@ -652,7 +652,10 @@ function LeadRow({ lead, selected, onSelect, onEdit, onLogCall }) {
         ) : (
           <Typography variant="body2">{prospectName(lead)}</Typography>
         )}
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+        <Typography
+          variant="caption"
+          sx={{ color: 'text.secondary', display: 'block' }}
+        >
           {lead.companies?.id ? (
             <Link
               href={paths.companyDetails(lead.companies.id)}
@@ -689,7 +692,7 @@ function LeadRow({ lead, selected, onSelect, onEdit, onLogCall }) {
         )}
       </TableCell>
       <TableCell sx={{ minWidth: 150 }}>
-        <Stack spacing={0.75} alignItems="flex-start">
+        <Stack direction="column" spacing={0.75} alignItems="flex-start">
           <Chip
             label={formatLeadStatus(lead.status)}
             size="small"
@@ -703,7 +706,7 @@ function LeadRow({ lead, selected, onSelect, onEdit, onLogCall }) {
       </TableCell>
       <TableCell sx={{ minWidth: 300 }}>
         {primaryEquipment ? (
-          <Stack spacing={1}>
+          <Stack direction="column" spacing={1}>
             <Stack direction="row" spacing={1.25} alignItems="center">
               <EquipmentCategoryIcon category={primaryEquipment.category} />
               <Box sx={{ minWidth: 0 }}>

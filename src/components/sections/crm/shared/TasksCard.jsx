@@ -196,7 +196,7 @@ function EditTaskDialog({ open, task, supabase, onClose, onSaved }) {
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Edit Task</DialogTitle>
       <DialogContent>
-        <Stack spacing={2} sx={{ pt: 1 }}>
+        <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
           <TextField
             label="Task"

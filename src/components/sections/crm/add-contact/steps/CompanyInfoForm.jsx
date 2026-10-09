@@ -475,7 +475,7 @@ function ExistingCompanyPicker({ companies, value, onChange }) {
   };
 
   return (
-    <Stack spacing={1.5} sx={{ width: 1 }}>
+    <Stack direction="column" spacing={1.5} sx={{ width: 1 }}>
       <TextField
         fullWidth
         label="Search Existing Companies"

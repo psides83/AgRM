@@ -338,7 +338,7 @@ const ContactsList = () => {
                       </TableCell>
                       <TableCell>
                         {contact.linkedCompanies.length ? (
-                          <Stack spacing={0.25}>
+                          <Stack direction="column" spacing={0.25}>
                             {contact.linkedCompanies.map((company) => (
                               <Box key={company.id}>
                                 <Link

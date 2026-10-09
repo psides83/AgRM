@@ -304,7 +304,7 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
             </Button>
           }
         >
-          <Stack spacing={2.5}>
+          <Stack direction="column" spacing={2.5}>
             <FormControlLabel
               control={
                 <Switch
@@ -568,7 +568,7 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
 
       <Grid size={{ xs: 12, lg: 7 }}>
         <Paper sx={{ p: { xs: 3, md: 4 } }}>
-          <Stack spacing={2.5}>
+          <Stack direction="column" spacing={2.5}>
             {error && <Alert severity="error">{error}</Alert>}
             <FormControlLabel
               control={
@@ -711,7 +711,7 @@ const BusinessCardManagerClient = ({ embedded = false }) => {
       </Grid>
 
       <Grid size={{ xs: 12, lg: 5 }}>
-        <Stack spacing={3}>
+        <Stack direction="column" spacing={3}>
           <BusinessCardPreview form={form} />
           <Paper sx={{ p: { xs: 3, md: 4 }, textAlign: 'center' }}>
             <Typography variant="h6" sx={{ mb: 2 }}>

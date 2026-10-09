@@ -370,7 +370,7 @@ const CompaniesList = () => {
                       </TableCell>
                       <TableCell>
                         {company.linkedContacts.length ? (
-                          <Stack spacing={0.25}>
+                          <Stack direction="column" spacing={0.25}>
                             {company.linkedContacts
                               .slice(0, 2)
                               .map((contact) => (
@@ -538,7 +538,7 @@ function CreateCompanyDialog({ open, onClose, onCreated, supabase }) {
     >
       <DialogTitle>Add Company</DialogTitle>
       <DialogContent>
-        <Stack spacing={3} sx={{ pt: 1 }}>
+        <Stack direction="column" spacing={3} sx={{ pt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
 
           <CompanyFormSection title="Company Details">
@@ -704,7 +704,7 @@ function CreateCompanyDialog({ open, onClose, onCreated, supabase }) {
 
 function CompanyFormSection({ title, children }) {
   return (
-    <Stack spacing={2}>
+    <Stack direction="column" spacing={2}>
       <Box>
         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
           {title}

@@ -17,11 +17,11 @@ const DuplicateRecordDialog = ({ open, matches, onCancel, onConfirm }) => {
     <Dialog open={open} onClose={onCancel} fullWidth maxWidth="sm">
       <DialogTitle>Possible Duplicate Found</DialogTitle>
       <DialogContent>
-        <Stack spacing={2} sx={{ pt: 1 }}>
+        <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
           <Alert severity="warning">
             One or more similar records already exist. Confirm before creating a new record.
           </Alert>
-          <Stack spacing={1.5} divider={<Divider flexItem />}>
+          <Stack direction="column" spacing={1.5} divider={<Divider flexItem />}>
             {(matches || []).map((match, index) => (
               <Box key={`${match.type}-${match.title}-${index}`}>
                 <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}>

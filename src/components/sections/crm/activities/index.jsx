@@ -390,7 +390,7 @@ function ActivityRow({ activity, onComplete, onEdit }) {
   return (
     <TableRow hover>
       <TableCell sx={{ minWidth: 300 }}>
-        <Stack spacing={0.75} alignItems="flex-start">
+        <Stack direction="column" spacing={0.75} alignItems="flex-start">
           <Chip
             label={formatEnum(activity.type)}
             size="small"
@@ -426,7 +426,10 @@ function ActivityRow({ activity, onComplete, onEdit }) {
         ) : (
           <Typography variant="body2">{recordLabel(activity)}</Typography>
         )}
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+        <Typography
+          variant="caption"
+          sx={{ color: 'text.secondary', display: 'block' }}
+        >
           {companyLabel(activity) || '-'}
         </Typography>
       </TableCell>
@@ -449,7 +452,7 @@ function ActivityRow({ activity, onComplete, onEdit }) {
         </Typography>
       </TableCell>
       <TableCell sx={{ minWidth: 150 }}>
-        <Stack spacing={1} alignItems="flex-start">
+        <Stack direction="column" spacing={1} alignItems="flex-start">
           <Chip
             label={isComplete ? 'Complete' : isOverdue ? 'Overdue' : 'Open'}
             size="small"

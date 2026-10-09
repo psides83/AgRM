@@ -39,7 +39,7 @@ const midpoint = (first, second) => ({
 });
 
 const AorMaps = () => (
-  <Stack gap={3}>
+  <Stack direction="column" gap={3}>
     <PageHeader
       title="AOR Maps"
       breadcrumb={[
