@@ -1576,6 +1576,11 @@ function EditContactDialog({
                 renderInput={(params) => (
                   <TextField
                     {...params}
+                    // Keep Autocomplete's input ref and handlers over theme defaults.
+                    slotProps={{
+                      input: params.InputProps,
+                      htmlInput: params.inputProps,
+                    }}
                     label="Existing Companies"
                     placeholder="Select companies"
                   />
