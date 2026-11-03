@@ -27,6 +27,7 @@ import { useAuth } from 'providers/AuthProvider';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import CrmFilesPanel from 'components/sections/crm/shared/CrmFilesPanel';
+import AddressInfoRow from 'components/sections/crm/shared/AddressInfoRow';
 import AddTaskDialog from 'components/sections/crm/shared/AddTaskDialog';
 import TasksCard from 'components/sections/crm/shared/TasksCard';
 import { calculateCommission } from 'components/sections/crm/shared/commission';
@@ -554,12 +555,6 @@ const LeadDetails = ({ leadId }) => {
                     )}
                   />
                   <InfoRow label="Home" value={formatPhone(lead.home_phone)} />
-                  <InfoRow
-                    label="Location"
-                    value={[lead.city, lead.region, lead.postal_code]
-                      .filter(Boolean)
-                      .join(', ')}
-                  />
                   <Button
                     variant="soft"
                     color="neutral"
@@ -570,18 +565,14 @@ const LeadDetails = ({ leadId }) => {
                   </Button>
                 </>
               )}
+              <AddressInfoRow record={lead} />
               <Divider />
               {company ? (
                 <>
                   <InfoRow label="Company" value={company.name} />
                   <InfoRow label="Type" value={company.company_type} />
                   <InfoRow label="Phone" value={formatPhone(company.phone)} />
-                  <InfoRow
-                    label="Location"
-                    value={[company.city, company.region]
-                      .filter(Boolean)
-                      .join(', ')}
-                  />
+                  <AddressInfoRow record={company} />
                   <Button
                     component={Link}
                     href={paths.companyDetails(company.id)}
@@ -596,17 +587,6 @@ const LeadDetails = ({ leadId }) => {
               ) : (
                 <>
                   <InfoRow label="Prospect Company" value={lead.company_name} />
-                  <InfoRow
-                    label="Address"
-                    value={[
-                      lead.address_line1,
-                      lead.city,
-                      lead.region,
-                      lead.postal_code,
-                    ]
-                      .filter(Boolean)
-                      .join(', ')}
-                  />
                 </>
               )}
             </InfoCard>
