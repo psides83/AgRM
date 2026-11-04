@@ -28,7 +28,7 @@ import PageHeader from "components/sections/ecommerce/admin/common/PageHeader";
 import { formatPhone } from "components/sections/crm/shared/phoneFormat";
 
 import LocationFilters from "components/sections/crm/shared/LocationFilters";
-import { matchesLocation } from "components/sections/crm/shared/locationFilters";
+import { matchesLocation } from "components/sections/crm/shared/locationFilterUtils";
 
 const ContactsList = () => {
   const supabase = useMemo(() => createClient(), []);

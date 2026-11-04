@@ -9,7 +9,7 @@
     "dev": "NEXT_TELEMETRY_DISABLED=1 next dev -H 127.0.0.1 -p 4000 --webpack --disable-source-maps --no-server-fast-refresh",
     "dev:turbo": "NEXT_TELEMETRY_DISABLED=1 next dev -H 127.0.0.1 -p 4000 --turbo",
     "clean:next": "rm -rf .next",
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' next build",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' next build --webpack",
     "start": "next start -p 4000",
     "lint": "eslint . --max-warnings 0",
     "lint:next": "next lint",

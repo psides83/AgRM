@@ -1,5 +1,5 @@
 import { Autocomplete, Stack, TextField } from "@mui/material";
-import { locationOptions } from "./locationFilters";
+import { locationOptions } from "./locationFilterUtils";
 
 export default function LocationFilters({ records, value, onChange }) {
   return (

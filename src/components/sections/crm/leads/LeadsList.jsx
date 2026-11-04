@@ -38,7 +38,7 @@ import {
 } from 'components/sections/crm/constants';
 
 import LocationFilters from 'components/sections/crm/shared/LocationFilters';
-import { matchesLocation } from 'components/sections/crm/shared/locationFilters';
+import { matchesLocation } from 'components/sections/crm/shared/locationFilterUtils';
 
 const emptyFilters = {
   search: '',

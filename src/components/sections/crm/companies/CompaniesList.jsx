@@ -37,7 +37,7 @@ import { createClient } from "lib/supabase/client";
 import paths from "routes/paths";
 
 import LocationFilters from "components/sections/crm/shared/LocationFilters";
-import { matchesLocation } from "components/sections/crm/shared/locationFilters";
+import { matchesLocation } from "components/sections/crm/shared/locationFilterUtils";
 
 const emptyCompanyForm = {
   name: "",
