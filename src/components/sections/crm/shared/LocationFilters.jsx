@@ -19,7 +19,15 @@ export default function LocationFilters({ records, value, onChange }) {
               {...params}
               slotProps={{
                 input: params.InputProps,
-                htmlInput: params.inputProps,
+                htmlInput: {
+                  ...params.inputProps,
+                  autoComplete: "new-password",
+                  name: `crm-filter-${field === "city" ? "locality" : "area"}-query`,
+                  "data-1p-ignore": "true",
+                  "data-bwignore": "true",
+                  "data-form-type": "other",
+                  "data-lpignore": "true",
+                },
               }}
               label={field === "city" ? "City" : "County"}
               placeholder="All"
