@@ -5,11 +5,14 @@ export function normalizeLocation(value) {
 }
 
 export function matchesLocation(record, filters) {
-  return ["city", "county"].every(
-    (field) =>
-      !normalizeLocation(filters[field]) ||
-      normalizeLocation(record[field]) === normalizeLocation(filters[field]),
-  );
+  return ["city", "county"].every((field) => {
+    const selected = (filters[field] || [])
+      .map(normalizeLocation)
+      .filter(Boolean);
+    return (
+      !selected.length || selected.includes(normalizeLocation(record[field]))
+    );
+  });
 }
 
 export function locationOptions(records, field) {

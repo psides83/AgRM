@@ -42,8 +42,8 @@ import { matchesLocation } from 'components/sections/crm/shared/locationFilterUt
 
 const emptyFilters = {
   search: '',
-  city: '',
-  county: '',
+  city: [],
+  county: [],
   queue: 'active',
   status: 'all',
   followUp: 'all',

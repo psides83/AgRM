@@ -66,8 +66,8 @@ const CompaniesList = () => {
   const [companies, setCompanies] = useState([]);
   const [search, setSearch] = useState("");
   const [locationFilters, setLocationFilters] = useState({
-    city: "",
-    county: "",
+    city: [],
+    county: [],
   });
   const [sort, setSort] = useState({ key: "createdAt", direction: "desc" });
   const [isLoading, setIsLoading] = useState(true);
