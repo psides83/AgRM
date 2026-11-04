@@ -37,8 +37,13 @@ import {
   leadStatuses,
 } from 'components/sections/crm/constants';
 
+import LocationFilters from 'components/sections/crm/shared/LocationFilters';
+import { matchesLocation } from 'components/sections/crm/shared/locationFilters';
+
 const emptyFilters = {
   search: '',
+  city: '',
+  county: '',
   queue: 'active',
   status: 'all',
   followUp: 'all',
@@ -236,6 +241,7 @@ const LeadsList = () => {
 
       return (
         (!search || text.includes(search)) &&
+        matchesLocation(lead, filters) &&
         leadMatchesQueueFilter(lead, filters.queue) &&
         (filters.status === 'all' || lead.status === filters.status) &&
         leadMatchesFollowUpFilter(lead, filters.followUp)
@@ -513,6 +519,14 @@ const LeadsList = () => {
               color={outcomeStats.conversionRate ? 'primary' : 'neutral'}
             />
           </Stack>
+
+          <LocationFilters
+            records={leads}
+            value={filters}
+            onChange={(field, selection) =>
+              setFilters((prev) => ({ ...prev, [field]: selection }))
+            }
+          />
 
           {error && (
             <Alert severity="error" sx={{ mt: 3 }}>
@@ -1083,7 +1097,9 @@ function QuickLogCallDialog({ open, lead, onClose, onSaved, supabase }) {
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               {lead
                 ? [
-                    formatPhone(lead.mobile_phone || lead.phone || lead.home_phone),
+                    formatPhone(
+                      lead.mobile_phone || lead.phone || lead.home_phone,
+                    ),
                     lead.email,
                     lead.branch,
                   ]
@@ -1168,7 +1184,10 @@ function BulkLeadActions({
   const [error, setError] = useState(null);
 
   const hasChanges = Boolean(
-    form.status || form.nextFollowUpAt || form.branch.trim() || form.source.trim(),
+    form.status ||
+    form.nextFollowUpAt ||
+    form.branch.trim() ||
+    form.source.trim(),
   );
 
   const handleApply = async () => {
@@ -1250,7 +1269,12 @@ function BulkLeadActions({
                 Apply only the fields you fill in.
               </Typography>
             </Box>
-            <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              useFlexGap
+              sx={{ flexWrap: 'wrap' }}
+            >
               <Button color="neutral" variant="soft" onClick={onClear}>
                 Clear
               </Button>
@@ -1272,7 +1296,12 @@ function BulkLeadActions({
             </Stack>
           </Stack>
           {error && <Alert severity="error">{error}</Alert>}
-          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            useFlexGap
+            sx={{ flexWrap: 'wrap' }}
+          >
             <Button
               size="small"
               variant="soft"
@@ -1344,7 +1373,12 @@ function BulkLeadActions({
           </Stack>
         </Stack>
       </Paper>
-      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} fullWidth maxWidth="xs">
+      <Dialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        fullWidth
+        maxWidth="xs"
+      >
         <DialogTitle>Delete Selected Leads?</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -1359,7 +1393,12 @@ function BulkLeadActions({
           <Button color="neutral" onClick={() => setDeleteOpen(false)}>
             Cancel
           </Button>
-          <Button color="error" variant="contained" loading={isSaving} onClick={handleDelete}>
+          <Button
+            color="error"
+            variant="contained"
+            loading={isSaving}
+            onClick={handleDelete}
+          >
             Delete Leads
           </Button>
         </DialogActions>
@@ -1483,7 +1522,9 @@ function cleanText(value) {
 }
 
 function truncateText(value, maxLength) {
-  const text = String(value || '').trim().replace(/\s+/g, ' ');
+  const text = String(value || '')
+    .trim()
+    .replace(/\s+/g, ' ');
   if (text.length <= maxLength) return text;
   return `${text.slice(0, maxLength - 3)}...`;
 }
@@ -1549,7 +1590,11 @@ function leadStatusColor(status) {
     return 'success';
   if (['attempted', 'working'].includes(status)) return 'info';
   if (status === 'converted') return 'primary';
-  if (['not_a_fit', 'bad_number', 'do_not_contact', 'unqualified'].includes(status))
+  if (
+    ['not_a_fit', 'bad_number', 'do_not_contact', 'unqualified'].includes(
+      status,
+    )
+  )
     return 'error';
   return 'neutral';
 }
@@ -1611,12 +1656,15 @@ function leadOutcomeStats(leads) {
   );
 
   const workedLeads = leads.filter(
-    (lead) => Number(lead.call_attempt_count || 0) > 0 || lead.last_contacted_at,
+    (lead) =>
+      Number(lead.call_attempt_count || 0) > 0 || lead.last_contacted_at,
   ).length;
 
   return {
     ...stats,
-    reachRate: workedLeads ? Math.round((stats.reached / workedLeads) * 100) : 0,
+    reachRate: workedLeads
+      ? Math.round((stats.reached / workedLeads) * 100)
+      : 0,
     conversionRate: leads.length
       ? Math.round((stats.converted / leads.length) * 100)
       : 0,

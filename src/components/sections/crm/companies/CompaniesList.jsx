@@ -36,6 +36,9 @@ import {
 import { createClient } from "lib/supabase/client";
 import paths from "routes/paths";
 
+import LocationFilters from "components/sections/crm/shared/LocationFilters";
+import { matchesLocation } from "components/sections/crm/shared/locationFilters";
+
 const emptyCompanyForm = {
   name: "",
   companyType: "",
@@ -62,6 +65,10 @@ const CompaniesList = () => {
   const supabase = useMemo(() => createClient(), []);
   const [companies, setCompanies] = useState([]);
   const [search, setSearch] = useState("");
+  const [locationFilters, setLocationFilters] = useState({
+    city: "",
+    county: "",
+  });
   const [sort, setSort] = useState({ key: "createdAt", direction: "desc" });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -75,7 +82,7 @@ const CompaniesList = () => {
         supabase
           .from("companies")
           .select(
-            "id, name, company_type, account_number, website, email, phone, city, region, created_at",
+            "id, name, company_type, account_number, website, email, phone, city, county, region, created_at",
           )
           .order("created_at", { ascending: false }),
         supabase
@@ -159,7 +166,6 @@ const CompaniesList = () => {
 
   const filteredCompanies = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
-    if (!normalizedSearch) return companies;
 
     return companies.filter((company) => {
       const values = [
@@ -170,6 +176,7 @@ const CompaniesList = () => {
         company.email,
         company.phone,
         company.city,
+        company.county,
         company.region,
         company.latestActivity?.type,
         company.latestActivity?.subject,
@@ -180,13 +187,16 @@ const CompaniesList = () => {
         ]),
       ];
 
-      return values
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedSearch);
+      return (
+        matchesLocation(company, locationFilters) &&
+        values
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedSearch)
+      );
     });
-  }, [companies, search]);
+  }, [companies, search, locationFilters]);
 
   const sortedCompanies = useMemo(
     () => [...filteredCompanies].sort((a, b) => compareCompanies(a, b, sort)),
@@ -270,6 +280,14 @@ const CompaniesList = () => {
               }}
             />
           </Stack>
+
+          <LocationFilters
+            records={companies}
+            value={locationFilters}
+            onChange={(field, selection) =>
+              setLocationFilters((prev) => ({ ...prev, [field]: selection }))
+            }
+          />
 
           {error && (
             <Alert severity="error" sx={{ mt: 3 }}>

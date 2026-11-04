@@ -27,10 +27,17 @@ import IconifyIcon from "components/base/IconifyIcon";
 import PageHeader from "components/sections/ecommerce/admin/common/PageHeader";
 import { formatPhone } from "components/sections/crm/shared/phoneFormat";
 
+import LocationFilters from "components/sections/crm/shared/LocationFilters";
+import { matchesLocation } from "components/sections/crm/shared/locationFilters";
+
 const ContactsList = () => {
   const supabase = useMemo(() => createClient(), []);
   const [contacts, setContacts] = useState([]);
   const [search, setSearch] = useState("");
+  const [locationFilters, setLocationFilters] = useState({
+    city: "",
+    county: "",
+  });
   const [sort, setSort] = useState({ key: "createdAt", direction: "desc" });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -52,6 +59,7 @@ const ContactsList = () => {
         phone,
         mobile_phone,
         city,
+        county,
         region,
         tags,
         created_at,
@@ -135,10 +143,6 @@ const ContactsList = () => {
   const filteredContacts = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
-    if (!normalizedSearch) {
-      return contacts;
-    }
-
     return contacts.filter((contact) => {
       const values = [
         contact.first_name,
@@ -149,6 +153,7 @@ const ContactsList = () => {
         contact.phone,
         contact.mobile_phone,
         contact.city,
+        contact.county,
         contact.region,
         contact.companies?.name,
         contact.companies?.company_type,
@@ -161,13 +166,16 @@ const ContactsList = () => {
         ...(contact.tags || []),
       ];
 
-      return values
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedSearch);
+      return (
+        matchesLocation(contact, locationFilters) &&
+        values
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedSearch)
+      );
     });
-  }, [contacts, search]);
+  }, [contacts, search, locationFilters]);
 
   const sortedContacts = useMemo(
     () => [...filteredContacts].sort((a, b) => compareContacts(a, b, sort)),
@@ -253,6 +261,14 @@ const ContactsList = () => {
               }}
             />
           </Stack>
+
+          <LocationFilters
+            records={contacts}
+            value={locationFilters}
+            onChange={(field, selection) =>
+              setLocationFilters((prev) => ({ ...prev, [field]: selection }))
+            }
+          />
 
           {error && (
             <Alert severity="error" sx={{ mt: 3 }}>
