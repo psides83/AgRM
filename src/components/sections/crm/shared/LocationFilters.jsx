@@ -14,6 +14,10 @@ export default function LocationFilters({ records, value, onChange }) {
           renderInput={(params) => (
             <TextField
               {...params}
+              slotProps={{
+                input: params.InputProps,
+                htmlInput: params.inputProps,
+              }}
               label={field === "city" ? "City" : "County"}
               placeholder="All"
             />
