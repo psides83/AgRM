@@ -651,6 +651,7 @@ const CompanyDetails = ({ companyId }) => {
       <AddActivityDialog
         open={dialog === "activity"}
         company={company}
+        contacts={contacts}
         onClose={() => setDialog(null)}
         onSaved={fetchDetails}
         supabase={supabase}
@@ -2321,8 +2322,16 @@ function AddNoteDialog({ open, company, onClose, onSaved, supabase }) {
   );
 }
 
-function AddActivityDialog({ open, company, onClose, onSaved, supabase }) {
+function AddActivityDialog({
+  open,
+  company,
+  contacts = [],
+  onClose,
+  onSaved,
+  supabase,
+}) {
   const [form, setForm] = useState({
+    contactId: "",
     type: "call",
     direction: "outbound",
     subject: "",
@@ -2335,6 +2344,7 @@ function AddActivityDialog({ open, company, onClose, onSaved, supabase }) {
   useEffect(() => {
     if (open)
       setForm({
+        contactId: "",
         type: "call",
         direction: "outbound",
         subject: "",
@@ -2350,6 +2360,9 @@ function AddActivityDialog({ open, company, onClose, onSaved, supabase }) {
     const { error } = await supabase.from("activities").insert({
       owner_id: userResult.user.id,
       company_id: company.id,
+      contact_id: contacts.some((contact) => contact.id === form.contactId)
+        ? form.contactId
+        : null,
       type: form.type,
       direction: form.direction,
       subject: cleanText(form.subject) || formatEnum(form.type),
@@ -2371,6 +2384,25 @@ function AddActivityDialog({ open, company, onClose, onSaved, supabase }) {
       <DialogTitle>Add Activity</DialogTitle>
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
+          <TextField
+            select
+            label="Contact (optional)"
+            value={form.contactId}
+            onChange={handleField(setForm, "contactId")}
+            helperText={
+              contacts.length
+                ? "This contact will be listed in the activities export."
+                : "This company has no contacts yet. You can log a company-only activity."
+            }
+            fullWidth
+          >
+            <MenuItem value="">Company only</MenuItem>
+            {contacts.map((contact) => (
+              <MenuItem key={contact.id} value={contact.id}>
+                {contactName(contact)}
+              </MenuItem>
+            ))}
+          </TextField>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               select

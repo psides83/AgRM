@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
@@ -24,27 +24,27 @@ import {
   TableSortLabel,
   TextField,
   Typography,
-} from '@mui/material';
-import Grid from '@mui/material/Grid';
-import paths from 'routes/paths';
-import { createClient } from 'lib/supabase/client';
-import IconifyIcon from 'components/base/IconifyIcon';
-import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
+} from "@mui/material";
+import Grid from "@mui/material/Grid";
+import paths from "routes/paths";
+import { createClient } from "lib/supabase/client";
+import IconifyIcon from "components/base/IconifyIcon";
+import PageHeader from "components/sections/ecommerce/admin/common/PageHeader";
 import {
   activityDirections,
   activityTypes,
-} from 'components/sections/crm/constants';
+} from "components/sections/crm/constants";
 
 const emptyFilters = {
-  search: '',
-  type: 'all',
-  direction: 'all',
-  status: 'open',
+  search: "",
+  type: "all",
+  direction: "all",
+  status: "open",
 };
 
 const emptyExportRange = {
-  startDate: '',
-  endDate: '',
+  startDate: "",
+  endDate: "",
 };
 
 const ActivitiesPage = () => {
@@ -52,16 +52,19 @@ const ActivitiesPage = () => {
   const [activities, setActivities] = useState([]);
   const [filters, setFilters] = useState(emptyFilters);
   const [exportRange, setExportRange] = useState(emptyExportRange);
-  const [sort, setSort] = useState({ key: 'date', direction: 'desc' });
+  const [sort, setSort] = useState({ key: "date", direction: "desc" });
   const [editingActivity, setEditingActivity] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [exportDialog, setExportDialog] = useState(null);
+  const [exportContacts, setExportContacts] = useState({});
+  const [isPreparingExport, setIsPreparingExport] = useState(false);
 
   const fetchActivities = async () => {
     setError(null);
 
     const { data, error: queryError } = await supabase
-      .from('activities')
+      .from("activities")
       .select(
         `
         id,
@@ -83,7 +86,7 @@ const ActivitiesPage = () => {
         deals(id, name, stage, contacts(id, first_name, last_name, city, region), companies(id, name, city, region))
       `,
       )
-      .order('occurred_at', { ascending: false });
+      .order("occurred_at", { ascending: false });
 
     if (queryError) {
       setError(queryError.message);
@@ -98,10 +101,10 @@ const ActivitiesPage = () => {
     fetchActivities();
 
     const channel = supabase
-      .channel('agrm-activities-list')
+      .channel("agrm-activities-list")
       .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'activities' },
+        "postgres_changes",
+        { event: "*", schema: "public", table: "activities" },
         () => fetchActivities(),
       )
       .subscribe();
@@ -124,18 +127,18 @@ const ActivitiesPage = () => {
         companyLabel(activity),
       ]
         .filter(Boolean)
-        .join(' ')
+        .join(" ")
         .toLowerCase();
 
       return (
         (!search || text.includes(search)) &&
-        (filters.type === 'all' || activity.type === filters.type) &&
-        (filters.direction === 'all' ||
+        (filters.type === "all" || activity.type === filters.type) &&
+        (filters.direction === "all" ||
           activity.direction === filters.direction) &&
-        (filters.status === 'all' ||
-          (filters.status === 'open' && !activity.completed_at) ||
-          (filters.status === 'complete' && activity.completed_at) ||
-          (filters.status === 'overdue' &&
+        (filters.status === "all" ||
+          (filters.status === "open" && !activity.completed_at) ||
+          (filters.status === "complete" && activity.completed_at) ||
+          (filters.status === "overdue" &&
             !activity.completed_at &&
             activity.due_at &&
             new Date(activity.due_at) < new Date()))
@@ -159,15 +162,15 @@ const ActivitiesPage = () => {
   const handleSort = (key) => {
     setSort((prev) => ({
       key,
-      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
   };
 
   const handleComplete = async (activityId) => {
     const { error: updateError } = await supabase
-      .from('activities')
+      .from("activities")
       .update({ completed_at: new Date().toISOString() })
-      .eq('id', activityId);
+      .eq("id", activityId);
 
     if (updateError) {
       setError(updateError.message);
@@ -181,20 +184,68 @@ const ActivitiesPage = () => {
     fetchActivities();
   };
 
-  const handleExport = () => {
+  const downloadActivities = (rows) => {
+    downloadCsv(
+      `contact-activities-${exportRange.startDate || "all"}-${exportRange.endDate || "all"}.csv`,
+      activityExportCsv(rows),
+    );
+  };
+
+  const handleExport = async () => {
+    setError(null);
     const exportRows = contactReportActivities(activities)
       .filter((activity) => activityInExportRange(activity, exportRange))
       .sort((a, b) => dateValue(activityDate(a)) - dateValue(activityDate(b)));
 
     if (!exportRows.length) {
-      setError('No contact activities found for that export date range.');
+      setError(
+        "No contact or company activities found for that export date range.",
+      );
       return;
     }
 
-    downloadCsv(
-      `contact-activities-${exportRange.startDate || 'all'}-${exportRange.endDate || 'all'}.csv`,
-      activityExportCsv(exportRows),
+    const companyIds = [
+      ...new Set(
+        exportRows
+          .filter(
+            (activity) => activity.company_id && !exportContactName(activity),
+          )
+          .map((activity) => activity.company_id),
+      ),
+    ];
+    if (!companyIds.length) {
+      downloadActivities(exportRows);
+      return;
+    }
+
+    setIsPreparingExport(true);
+    const { data, error: queryError } = await supabase
+      .from("contacts")
+      .select("id, company_id, first_name, last_name, city, region")
+      .in("company_id", companyIds)
+      .order("first_name");
+    setIsPreparingExport(false);
+    if (queryError) {
+      setError(queryError.message);
+      return;
+    }
+    setExportContacts({});
+    setExportDialog({ rows: exportRows, companyIds, contacts: data || [] });
+  };
+
+  const handleConfirmExport = () => {
+    downloadActivities(
+      exportDialog.rows.map((activity) => {
+        if (exportContactName(activity)) return activity;
+        const contact = exportDialog.contacts.find(
+          (item) =>
+            item.id === exportContacts[activity.company_id] &&
+            item.company_id === activity.company_id,
+        );
+        return contact ? { ...activity, contacts: contact } : activity;
+      }),
     );
+    setExportDialog(null);
   };
 
   return (
@@ -203,8 +254,8 @@ const ActivitiesPage = () => {
         <PageHeader
           title="Activities"
           breadcrumb={[
-            { label: 'Home', url: paths.crm },
-            { label: 'Activities', active: true },
+            { label: "Home", url: paths.crm },
+            { label: "Activities", active: true },
           ]}
         />
       </Grid>
@@ -212,21 +263,21 @@ const ActivitiesPage = () => {
       <Grid size={12}>
         <Paper sx={{ p: { xs: 3, md: 4 } }}>
           <Stack
-            direction={{ xs: 'column', xl: 'row' }}
+            direction={{ xs: "column", xl: "row" }}
             spacing={2}
-            sx={{ justifyContent: 'space-between' }}
+            sx={{ justifyContent: "space-between" }}
           >
             <Box>
               <Typography variant="h6">Activity list</Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
                 {filteredActivities.length} shown from {activities.length} total
-                activit{activities.length === 1 ? 'y' : 'ies'}
+                activit{activities.length === 1 ? "y" : "ies"}
               </Typography>
             </Box>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+            <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
               <TextField
                 value={filters.search}
-                onChange={handleFilter('search')}
+                onChange={handleFilter("search")}
                 placeholder="Search activities, contacts, companies..."
                 sx={{ width: { xs: 1, md: 360 } }}
                 slotProps={{
@@ -242,20 +293,20 @@ const ActivitiesPage = () => {
               <FilterSelect
                 label="Type"
                 value={filters.type}
-                onChange={handleFilter('type')}
+                onChange={handleFilter("type")}
                 options={activityTypes}
               />
               <FilterSelect
                 label="Direction"
                 value={filters.direction}
-                onChange={handleFilter('direction')}
+                onChange={handleFilter("direction")}
                 options={activityDirections}
               />
               <TextField
                 select
                 label="Status"
                 value={filters.status}
-                onChange={handleFilter('status')}
+                onChange={handleFilter("status")}
                 sx={{ minWidth: 150 }}
               >
                 <MenuItem value="all">All</MenuItem>
@@ -274,22 +325,22 @@ const ActivitiesPage = () => {
 
           <Paper variant="outlined" sx={{ mt: 3, p: 2 }}>
             <Stack
-              direction={{ xs: 'column', md: 'row' }}
+              direction={{ xs: "column", md: "row" }}
               spacing={2}
-              sx={{ alignItems: { md: 'center' } }}
+              sx={{ alignItems: { md: "center" } }}
             >
               <Box sx={{ minWidth: { md: 220 }, flexGrow: 1 }}>
                 <Typography variant="subtitle2">Export CSV</Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Contact activity report: Date, Company, Contact, Location,
-                  Notes
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  Contact and company activity report: Date, Company, Contact,
+                  Location, Notes
                 </Typography>
               </Box>
               <TextField
                 label="Start Date"
                 type="date"
                 value={exportRange.startDate}
-                onChange={handleExportRange('startDate')}
+                onChange={handleExportRange("startDate")}
                 slotProps={{ inputLabel: { shrink: true } }}
                 sx={{ minWidth: 160 }}
               />
@@ -297,13 +348,14 @@ const ActivitiesPage = () => {
                 label="End Date"
                 type="date"
                 value={exportRange.endDate}
-                onChange={handleExportRange('endDate')}
+                onChange={handleExportRange("endDate")}
                 slotProps={{ inputLabel: { shrink: true } }}
                 sx={{ minWidth: 160 }}
               />
               <Button
                 variant="contained"
                 onClick={handleExport}
+                loading={isPreparingExport}
                 startIcon={
                   <IconifyIcon icon="material-symbols:download-rounded" />
                 }
@@ -370,6 +422,66 @@ const ActivitiesPage = () => {
           </TableContainer>
         </Paper>
       </Grid>
+      <Dialog
+        open={Boolean(exportDialog)}
+        onClose={() => setExportDialog(null)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Choose contacts for company activities</DialogTitle>
+        <DialogContent>
+          <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              Choose the contact to list for each company's activities in this
+              export. You can also leave the contact blank. Activities already
+              linked to a contact keep that contact.
+            </Typography>
+            {exportDialog?.companyIds.map((companyId) => {
+              const company = exportDialog.rows.find(
+                (activity) => activity.company_id === companyId,
+              );
+              const contacts = exportDialog.contacts.filter(
+                (contact) => contact.company_id === companyId,
+              );
+              return (
+                <TextField
+                  key={companyId}
+                  select
+                  fullWidth
+                  label={companyLabel(company) || "Company"}
+                  value={exportContacts[companyId] || ""}
+                  onChange={(event) =>
+                    setExportContacts((prev) => ({
+                      ...prev,
+                      [companyId]: event.target.value,
+                    }))
+                  }
+                  helperText={
+                    contacts.length
+                      ? "Applies to company activities without a contact."
+                      : "This company has no contacts. Its activities will still be exported."
+                  }
+                >
+                  <MenuItem value="">Leave contact blank</MenuItem>
+                  {contacts.map((contact) => (
+                    <MenuItem key={contact.id} value={contact.id}>
+                      {contactName(contact)}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              );
+            })}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button color="neutral" onClick={() => setExportDialog(null)}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleConfirmExport}>
+            Export CSV
+          </Button>
+        </DialogActions>
+      </Dialog>
       <EditActivityDialog
         open={Boolean(editingActivity)}
         activity={editingActivity}
@@ -397,16 +509,16 @@ function ActivityRow({ activity, onComplete, onEdit }) {
             variant="soft"
             color={activityTypeColor(activity.type)}
           />
-          <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
+          <Typography variant="subtitle2" sx={{ overflowWrap: "anywhere" }}>
             {activity.subject || formatEnum(activity.type)}
           </Typography>
           {activity.body && (
             <Typography
               variant="body2"
               sx={{
-                color: 'text.secondary',
-                whiteSpace: 'pre-wrap',
-                overflowWrap: 'anywhere',
+                color: "text.secondary",
+                whiteSpace: "pre-wrap",
+                overflowWrap: "anywhere",
               }}
             >
               {activity.body}
@@ -419,7 +531,7 @@ function ActivityRow({ activity, onComplete, onEdit }) {
           <Link
             href={href}
             underline="hover"
-            sx={{ color: 'text.primary', fontWeight: 600 }}
+            sx={{ color: "text.primary", fontWeight: 600 }}
           >
             {recordLabel(activity)}
           </Link>
@@ -428,14 +540,14 @@ function ActivityRow({ activity, onComplete, onEdit }) {
         )}
         <Typography
           variant="caption"
-          sx={{ color: 'text.secondary', display: 'block' }}
+          sx={{ color: "text.secondary", display: "block" }}
         >
-          {companyLabel(activity) || '-'}
+          {companyLabel(activity) || "-"}
         </Typography>
       </TableCell>
       <TableCell sx={{ minWidth: 130 }}>
         <Typography variant="body2">
-          {formatEnum(activity.direction) || '-'}
+          {formatEnum(activity.direction) || "-"}
         </Typography>
       </TableCell>
       <TableCell sx={{ minWidth: 190 }}>
@@ -444,20 +556,20 @@ function ActivityRow({ activity, onComplete, onEdit }) {
         </Typography>
         <Typography
           variant="caption"
-          sx={{ color: isOverdue ? 'error.main' : 'text.secondary' }}
+          sx={{ color: isOverdue ? "error.main" : "text.secondary" }}
         >
           {activity.due_at
             ? `Due ${formatDateTime(activity.due_at)}`
-            : 'No due date'}
+            : "No due date"}
         </Typography>
       </TableCell>
       <TableCell sx={{ minWidth: 150 }}>
         <Stack direction="column" spacing={1} alignItems="flex-start">
           <Chip
-            label={isComplete ? 'Complete' : isOverdue ? 'Overdue' : 'Open'}
+            label={isComplete ? "Complete" : isOverdue ? "Overdue" : "Open"}
             size="small"
             variant="soft"
-            color={isComplete ? 'success' : isOverdue ? 'error' : 'neutral'}
+            color={isComplete ? "success" : isOverdue ? "error" : "neutral"}
           />
           {!isComplete && (
             <Button
@@ -487,12 +599,12 @@ function ActivityRow({ activity, onComplete, onEdit }) {
 
 function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
   const [form, setForm] = useState({
-    type: 'call',
-    direction: 'outbound',
-    subject: '',
-    body: '',
-    occurredAt: '',
-    dueAt: '',
+    type: "call",
+    direction: "outbound",
+    subject: "",
+    body: "",
+    occurredAt: "",
+    dueAt: "",
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -502,10 +614,10 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
 
     setError(null);
     setForm({
-      type: activity?.type || 'call',
-      direction: activity?.direction || 'outbound',
-      subject: activity?.subject || '',
-      body: activity?.body || '',
+      type: activity?.type || "call",
+      direction: activity?.direction || "outbound",
+      subject: activity?.subject || "",
+      body: activity?.body || "",
       occurredAt: toDateTimeLocal(
         activity?.occurred_at || activity?.created_at,
       ),
@@ -520,7 +632,7 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
     setError(null);
 
     const { error: updateError } = await supabase
-      .from('activities')
+      .from("activities")
       .update({
         type: form.type,
         direction: form.direction,
@@ -531,7 +643,7 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
           : new Date().toISOString(),
         due_at: form.dueAt ? new Date(form.dueAt).toISOString() : null,
       })
-      .eq('id', activity.id);
+      .eq("id", activity.id);
 
     setIsSaving(false);
 
@@ -549,12 +661,12 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               select
               label="Type"
               value={form.type}
-              onChange={handleField(setForm, 'type')}
+              onChange={handleField(setForm, "type")}
               fullWidth
             >
               {activityTypes.map((type) => (
@@ -567,7 +679,7 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
               select
               label="Direction"
               value={form.direction}
-              onChange={handleField(setForm, 'direction')}
+              onChange={handleField(setForm, "direction")}
               fullWidth
             >
               {activityDirections.map((direction) => (
@@ -580,23 +692,23 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
           <TextField
             label="Subject"
             value={form.subject}
-            onChange={handleField(setForm, 'subject')}
+            onChange={handleField(setForm, "subject")}
             fullWidth
           />
           <TextField
             label="Details"
             value={form.body}
-            onChange={handleField(setForm, 'body')}
+            onChange={handleField(setForm, "body")}
             fullWidth
             multiline
             rows={3}
           />
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Occurred At"
               type="datetime-local"
               value={form.occurredAt}
-              onChange={handleField(setForm, 'occurredAt')}
+              onChange={handleField(setForm, "occurredAt")}
               slotProps={{ inputLabel: { shrink: true } }}
               fullWidth
             />
@@ -604,7 +716,7 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
               label="Due At"
               type="datetime-local"
               value={form.dueAt}
-              onChange={handleField(setForm, 'dueAt')}
+              onChange={handleField(setForm, "dueAt")}
               slotProps={{ inputLabel: { shrink: true } }}
               fullWidth
             />
@@ -648,7 +760,7 @@ function EmptyRow({ label }) {
       <TableCell colSpan={6}>
         <Typography
           variant="body2"
-          sx={{ color: 'text.secondary', py: 3, textAlign: 'center' }}
+          sx={{ color: "text.secondary", py: 3, textAlign: "center" }}
         >
           {label}
         </Typography>
@@ -664,18 +776,18 @@ function handleField(setForm, key) {
 }
 
 function cleanText(value) {
-  return String(value || '').trim();
+  return String(value || "").trim();
 }
 
 function preserveText(value) {
-  const text = String(value || '').trim();
+  const text = String(value || "").trim();
   return text || null;
 }
 
 function toDateTimeLocal(value) {
-  if (!value) return '';
+  if (!value) return "";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
+  if (Number.isNaN(date.getTime())) return "";
 
   const offsetMs = date.getTimezoneOffset() * 60000;
   return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
@@ -688,7 +800,7 @@ function SortableHeader({ label, sortKey, activeSort, onSort }) {
     >
       <TableSortLabel
         active={activeSort.key === sortKey}
-        direction={activeSort.key === sortKey ? activeSort.direction : 'asc'}
+        direction={activeSort.key === sortKey ? activeSort.direction : "asc"}
         onClick={() => onSort(sortKey)}
       >
         {label}
@@ -698,38 +810,38 @@ function SortableHeader({ label, sortKey, activeSort, onSort }) {
 }
 
 function compareActivities(a, b, sort) {
-  const direction = sort.direction === 'asc' ? 1 : -1;
+  const direction = sort.direction === "asc" ? 1 : -1;
   const aValue = activitySortValue(a, sort.key);
   const bValue = activitySortValue(b, sort.key);
 
-  if (sort.key === 'date') {
+  if (sort.key === "date") {
     return (dateValue(aValue) - dateValue(bValue)) * direction;
   }
 
-  if (sort.key === 'status') {
+  if (sort.key === "status") {
     return (Number(aValue) - Number(bValue)) * direction;
   }
 
   return (
-    String(aValue || '').localeCompare(String(bValue || ''), undefined, {
+    String(aValue || "").localeCompare(String(bValue || ""), undefined, {
       numeric: true,
-      sensitivity: 'base',
+      sensitivity: "base",
     }) * direction
   );
 }
 
 function activitySortValue(activity, key) {
-  if (key === 'activity') {
-    return [activity.type, activity.subject].filter(Boolean).join(' ');
+  if (key === "activity") {
+    return [activity.type, activity.subject].filter(Boolean).join(" ");
   }
-  if (key === 'linkedTo') {
+  if (key === "linkedTo") {
     return [recordLabel(activity), companyLabel(activity)]
       .filter(Boolean)
-      .join(' ');
+      .join(" ");
   }
-  if (key === 'direction') return activity.direction;
-  if (key === 'date') return activityDate(activity);
-  if (key === 'status') return activityStatusRank(activity);
+  if (key === "direction") return activity.direction;
+  if (key === "date") return activityDate(activity);
+  if (key === "status") return activityStatusRank(activity);
   return activityDate(activity);
 }
 
@@ -761,7 +873,9 @@ function activityDate(activity) {
 }
 
 function contactReportActivities(activities) {
-  return activities.filter((activity) => activity.contact_id);
+  return activities.filter(
+    (activity) => activity.contact_id || activity.company_id,
+  );
 }
 
 function startOfDay(value) {
@@ -775,7 +889,7 @@ function endOfDay(value) {
 }
 
 function activityExportCsv(activities) {
-  const headers = ['Date', 'Company', 'Contact', 'Location', 'Notes'];
+  const headers = ["Date", "Company", "Contact", "Location", "Notes"];
   const rows = activities.map((activity) => [
     formatExportDate(activityDate(activity)),
     companyLabel(activity),
@@ -784,18 +898,18 @@ function activityExportCsv(activities) {
     exportNotes(activity),
   ]);
 
-  return [headers, ...rows].map((row) => row.map(csvCell).join(',')).join('\n');
+  return [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
 }
 
 function csvCell(value) {
-  const text = String(value || '');
+  const text = String(value || "");
   return `"${text.replace(/"/g, '""')}"`;
 }
 
 function downloadCsv(filename, csv) {
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   document.body.appendChild(link);
@@ -805,11 +919,11 @@ function downloadCsv(filename, csv) {
 }
 
 function formatExportDate(value) {
-  if (!value) return '';
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+  if (!value) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   }).format(new Date(value));
 }
 
@@ -818,7 +932,7 @@ function exportContactName(activity) {
     contactName(activity.contacts) ||
     contactName(activity.leads?.contacts) ||
     contactName(activity.deals?.contacts) ||
-    ''
+    ""
   );
 }
 
@@ -833,11 +947,11 @@ function exportLocation(activity) {
     locationText(activity.deals?.companies) ||
     locationText(activity.contacts?.companies);
 
-  return contactLocation || companyLocation || '';
+  return contactLocation || companyLocation || "";
 }
 
 function locationText(record) {
-  return [record?.city, record?.region].filter(Boolean).join(', ');
+  return record?.city || "";
 }
 
 function exportNotes(activity) {
@@ -859,12 +973,12 @@ function recordLabel(activity) {
       activity.leads.source ||
       contactName(activity.leads.contacts) ||
       activity.leads.companies?.name ||
-      'Lead'
+      "Lead"
     );
   }
   if (activity.contacts) return contactName(activity.contacts);
   if (activity.companies) return activity.companies.name;
-  return 'CRM record';
+  return "CRM record";
 }
 
 function companyLabel(activity) {
@@ -873,36 +987,36 @@ function companyLabel(activity) {
     activity.deals?.companies?.name ||
     activity.leads?.companies?.name ||
     activity.contacts?.companies?.name ||
-    ''
+    ""
   );
 }
 
 function contactName(contact) {
-  return [contact?.first_name, contact?.last_name].filter(Boolean).join(' ');
+  return [contact?.first_name, contact?.last_name].filter(Boolean).join(" ");
 }
 
 function activityTypeColor(type) {
-  if (type === 'call' || type === 'text' || type === 'email') return 'info';
-  if (type === 'task') return 'warning';
-  if (type === 'quote' || type === 'demo') return 'success';
-  return 'neutral';
+  if (type === "call" || type === "text" || type === "email") return "info";
+  if (type === "task") return "warning";
+  if (type === "quote" || type === "demo") return "success";
+  return "neutral";
 }
 
 function formatDateTime(value) {
-  if (!value) return '-';
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
+  if (!value) return "-";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   }).format(new Date(value));
 }
 
 function formatEnum(value) {
-  if (!value) return '';
+  if (!value) return "";
   return String(value)
-    .replace(/_/g, ' ')
+    .replace(/_/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
