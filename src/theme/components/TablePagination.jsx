@@ -1,11 +1,9 @@
-import DataGridPaginationAction from 'components/pagination/DataGridPaginationAction';
 import TableLabelDisplayedRows from 'components/pagination/TableLabelDisplayedRows';
 
 const TablePagination = {
   defaultProps: {
     rowsPerPageOptions: [],
     labelDisplayedRows: TableLabelDisplayedRows,
-    ActionsComponent: DataGridPaginationAction,
   },
   styleOverrides: {
     root: ({ theme }) => ({
