@@ -22,6 +22,7 @@ import Grid from '@mui/material/Grid';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import { useAuth } from 'providers/AuthProvider';
+import AutocompleteTextField from 'components/base/AutocompleteTextField';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import {
@@ -585,7 +586,7 @@ function CreateDealDialog({ open, contacts, leads, onClose, onSaved, supabase })
             isOptionEqualToValue={(option, value) => option.id === value.id}
             noOptionsText="No leads found"
             renderInput={(params) => (
-              <TextField {...params} label="Originating Lead" placeholder="Search leads" fullWidth />
+              <AutocompleteTextField params={params} label="Originating Lead" placeholder="Search leads" fullWidth />
             )}
           />
           <Autocomplete
@@ -599,8 +600,8 @@ function CreateDealDialog({ open, contacts, leads, onClose, onSaved, supabase })
             noOptionsText="No contacts found"
             disabled={Boolean(selectedLead?.contact_id)}
             renderInput={(params) => (
-              <TextField
-                {...params}
+              <AutocompleteTextField
+                params={params}
                 label="Contact"
                 placeholder="Search contacts"
                 helperText={selectedLead?.contact_id ? 'Contact is set by the selected lead.' : undefined}

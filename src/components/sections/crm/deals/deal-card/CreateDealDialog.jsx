@@ -33,6 +33,7 @@ import dayjs from 'dayjs';
 import { useDealsContext } from 'providers/DealsProvider';
 import { ADD_NEW_DEAL, SET_CREATE_DEAL_DIALOG } from 'reducers/DealsReducer';
 import * as yup from 'yup';
+import AutocompleteTextField from 'components/base/AutocompleteTextField';
 import IconifyIcon from 'components/base/IconifyIcon';
 
 const validationSchema = yup.object().shape({
@@ -431,7 +432,7 @@ const CreateDealDialog = () => {
                       </Stack>
                     );
                   }}
-                  renderInput={(params) => <TextField {...params} label="Collaborators" />}
+                  renderInput={(params) => <AutocompleteTextField params={params} label="Collaborators" />}
                 />
               )}
             />

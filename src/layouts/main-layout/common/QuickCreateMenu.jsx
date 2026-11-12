@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
+import AutocompleteTextField from 'components/base/AutocompleteTextField';
 import IconifyIcon from 'components/base/IconifyIcon';
 import {
   activityDirections,
@@ -459,9 +460,9 @@ function CreateDealDialog({ open, onClose, supabase, contacts, companies, leads,
         <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
           <TextField label="Deal Name" value={form.name} onChange={handleField(setForm, 'name')} fullWidth required />
-          <Autocomplete options={leads} value={lead} onChange={handleLeadChange} getOptionLabel={leadOptionLabel} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <TextField {...params} label="Originating Lead" placeholder="Search leads" />} />
-          <Autocomplete options={contacts} value={contact} onChange={(_event, value) => setContact(value)} getOptionLabel={contactOptionLabel} isOptionEqualToValue={(option, value) => option.id === value.id} disabled={Boolean(lead?.contact_id)} renderInput={(params) => <TextField {...params} label="Contact" placeholder="Search contacts" />} />
-          <Autocomplete options={companies} value={company} onChange={(_event, value) => setCompany(value)} getOptionLabel={(option) => option?.name || ''} isOptionEqualToValue={(option, value) => option.id === value.id} disabled={Boolean(lead?.company_id || contact?.company_id)} renderInput={(params) => <TextField {...params} label="Company" placeholder="Search companies" />} />
+          <Autocomplete options={leads} value={lead} onChange={handleLeadChange} getOptionLabel={leadOptionLabel} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <AutocompleteTextField params={params} label="Originating Lead" placeholder="Search leads" />} />
+          <Autocomplete options={contacts} value={contact} onChange={(_event, value) => setContact(value)} getOptionLabel={contactOptionLabel} isOptionEqualToValue={(option, value) => option.id === value.id} disabled={Boolean(lead?.contact_id)} renderInput={(params) => <AutocompleteTextField params={params} label="Contact" placeholder="Search contacts" />} />
+          <Autocomplete options={companies} value={company} onChange={(_event, value) => setCompany(value)} getOptionLabel={(option) => option?.name || ''} isOptionEqualToValue={(option, value) => option.id === value.id} disabled={Boolean(lead?.company_id || contact?.company_id)} renderInput={(params) => <AutocompleteTextField params={params} label="Company" placeholder="Search companies" />} />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField select label="Stage" value={form.stage} onChange={handleField(setForm, 'stage')} fullWidth>{dealStages.map((stage) => <MenuItem key={stage} value={stage}>{formatEnum(stage)}</MenuItem>)}</TextField>
             <TextField label="Probability" type="number" value={form.probability} onChange={handleField(setForm, 'probability')} fullWidth />
