@@ -12,3 +12,12 @@ export function formatAddress(record) {
     .map((part) => String(part).trim())
     .join(", ");
 }
+
+export function getDirectionsDestination(record) {
+  if (!record?.address_line1?.trim()) return "";
+
+  return formatAddress({
+    ...record,
+    county: record.city?.trim() || record.postal_code?.trim() ? null : record.county,
+  });
+}

@@ -1,9 +1,10 @@
 import { Link, Stack, Typography } from "@mui/material";
-import { formatAddress } from "./addressFormat";
+import { formatAddress, getDirectionsDestination } from "./addressFormat";
 
-export default function AddressInfoRow({ record }) {
+export default function AddressInfoRow({ record, label = "Address" }) {
   const address = formatAddress(record);
-  const query = encodeURIComponent(address);
+  const destination = getDirectionsDestination(record);
+  const query = encodeURIComponent(destination);
 
   return (
     <Stack
@@ -12,7 +13,7 @@ export default function AddressInfoRow({ record }) {
       sx={{ justifyContent: "space-between", alignItems: "flex-start" }}
     >
       <Typography variant="body2" sx={{ color: "text.secondary" }}>
-        Address
+        {label}
       </Typography>
       <Stack spacing={0.5} sx={{ minWidth: 0, alignItems: "flex-end" }}>
         <Typography
@@ -21,7 +22,7 @@ export default function AddressInfoRow({ record }) {
         >
           {address || "-"}
         </Typography>
-        {address && (
+        {destination && (
           <Stack
             direction="row"
             spacing={1.5}
@@ -29,20 +30,20 @@ export default function AddressInfoRow({ record }) {
             sx={{ flexWrap: "wrap", justifyContent: "flex-end" }}
           >
             <Link
-              href={`https://maps.apple.com/?address=${query}`}
+              href={`https://maps.apple.com/directions?destination=${query}`}
               target="_blank"
               rel="noopener noreferrer"
               variant="body2"
-              aria-label={`Open ${address} in Apple Maps`}
+              aria-label={`Get directions to ${destination} in Apple Maps`}
             >
               Apple Maps
             </Link>
             <Link
-              href={`https://www.google.com/maps/search/?api=1&query=${query}`}
+              href={`https://www.google.com/maps/dir/?api=1&destination=${query}`}
               target="_blank"
               rel="noopener noreferrer"
               variant="body2"
-              aria-label={`Open ${address} in Google Maps`}
+              aria-label={`Get directions to ${destination} in Google Maps`}
             >
               Google Maps
             </Link>

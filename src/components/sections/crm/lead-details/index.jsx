@@ -28,6 +28,7 @@ import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import CrmFilesPanel from 'components/sections/crm/shared/CrmFilesPanel';
 import AddressInfoRow from 'components/sections/crm/shared/AddressInfoRow';
+import { formatAddress } from 'components/sections/crm/shared/addressFormat';
 import AddTaskDialog from 'components/sections/crm/shared/AddTaskDialog';
 import TasksCard from 'components/sections/crm/shared/TasksCard';
 import { calculateCommission } from 'components/sections/crm/shared/commission';
@@ -533,6 +534,7 @@ const LeadDetails = ({ leadId }) => {
                     label="Phone"
                     value={formatPhone(contact.mobile_phone || contact.phone)}
                   />
+                  <AddressInfoRow record={contact} label="Contact Address" />
                   <Button
                     component={Link}
                     href={paths.contactDetails(contact.id)}
@@ -565,7 +567,10 @@ const LeadDetails = ({ leadId }) => {
                   </Button>
                 </>
               )}
-              <AddressInfoRow record={lead} />
+              {(!contact ||
+                (formatAddress(lead) && formatAddress(lead) !== formatAddress(contact))) && (
+                <AddressInfoRow record={lead} label="Lead Address" />
+              )}
               <Divider />
               {company ? (
                 <>
