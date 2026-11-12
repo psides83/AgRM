@@ -48,6 +48,14 @@ const sitemap = [
         active: true,
       },
       {
+        name: 'Tasks',
+        key: 'tasks',
+        path: paths.tasks,
+        pathName: 'tasks',
+        icon: 'material-symbols:task-alt-rounded',
+        active: true,
+      },
+      {
         name: 'Activities',
         key: 'activities',
         path: paths.activities,

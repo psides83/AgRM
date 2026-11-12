@@ -89,10 +89,18 @@ function OpenTasksPanel() {
 
   return (
     <Paper sx={{ p: { xs: 3, md: 4 }, height: 1 }}>
-      <SectionTitle
-        title="Open tasks"
-        icon="material-symbols:task-alt-rounded"
-      />
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
+        <IconifyIcon
+          icon="material-symbols:task-alt-rounded"
+          sx={{ color: 'text.secondary', fontSize: 22 }}
+        />
+        <Typography variant="h6" sx={{ flex: 1 }}>
+          Open tasks
+        </Typography>
+        <Link href={paths.tasks} variant="body2" underline="hover">
+          View all tasks
+        </Link>
+      </Stack>
       <Stack direction="column" spacing={1.5}>
         {error && <Alert severity="error">{error}</Alert>}
         {tasks.length ? (
@@ -155,15 +163,6 @@ function OpenTasksPanel() {
         )}
       </Stack>
     </Paper>
-  );
-}
-
-function SectionTitle({ title, icon }) {
-  return (
-    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
-      <IconifyIcon icon={icon} sx={{ color: 'text.secondary', fontSize: 22 }} />
-      <Typography variant="h6">{title}</Typography>
-    </Stack>
   );
 }
 

@@ -326,14 +326,7 @@ const LeadsList = () => {
 
       <Grid size={12}>
         <Paper sx={{ p: { xs: 3, md: 4 } }}>
-          <Stack
-            direction={{ xs: 'column', lg: 'row' }}
-            spacing={2}
-            sx={{
-              justifyContent: 'space-between',
-              alignItems: { xs: 'stretch', lg: 'center' },
-            }}
-          >
+          <Stack direction="column" spacing={2}>
             <Box>
               <Typography variant="h6">Lead call queue</Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -341,28 +334,35 @@ const LeadsList = () => {
                 {leads.length === 1 ? '' : 's'}
               </Typography>
             </Box>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                value={filters.search}
-                onChange={handleFilter('search')}
-                placeholder="Search leads, contacts, companies, equipment..."
-                sx={{ width: { xs: 1, sm: 360 } }}
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IconifyIcon icon="material-symbols:search-rounded" />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
+            <TextField
+              value={filters.search}
+              onChange={handleFilter('search')}
+              placeholder="Search leads, contacts, companies, equipment..."
+              fullWidth
+              slotProps={{
+                htmlInput: { 'aria-label': 'Search leads' },
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <IconifyIcon icon="material-symbols:search-rounded" />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+            <Box
+              sx={{
+                display: 'grid',
+                gap: 2,
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))',
+              }}
+            >
               <TextField
                 select
                 label="Queue"
                 value={filters.queue}
                 onChange={handleFilter('queue')}
-                sx={{ minWidth: 180 }}
+                sx={{ minWidth: 0 }}
               >
                 <MenuItem value="active">
                   Active ({queueCounts.active})
@@ -386,7 +386,7 @@ const LeadsList = () => {
                 label="Status"
                 value={filters.status}
                 onChange={handleFilter('status')}
-                sx={{ minWidth: 180 }}
+                sx={{ minWidth: 0 }}
               >
                 <MenuItem value="all">All</MenuItem>
                 {leadStatuses.map((status) => (
@@ -400,7 +400,7 @@ const LeadsList = () => {
                 label="Follow-up"
                 value={filters.followUp}
                 onChange={handleFilter('followUp')}
-                sx={{ minWidth: 180 }}
+                sx={{ minWidth: 0 }}
               >
                 <MenuItem value="all">All</MenuItem>
                 <MenuItem value="overdue">
@@ -421,7 +421,7 @@ const LeadsList = () => {
                 label="Sort"
                 value={filters.sort}
                 onChange={handleFilter('sort')}
-                sx={{ minWidth: 190 }}
+                sx={{ minWidth: 0 }}
               >
                 <MenuItem value="call_priority">Call Priority</MenuItem>
                 <MenuItem value="follow_up">Follow-up Date</MenuItem>
@@ -429,7 +429,7 @@ const LeadsList = () => {
                 <MenuItem value="newest">Newest First</MenuItem>
                 <MenuItem value="oldest">Oldest First</MenuItem>
               </TextField>
-            </Stack>
+            </Box>
           </Stack>
 
           <Stack

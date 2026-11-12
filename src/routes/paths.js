@@ -114,6 +114,7 @@ const paths = {
   dealDetails: (dealId) =>
     `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/deals/${dealId || ''}`,
   addContact: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/add-contact`,
+  tasks: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/tasks`,
   activities: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/activities`,
   deals: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/deals`,
   equipment: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/equipment`,

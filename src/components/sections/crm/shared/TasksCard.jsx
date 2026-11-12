@@ -13,6 +13,7 @@ import {
   DialogTitle,
   Divider,
   IconButton,
+  Link,
   Paper,
   Stack,
   TextField,
@@ -21,25 +22,42 @@ import {
 } from '@mui/material';
 import IconifyIcon from 'components/base/IconifyIcon';
 
-function TasksCard({ tasks, supabase, onSaved }) {
+function TasksCard({
+  tasks,
+  supabase,
+  onSaved,
+  preserveOrder = false,
+  getRelatedRecord,
+  emptyMessage = 'No tasks yet.',
+}) {
   const [editingTask, setEditingTask] = useState(null);
+  const [savingIds, setSavingIds] = useState([]);
+  const [error, setError] = useState(null);
 
   const handleComplete = async (taskId) => {
+    setError(null);
+    setSavingIds((current) => [...current, taskId]);
     const { error } = await supabase
       .from('tasks')
       .update({ completed_at: new Date().toISOString() })
       .eq('id', taskId);
 
-    if (!error) onSaved();
+    setSavingIds((current) => current.filter((id) => id !== taskId));
+    if (error) setError(error.message);
+    else onSaved();
   };
 
-  const sortedTasks = [...tasks].sort((a, b) => {
-    if (!!a.completed_at !== !!b.completed_at) return a.completed_at ? 1 : -1;
-    if (a.due_at && b.due_at) return new Date(a.due_at) - new Date(b.due_at);
-    if (a.due_at) return -1;
-    if (b.due_at) return 1;
-    return new Date(b.created_at) - new Date(a.created_at);
-  });
+  const sortedTasks = preserveOrder
+    ? tasks
+    : [...tasks].sort((a, b) => {
+        if (!!a.completed_at !== !!b.completed_at)
+          return a.completed_at ? 1 : -1;
+        if (a.due_at && b.due_at)
+          return new Date(a.due_at) - new Date(b.due_at);
+        if (a.due_at) return -1;
+        if (b.due_at) return 1;
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
 
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
@@ -51,85 +69,105 @@ function TasksCard({ tasks, supabase, onSaved }) {
         <Typography variant="h6">Tasks</Typography>
       </Stack>
 
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
       <Stack direction="column" divider={<Divider flexItem />} spacing={2}>
         {sortedTasks.length ? (
-          sortedTasks.map((task) => (
-            <Stack
-              key={task.id}
-              direction="row"
-              spacing={1.5}
-              sx={{ alignItems: 'flex-start' }}
-            >
-              <Checkbox
-                checked={!!task.completed_at}
-                disabled={!!task.completed_at}
-                onChange={() => handleComplete(task.id)}
-                sx={{ p: 0.25, mt: 0.25 }}
-              />
-              <Box sx={{ minWidth: 0, flex: 1 }}>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  useFlexGap
-                  sx={{ alignItems: 'center', flexWrap: 'wrap', mb: 0.25 }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{
-                      textDecoration: task.completed_at
-                        ? 'line-through'
-                        : 'none',
-                      color: task.completed_at
-                        ? 'text.secondary'
-                        : 'text.primary',
-                    }}
+          sortedTasks.map((task) => {
+            const record = getRelatedRecord?.(task);
+            return (
+              <Stack
+                key={task.id}
+                direction="row"
+                spacing={1.5}
+                sx={{ alignItems: 'flex-start' }}
+              >
+                <Checkbox
+                  checked={!!task.completed_at}
+                  disabled={!!task.completed_at || savingIds.includes(task.id)}
+                  slotProps={{
+                    input: { 'aria-label': `Complete ${task.title}` },
+                  }}
+                  onChange={() => handleComplete(task.id)}
+                  sx={{ p: 0.25, mt: 0.25 }}
+                />
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    useFlexGap
+                    sx={{ alignItems: 'center', flexWrap: 'wrap', mb: 0.25 }}
                   >
-                    {task.title}
-                  </Typography>
-                  {task.completed_at && (
-                    <Chip
-                      size="small"
-                      label="Complete"
-                      color="success"
-                      variant="soft"
-                    />
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        textDecoration: task.completed_at
+                          ? 'line-through'
+                          : 'none',
+                        color: task.completed_at
+                          ? 'text.secondary'
+                          : 'text.primary',
+                      }}
+                    >
+                      {task.title}
+                    </Typography>
+                    {task.completed_at && (
+                      <Chip
+                        size="small"
+                        label="Complete"
+                        color="success"
+                        variant="soft"
+                      />
+                    )}
+                    {task.due_at && (!task.completed_at || preserveOrder) && (
+                      <Chip
+                        size="small"
+                        label={`Due ${formatDateTime(task.due_at)}`}
+                        color={
+                          !task.completed_at && isPastDue(task.due_at)
+                            ? 'error'
+                            : 'primary'
+                        }
+                        variant="soft"
+                      />
+                    )}
+                  </Stack>
+                  {record && (
+                    <Link href={record.href} variant="body2" underline="hover">
+                      {record.name}
+                    </Link>
                   )}
-                  {task.due_at && !task.completed_at && (
-                    <Chip
-                      size="small"
-                      label={`Due ${formatDateTime(task.due_at)}`}
-                      color={isPastDue(task.due_at) ? 'error' : 'primary'}
-                      variant="soft"
-                    />
+                  {task.body && (
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'text.secondary',
+                        whiteSpace: 'pre-wrap',
+                        overflowWrap: 'anywhere',
+                      }}
+                    >
+                      {task.body}
+                    </Typography>
                   )}
-                </Stack>
-                {task.body && (
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'text.secondary',
-                      whiteSpace: 'pre-wrap',
-                      overflowWrap: 'anywhere',
-                    }}
+                </Box>
+                <Tooltip title="Edit task">
+                  <IconButton
+                    size="small"
+                    aria-label={`Edit ${task.title}`}
+                    onClick={() => setEditingTask(task)}
                   >
-                    {task.body}
-                  </Typography>
-                )}
-              </Box>
-              <Tooltip title="Edit task">
-                <IconButton
-                  size="small"
-                  aria-label={`Edit ${task.title}`}
-                  onClick={() => setEditingTask(task)}
-                >
-                  <IconifyIcon icon="material-symbols:edit-outline" />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          ))
+                    <IconifyIcon icon="material-symbols:edit-outline" />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            );
+          })
         ) : (
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            No tasks yet.
+            {emptyMessage}
           </Typography>
         )}
       </Stack>
