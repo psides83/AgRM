@@ -81,8 +81,7 @@ async function getDashboardData() {
 
   const [
     profileResult,
-    contacts,
-    openLeads,
+    relationshipCountsResult,
     openDeals,
     equipmentInterests,
     leadsResult,
@@ -97,8 +96,7 @@ async function getDashboardData() {
       .select('commission_rate')
       .eq('id', user.id)
       .maybeSingle(),
-    getCount(supabase, 'contacts'),
-    getCount(supabase, 'leads', [['neq', 'status', 'converted']]),
+    supabase.rpc('crm_dashboard_relationship_counts').single(),
     getCount(supabase, 'deals', [['neq', 'stage', 'closed']]),
     getCount(supabase, 'equipment_interests'),
     supabase
@@ -206,6 +204,7 @@ async function getDashboardData() {
   ]);
 
   const queryError = [
+    relationshipCountsResult.error,
     leadsResult.error,
     leadFollowUpsResult.error,
     activityFollowUpsResult.error,
@@ -215,6 +214,8 @@ async function getDashboardData() {
   ].find(Boolean);
 
   if (queryError) throw queryError;
+
+  const { contacts, open_leads: openLeads } = relationshipCountsResult.data;
 
   const followUps = [
     ...(leadFollowUpsResult.data || []).map((lead) => ({
