@@ -24,6 +24,7 @@ import { useRouter } from 'next/navigation';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import { useAuth } from 'providers/AuthProvider';
+import EquipmentDealDialog from 'components/sections/crm/shared/EquipmentDealDialog';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import CrmFilesPanel from 'components/sections/crm/shared/CrmFilesPanel';
@@ -80,6 +81,7 @@ const LeadDetails = ({ leadId }) => {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [convertingEquipment, setConvertingEquipment] = useState(null);
   const [dialog, setDialog] = useState(null);
   const [actionAnchorEl, setActionAnchorEl] = useState(null);
 
@@ -602,7 +604,7 @@ const LeadDetails = ({ leadId }) => {
 
         <Grid size={{ xs: 12, lg: 8 }}>
           <Stack direction="column" spacing={3}>
-            <EquipmentCard equipmentInterests={equipmentInterests} />
+            <EquipmentCard equipmentInterests={equipmentInterests} onConvert={setConvertingEquipment} />
           <DealsCard deals={deals} commissionRate={profile?.commission_rate} />
             <TasksCard
               tasks={tasks}
@@ -619,6 +621,15 @@ const LeadDetails = ({ leadId }) => {
         </Grid>
       </Grid>
 
+      {convertingEquipment && (
+        <EquipmentDealDialog
+          supabase={supabase}
+          contactId={convertingEquipment.contact_id || lead.contact_id}
+          leadId={lead.id}
+          items={[convertingEquipment]}
+          onClose={() => setConvertingEquipment(null)}
+        />
+      )}
       <UpdateLeadDialog
         open={dialog === 'status'}
         lead={lead}
@@ -778,7 +789,7 @@ function DealsCard({ deals, commissionRate }) {
   );
 }
 
-function EquipmentCard({ equipmentInterests }) {
+function EquipmentCard({ equipmentInterests, onConvert }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
       <SectionTitle
@@ -815,6 +826,11 @@ function EquipmentCard({ equipmentInterests }) {
                   .filter((value) => value && value !== 'No Location')
                   .join(' · ')}
                 chip={interest.trade_in ? 'Trade-in' : null}
+                action={interest.deal_id ? (
+                  <Button size="small" href={paths.dealDetails(interest.deal_id)}>View Deal</Button>
+                ) : (
+                  <Button size="small" onClick={() => onConvert(interest)}>Convert to Deal</Button>
+                )}
               />
             );
           })
@@ -1144,7 +1160,7 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
   );
 }
 
-function RecordRow({ title, subtitle, chip, href }) {
+function RecordRow({ title, subtitle, chip, href, action }) {
   return (
     <Box sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 2 }}>
       <Stack
@@ -1169,6 +1185,7 @@ function RecordRow({ title, subtitle, chip, href }) {
             {subtitle}
           </Typography>
         </Box>
+        {action}
         {chip && (
           <Chip
             label={chip}

@@ -28,6 +28,7 @@ import Grid from '@mui/material/Grid';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
+import EquipmentDealDialog from 'components/sections/crm/shared/EquipmentDealDialog';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import {
   equipmentCategories,
@@ -83,6 +84,7 @@ const Equipment = () => {
   const [filters, setFilters] = useState(emptyFilters);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [convertingItem, setConvertingItem] = useState(null);
   const [deleteItem, setDeleteItem] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -353,6 +355,7 @@ const Equipment = () => {
                       locations={equipmentLocations}
                       onQuickUpdate={handleQuickUpdate}
                       onEdit={openEditDialog}
+                      onConvert={setConvertingItem}
                       onDelete={setDeleteItem}
                     />
                   ))
@@ -365,6 +368,15 @@ const Equipment = () => {
         </Paper>
       </Grid>
 
+      {convertingItem && (
+        <EquipmentDealDialog
+          supabase={supabase}
+          contactId={convertingItem.contact_id}
+          leadId={convertingItem.lead_id}
+          items={[convertingItem]}
+          onClose={() => setConvertingItem(null)}
+        />
+      )}
       <AddEquipmentDialog
         open={dialogOpen}
         item={editingItem}
@@ -417,7 +429,7 @@ const Equipment = () => {
   }
 };
 
-function EquipmentRow({ item, locations, onQuickUpdate, onEdit, onDelete }) {
+function EquipmentRow({ item, locations, onQuickUpdate, onEdit, onConvert, onDelete }) {
   const owner = equipmentOwner(item);
   const href = equipmentHref(item);
 
@@ -521,6 +533,9 @@ function EquipmentRow({ item, locations, onQuickUpdate, onEdit, onDelete }) {
           >
             Edit
           </Button>
+          {!item.deal_id && (item.contact_id || item.lead_id) && (
+            <Button size="small" onClick={() => onConvert(item)}>Convert to Deal</Button>
+          )}
           <Button
             size="small"
             color="error"

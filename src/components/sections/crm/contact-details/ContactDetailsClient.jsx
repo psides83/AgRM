@@ -18,6 +18,12 @@ import {
   MenuItem,
   Paper,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   TextField,
   Typography,
   Autocomplete,
@@ -32,6 +38,7 @@ import PageHeader from "components/sections/ecommerce/admin/common/PageHeader";
 import CrmFilesPanel from "components/sections/crm/shared/CrmFilesPanel";
 import SensitiveInfoRow from "components/sections/crm/shared/SensitiveInfoRow";
 import AddTaskDialog from "components/sections/crm/shared/AddTaskDialog";
+import EquipmentDealDialog from "components/sections/crm/shared/EquipmentDealDialog";
 import TasksCard from "components/sections/crm/shared/TasksCard";
 import AddressInfoRow from "components/sections/crm/shared/AddressInfoRow";
 import { formatAddress } from "components/sections/crm/shared/addressFormat";
@@ -75,6 +82,7 @@ const ContactDetailsClient = ({ contactId }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dialog, setDialog] = useState(null);
+  const [dealEquipment, setDealEquipment] = useState(null);
   const [editingEquipment, setEditingEquipment] = useState(null);
   const [contactMenuAnchor, setContactMenuAnchor] = useState(null);
   const [actionMenuAnchor, setActionMenuAnchor] = useState(null);
@@ -311,6 +319,7 @@ const ContactDetailsClient = ({ contactId }) => {
     linkedCompanies.find((item) => item.is_primary) ||
     linkedCompanies[0] ||
     contact.companies;
+  const companiesInContactInfo = linkedCompanies.length ? linkedCompanies : company ? [company] : [];
   const contactName = [contact.first_name, contact.last_name]
     .filter(Boolean)
     .join(" ");
@@ -600,6 +609,25 @@ const ContactDetailsClient = ({ contactId }) => {
               icon="material-symbols:contacts-outline-rounded"
             >
               <InfoRow label="Role" value={contact.title} />
+              <InfoRow
+                label={companiesInContactInfo.length > 1 ? "Linked Companies" : "Linked Company"}
+                value={companiesInContactInfo.length ? (
+                  <Stack component="span" spacing={0.5} sx={{ alignItems: "flex-end" }}>
+                    {companiesInContactInfo.map((linkedCompany) => (
+                      <Box component="span" key={linkedCompany.id}>
+                        <Link href={paths.companyDetails(linkedCompany.id)} underline="hover" color="inherit">
+                          {linkedCompany.name}
+                        </Link>
+                        {linkedCompany.is_primary && companiesInContactInfo.length > 1 && (
+                          <Typography component="span" variant="caption" sx={{ ml: 1, color: "text.secondary" }}>
+                            Primary
+                          </Typography>
+                        )}
+                      </Box>
+                    ))}
+                  </Stack>
+                ) : undefined}
+              />
               <InfoRow label="Account Number" value={contact.account_number} />
               {contact.ssn_last4 ? (
                 <SensitiveInfoRow
@@ -642,82 +670,6 @@ const ContactDetailsClient = ({ contactId }) => {
                 </Typography>
               )}
             </InfoCard>
-
-            <InfoCard
-              title="Linked Company"
-              icon="material-symbols:business-center-outline-rounded"
-            >
-              {linkedCompanies.length ? (
-                <>
-                  {linkedCompanies.map((linkedCompany) => (
-                    <Box key={linkedCompany.id}>
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        sx={{ alignItems: "center" }}
-                      >
-                        <Link
-                          href={paths.companyDetails(linkedCompany.id)}
-                          underline="hover"
-                          sx={{ color: "text.primary", fontWeight: 700 }}
-                        >
-                          {linkedCompany.name}
-                        </Link>
-                        {linkedCompany.is_primary && (
-                          <Chip label="Primary" size="small" variant="soft" />
-                        )}
-                      </Stack>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: "text.secondary" }}
-                      >
-                        {[
-                          linkedCompany.company_type,
-                          formatPhone(linkedCompany.phone),
-                          [linkedCompany.city, linkedCompany.region]
-                            .filter(Boolean)
-                            .join(", "),
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </Typography>
-                    </Box>
-                  ))}
-                </>
-              ) : company ? (
-                <>
-                  <InfoRow
-                    label="Name"
-                    value={
-                      <Link
-                        href={paths.companyDetails(company.id)}
-                        underline="hover"
-                        sx={{ color: "text.primary", fontWeight: 700 }}
-                      >
-                        {company.name}
-                      </Link>
-                    }
-                  />
-                  <InfoRow label="Type" value={company.company_type} />
-                  <InfoRow label="Email" value={company.email} />
-                  <InfoRow label="Phone" value={formatPhone(company.phone)} />
-                  <AddressInfoRow record={company} />
-                  {company.website && (
-                    <Link
-                      href={company.website}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {company.website}
-                    </Link>
-                  )}
-                </>
-              ) : (
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  No company linked.
-                </Typography>
-              )}
-            </InfoCard>
           </Stack>
         </Grid>
 
@@ -735,6 +687,7 @@ const ContactDetailsClient = ({ contactId }) => {
             />
             <EquipmentCard
               equipmentInterests={equipmentInterests}
+              onAddToDeal={setDealEquipment}
               onEdit={(item) => {
                 setEditingEquipment(item);
                 setDialog("equipment");
@@ -743,6 +696,7 @@ const ContactDetailsClient = ({ contactId }) => {
             <LeadsCard leads={leads} />
             <DealsCard
               deals={deals}
+              onAdd={() => setDealEquipment([])}
               commissionRate={profile?.commission_rate}
             />
             <CrmFilesPanel recordType="contact" recordId={contact.id} />
@@ -750,6 +704,15 @@ const ContactDetailsClient = ({ contactId }) => {
         </Grid>
       </Grid>
 
+      {dealEquipment && (
+        <EquipmentDealDialog
+          supabase={supabase}
+          contactId={contact.id}
+          items={dealEquipment}
+          deals={deals}
+          onClose={() => setDealEquipment(null)}
+        />
+      )}
       <AddLeadDialog
         open={dialog === "lead"}
         contact={contact}
@@ -880,13 +843,16 @@ function LeadsCard({ leads }) {
   );
 }
 
-function DealsCard({ deals, commissionRate }) {
+function DealsCard({ deals, commissionRate, onAdd }) {
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
-      <SectionTitle
-        title="Related Deals"
-        icon="material-symbols:handshake-outline-rounded"
-      />
+      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "baseline" }}>
+        <SectionTitle
+          title="Related Deals"
+          icon="material-symbols:handshake-outline-rounded"
+        />
+        <Button size="small" variant="soft" onClick={onAdd}>Add Deal</Button>
+      </Stack>
       <Stack direction="column" spacing={1.5}>
         {deals.length ? (
           deals.map((deal) => (
@@ -914,64 +880,97 @@ function leadDisplayName(lead) {
   );
 }
 
-function EquipmentCard({ equipmentInterests, onEdit }) {
+function EquipmentCard({ equipmentInterests, onEdit, onAddToDeal }) {
+  const [selectedIds, setSelectedIds] = useState([]);
+  const available = equipmentInterests.filter((interest) => !interest.deal_id);
+  const selected = available.filter((interest) => selectedIds.includes(interest.id));
+  const allSelected = available.length > 0 && selected.length === available.length;
+
   return (
     <Paper sx={{ p: { xs: 3, md: 4 } }}>
-      <SectionTitle
-        title="Equipment Interests"
-        icon="material-symbols:agriculture-outline-rounded"
-      />
-      <Stack direction="column" spacing={1.5}>
-        {equipmentInterests.length ? (
-          equipmentInterests.map((interest) => {
-            const equipmentName = [
-              interest.model_year,
-              interest.make,
-              interest.model,
-            ]
-              .filter(Boolean)
-              .join(" ");
-            const budget =
-              [
-                formatCurrency(interest.price_min),
-                formatCurrency(interest.price_max),
-              ]
-                .filter((value) => value !== "-")
-                .join(" - ") || "-";
-
-            return (
-              <RecordRow
-                key={interest.id}
-                title={equipmentName || formatEnum(interest.category)}
-                subtitle={[
-                  formatEnum(interest.category),
-                  formatEnum(interest.condition),
-                  locationLabel(interest.equipment_locations),
-                  `Budget ${budget}`,
-                ]
-                  .filter((value) => value && value !== "No Location")
-                  .join(" · ")}
-                chip={interest.trade_in ? "Trade-in" : null}
-                action={
-                  <Button
-                    size="small"
-                    variant="soft"
-                    color="neutral"
-                    onClick={() => onEdit(interest)}
-                    startIcon={
-                      <IconifyIcon icon="material-symbols:edit-outline-rounded" />
-                    }
-                  >
-                    Edit
-                  </Button>
-                }
-              />
-            );
-          })
-        ) : (
-          <EmptyState label="No equipment interests yet" />
-        )}
+      <Stack direction="row" spacing={1} sx={{ justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap" }}>
+        <SectionTitle title="Equipment Interests" icon="material-symbols:agriculture-outline-rounded" />
+        <Button
+          size="small"
+          variant="soft"
+          disabled={!selected.length}
+          onClick={() => onAddToDeal(selected)}
+        >
+          Add to Deal{selected.length > 0 ? ` (${selected.length})` : ""}
+        </Button>
       </Stack>
+      {equipmentInterests.length ? (
+        <TableContainer>
+          <Table size="small" aria-label="Equipment interests">
+            <TableHead>
+              <TableRow>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    checked={allSelected}
+                    disabled={!available.length}
+                    indeterminate={selected.length > 0 && !allSelected}
+                    onChange={() => setSelectedIds(allSelected ? [] : available.map((item) => item.id))}
+                    slotProps={{ input: { "aria-label": "Select all unlinked equipment interests" } }}
+                  />
+                </TableCell>
+                <TableCell>Equipment</TableCell>
+                <TableCell>Condition</TableCell>
+                <TableCell>Location</TableCell>
+                <TableCell>Budget</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {equipmentInterests.map((interest) => {
+                const name = [interest.model_year, interest.make, interest.model].filter(Boolean).join(" ")
+                  || formatEnum(interest.category);
+                const checked = !interest.deal_id && selectedIds.includes(interest.id);
+                const budget = [interest.price_min, interest.price_max]
+                  .filter((value) => value != null)
+                  .map(formatCurrency)
+                  .join(" – ");
+
+                return (
+                  <TableRow key={interest.id} selected={checked}>
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={checked}
+                        disabled={Boolean(interest.deal_id)}
+                        onChange={() => setSelectedIds((ids) => checked
+                          ? ids.filter((id) => id !== interest.id)
+                          : [...ids, interest.id])}
+                        slotProps={{ input: { "aria-label": `Select ${name}` } }}
+                      />
+                    </TableCell>
+                    <TableCell component="th" scope="row">
+                      {name}
+                      {interest.stock_number && (
+                        <Typography variant="caption" display="block">Stock {interest.stock_number}</Typography>
+                      )}
+                      {interest.trade_in && <Chip size="small" label="Trade-in" />}
+                    </TableCell>
+                    <TableCell>{formatEnum(interest.condition)}</TableCell>
+                    <TableCell>{locationLabel(interest.equipment_locations)}</TableCell>
+                    <TableCell>{budget || "–"}</TableCell>
+                    <TableCell align="right">
+                      <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
+                        {interest.deal_id ? (
+                          <Button size="small" href={paths.dealDetails(interest.deal_id)}>View Deal</Button>
+                        ) : (
+                          <Button size="small" onClick={() => onAddToDeal([interest])}>Convert to Deal</Button>
+                        )}
+                        <Button size="small" color="neutral" onClick={() => onEdit(interest)}>Edit</Button>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ) : (
+        <EmptyState label="No equipment interests yet" />
+      )}
     </Paper>
   );
 }
