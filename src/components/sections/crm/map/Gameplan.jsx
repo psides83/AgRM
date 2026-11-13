@@ -54,6 +54,27 @@ export default function Gameplan({ supabase, date, records, targets, onDaysChang
     return run(() => supabase.rpc('reorder_crm_gameplan', { target_date: date, ordered_ids: ids }));
   }
 
+  function logOutcome(target, record) {
+    return run(async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) return { error };
+      if (!data.user) return { error: new Error('Sign in to log an activity.') };
+
+      const { lead_id, contact_id, company_id, method, outcome } = target;
+      return supabase.from('activities').insert({
+        owner_id: data.user.id,
+        lead_id,
+        contact_id: contact_id || record.contact?.id || null,
+        company_id: company_id || record.company?.id || null,
+        type: method === 'Other' ? 'note' : method.toLowerCase(),
+        direction: method === 'Other' ? null : 'outbound',
+        subject: `${method} outcome · ${record.title}`,
+        body: outcome,
+        completed_at: new Date().toISOString(),
+      });
+    }, 'Outcome logged in CRM Activities.');
+  }
+
   const disabled = busy || loading || Boolean(loadError);
 
   return (
@@ -105,6 +126,7 @@ export default function Gameplan({ supabase, date, records, targets, onDaysChang
                 move={(offset) => move(index, offset)}
                 remove={() => run(() => table().delete().eq('id', target.id))}
                 save={(outcome) => run(() => table().update({ outcome }).eq('id', target.id), 'Outcome saved.')}
+                logOutcome={logOutcome}
                 followUp={(day) => run(async () => {
                   const { lead_id, contact_id, company_id, method } = target;
                   const { error } = await createGameplan(supabase, day);
@@ -121,7 +143,7 @@ export default function Gameplan({ supabase, date, records, targets, onDaysChang
   );
 }
 
-function Target({ target, record, origin, disabled, first, last, move, remove, save, followUp }) {
+function Target({ target, record, origin, disabled, first, last, move, remove, save, logOutcome, followUp }) {
   const address = record?.address;
   const storedCoordinates = record?.coordinates;
   const [resolved, setResolved] = useState(null);
@@ -196,6 +218,13 @@ function Target({ target, record, origin, disabled, first, last, move, remove, s
       </Stack>
       <TextField label="Outcome" size="small" multiline value={outcome} onChange={(event) => setOutcome(event.target.value)} />
       <Button size="small" disabled={disabled || outcome.trim() === target.outcome} onClick={() => save(outcome.trim())}>Save outcome</Button>
+      {record && target.outcome.trim() && (
+        <Button size="small" variant="outlined"
+          disabled={disabled || outcome.trim() !== target.outcome}
+          onClick={() => logOutcome(target, record)}>
+          Log outcome as activity
+        </Button>
+      )}
       <TextField type="date" size="small" label="Follow-up date" value={followUpDate}
         onChange={(event) => setFollowUpDate(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
       <Button size="small" disabled={disabled || followUpDate <= target.plan_date}
