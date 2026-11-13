@@ -234,6 +234,7 @@ const CrmMap = () => {
 
       const root = createRoot(node);
       const positions = filter === 'gameplan' ? planPositions.get(record.id) : null;
+      const showIcon = record.kind === 'company' || !positions;
       node.setAttribute('aria-label', record.title);
       root.render(
         <Box
@@ -245,12 +246,15 @@ const CrmMap = () => {
             borderRadius: '50%',
             bgcolor: record.kind === 'lead' ? 'warning.main' : 'primary.main',
             color: 'common.white',
-            display: 'grid',
-            placeItems: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.5,
             boxShadow: 3,
           }}
         >
-          {positions ? positions.join(', ') : <IconifyIcon icon={recordIcon(record.kind)} fontSize={21} />}
+          {showIcon && <IconifyIcon icon={recordIcon(record.kind)} fontSize={21} />}
+          {positions && <span>{positions.join(', ')}</span>}
         </Box>,
       );
 
