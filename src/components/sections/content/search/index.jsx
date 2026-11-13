@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import useListState from 'hooks/useListState';
+import { useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { TabContext, TabPanel } from '@mui/lab';
 import {
@@ -34,8 +35,8 @@ const formatSearchKey = (str) =>
 
 const SearchContainer = () => {
   const searchParams = useSearchParams();
-  const [sortBy, setSortBy] = useState('recommended');
-  const [value, setValue] = useState('blogs');
+  const [sortBy, setSortBy] = useListState('content/search/index:sortBy', 'recommended');
+  const [value, setValue] = useListState('content/search/index:value', 'blogs');
   const { only } = useBreakpoints();
 
   const searchKey = formatSearchKey(searchParams.get('key') || '');

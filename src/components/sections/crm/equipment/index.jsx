@@ -1,5 +1,6 @@
 'use client';
 
+import useListState from 'hooks/useListState';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
@@ -81,7 +82,7 @@ const Equipment = () => {
   const [leads, setLeads] = useState([]);
   const [deals, setDeals] = useState([]);
   const [equipmentLocations, setEquipmentLocations] = useState([]);
-  const [filters, setFilters] = useState(emptyFilters);
+  const [filters, setFilters] = useListState('crm/equipment/index:filters', emptyFilters);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [convertingItem, setConvertingItem] = useState(null);

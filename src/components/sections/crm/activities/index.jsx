@@ -1,5 +1,6 @@
 "use client";
 
+import useListState from 'hooks/useListState';
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -50,9 +51,9 @@ const emptyExportRange = {
 const ActivitiesPage = () => {
   const supabase = useMemo(() => createClient(), []);
   const [activities, setActivities] = useState([]);
-  const [filters, setFilters] = useState(emptyFilters);
+  const [filters, setFilters] = useListState('crm/activities/index:filters', emptyFilters);
   const [exportRange, setExportRange] = useState(emptyExportRange);
-  const [sort, setSort] = useState({ key: "date", direction: "desc" });
+  const [sort, setSort] = useListState('crm/activities/index:sort', { key: "date", direction: "desc" });
   const [editingActivity, setEditingActivity] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);

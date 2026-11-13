@@ -1,5 +1,6 @@
 'use client';
 
+import useListState from 'hooks/useListState';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -53,7 +54,7 @@ const CrmMap = () => {
   const [records, setRecords] = useState([]);
   const [mappedRecords, setMappedRecords] = useState([]);
   const [unmappedRecords, setUnmappedRecords] = useState([]);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useListState('crm/map/index:filter', 'all');
   const [isDroppingLeadPin, setIsDroppingLeadPin] = useState(false);
   const [leadPin, setLeadPin] = useState(null);
   const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false);

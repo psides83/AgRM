@@ -1,17 +1,28 @@
-import { createContext, useCallback, use, useEffect, useMemo, useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { createContext, useCallback, use, useEffect, useMemo } from 'react';
+import useListState from 'hooks/useListState';
+import { FormProvider, useForm, useWatch } from 'react-hook-form';
 
 export const ProductsContext = createContext({});
 
 const ProductsProvider = ({ children, products }) => {
-  const [visibleProducts, setVisibleProducts] = useState(products);
-  const methods = useForm();
-  const { setValue, getValues, reset, watch, handleSubmit } = methods;
-  const formValues = getValues();
+  const [filters, setFilters, restored] = useListState('products:filters', {});
+  const [sortBy, handleProductsSort] = useListState('products:sort', 'recommended');
+  const methods = useForm({ defaultValues: {} });
+  const { control, setValue, reset, subscribe } = methods;
+  const formValues = useWatch({ control });
+
+  useEffect(() => {
+    if (!restored) return;
+    reset(filters);
+    return subscribe({
+      formState: { values: true },
+      callback: ({ values }) => setFilters(values),
+    });
+  }, [restored, reset, subscribe, setFilters]);
 
   const filterItems = useMemo(() => {
     return Object.keys(formValues).reduce((acc, key) => {
-      if (key !== 'priceRange') {
+      if (key !== 'priceRange' && Array.isArray(formValues[key])) {
         formValues[key].forEach((element) => {
           acc.push({
             value: element,
@@ -34,40 +45,13 @@ const ProductsProvider = ({ children, products }) => {
     [formValues],
   );
 
-  const handleProductsSort = useCallback(
-    (sortBy) => {
-      switch (sortBy) {
-        case 'recommended':
-          onSubmit(formValues);
-          break;
-        case 'lowToHight':
-          setVisibleProducts((prev) =>
-            [...prev].sort((a, b) => a.price.discounted - b.price.discounted),
-          );
-          break;
-        case 'highToLow':
-          setVisibleProducts((prev) =>
-            [...prev].sort((a, b) => b.price.discounted - a.price.discounted),
-          );
-          break;
-        case 'highestRated':
-          setVisibleProducts((prev) => [...prev].sort((a, b) => b.ratings - a.ratings));
-          break;
-        default:
-          onSubmit(formValues);
-      }
-    },
-    [formValues],
-  );
+  const handleResetFilters = () => reset({});
 
-  const handleResetFilters = useCallback(() => {
-    reset();
-  }, []);
-
-  const onSubmit = (data) => {
+  const visibleProducts = useMemo(() => {
+    const data = formValues;
     const filteredProducts = products.filter((product) => {
       return Object.keys(data).every((key) => {
-        if (data[key].length === 0) {
+        if (!data[key]?.length) {
           return true;
         }
         if (key === 'priceRange') {
@@ -82,14 +66,17 @@ const ProductsProvider = ({ children, products }) => {
       });
     });
 
-    setVisibleProducts(filteredProducts);
-  };
-
-  useEffect(() => {
-    const subscription = watch(() => handleSubmit(onSubmit));
-
-    return () => subscription.unsubscribe();
-  }, [handleSubmit, watch]);
+    switch (sortBy) {
+      case 'lowToHight':
+        return filteredProducts.sort((a, b) => a.price.discounted - b.price.discounted);
+      case 'highToLow':
+        return filteredProducts.sort((a, b) => b.price.discounted - a.price.discounted);
+      case 'highestRated':
+        return filteredProducts.sort((a, b) => b.ratings - a.ratings);
+      default:
+        return filteredProducts;
+    }
+  }, [formValues, products, sortBy]);
 
   return (
     <ProductsContext
@@ -98,6 +85,7 @@ const ProductsProvider = ({ children, products }) => {
         visibleProducts,
         handleDeleteFilterItem,
         handleResetFilters,
+        sortBy,
         handleProductsSort,
       }}
     >

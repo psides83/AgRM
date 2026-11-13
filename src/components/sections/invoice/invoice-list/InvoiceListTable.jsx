@@ -1,3 +1,4 @@
+import useListState from 'hooks/useListState';
 import { useMemo } from 'react';
 import { Avatar, Box, Chip, Link, Stack, Typography } from '@mui/material';
 import { DataGrid, GRID_CHECKBOX_SELECTION_COL_DEF, gridClasses } from '@mui/x-data-grid';
@@ -23,6 +24,11 @@ const getPaymentStatusBadgeColor = (val) => {
 const defaultPageSize = 8;
 
 const InvoiceListTable = ({ apiRef, data, filterButtonEl, filterModel, onFilterModelChange }) => {
+  const [sortModel, setSortModel] = useListState('invoice:sort', []);
+  const [paginationModel, setPaginationModel] = useListState('invoice:pagination', {
+    page: 0,
+    pageSize: defaultPageSize,
+  });
   const { currencyFormat } = useNumberFormat();
   const columns = useMemo(
     () => [
@@ -213,13 +219,10 @@ const InvoiceListTable = ({ apiRef, data, filterButtonEl, filterModel, onFilterM
         pageSizeOptions={[defaultPageSize, data.length]}
         filterModel={filterModel}
         onFilterModelChange={onFilterModelChange}
-        initialState={{
-          pagination: {
-            paginationModel: {
-              pageSize: defaultPageSize,
-            },
-          },
-        }}
+        sortModel={sortModel}
+        onSortModelChange={setSortModel}
+        paginationModel={paginationModel}
+        onPaginationModelChange={setPaginationModel}
         checkboxSelection
         slots={{
           basePagination: (props) => <DataGridPagination showFullPagination {...props} />,

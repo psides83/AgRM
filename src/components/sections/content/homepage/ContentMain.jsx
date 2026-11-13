@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import useListState from 'hooks/useListState';
 import { TabContext, TabPanel } from '@mui/lab';
 import { Box } from '@mui/material';
 import { contentList } from 'data/content/homepage';
@@ -14,7 +14,7 @@ const getUniqueCategories = () => [
 ];
 
 const ContentMain = () => {
-  const [category, setCategory] = useState('all');
+  const [category, setCategory] = useListState('content/homepage/ContentMain:category', 'all');
   const contentCategories = getUniqueCategories();
 
   const filteredItems =

@@ -1,5 +1,6 @@
 "use client";
 
+import useListState from 'hooks/useListState';
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -64,12 +65,12 @@ const CompaniesList = () => {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [companies, setCompanies] = useState([]);
-  const [search, setSearch] = useState("");
-  const [locationFilters, setLocationFilters] = useState({
+  const [search, setSearch] = useListState('crm/companies/CompaniesList:search', "");
+  const [locationFilters, setLocationFilters] = useListState('crm/companies/CompaniesList:locationFilters', {
     city: [],
     county: [],
   });
-  const [sort, setSort] = useState({ key: "createdAt", direction: "desc" });
+  const [sort, setSort] = useListState('crm/companies/CompaniesList:sort', { key: "createdAt", direction: "desc" });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);

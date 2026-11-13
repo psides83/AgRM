@@ -1,5 +1,6 @@
 "use client";
 
+import useListState from 'hooks/useListState';
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -33,12 +34,12 @@ import { matchesLocation } from "components/sections/crm/shared/locationFilterUt
 const ContactsList = () => {
   const supabase = useMemo(() => createClient(), []);
   const [contacts, setContacts] = useState([]);
-  const [search, setSearch] = useState("");
-  const [locationFilters, setLocationFilters] = useState({
+  const [search, setSearch] = useListState('crm/contacts/ContactsList:search', "");
+  const [locationFilters, setLocationFilters] = useListState('crm/contacts/ContactsList:locationFilters', {
     city: [],
     county: [],
   });
-  const [sort, setSort] = useState({ key: "createdAt", direction: "desc" });
+  const [sort, setSort] = useListState('crm/contacts/ContactsList:sort', { key: "createdAt", direction: "desc" });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 

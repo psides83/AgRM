@@ -1,3 +1,4 @@
+import useListState from 'hooks/useListState';
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, Chip, Link, Stack } from '@mui/material';
@@ -28,7 +29,12 @@ const zeroPad = (num, places) => String(num).padStart(places, '0');
 
 const defaultPageSize = 8;
 
-const ProductsTable = ({ apiRef, filterButtonEl }) => {
+const ProductsTable = ({ apiRef, filterButtonEl, filterModel, onFilterModelChange }) => {
+  const [sortModel, setSortModel] = useListState('admin-products:sort', []);
+  const [paginationModel, setPaginationModel] = useListState('admin-products:pagination', {
+    page: 0,
+    pageSize: defaultPageSize,
+  });
   const { currencyFormat } = useNumberFormat();
   const { push } = useRouter();
   const columns = useMemo(
@@ -162,13 +168,12 @@ const ProductsTable = ({ apiRef, filterButtonEl }) => {
         apiRef={apiRef}
         columns={columns}
         pageSizeOptions={[defaultPageSize, productListAdmin.length]}
-        initialState={{
-          pagination: {
-            paginationModel: {
-              pageSize: defaultPageSize,
-            },
-          },
-        }}
+        filterModel={filterModel}
+        onFilterModelChange={onFilterModelChange}
+        sortModel={sortModel}
+        onSortModelChange={setSortModel}
+        paginationModel={paginationModel}
+        onPaginationModelChange={setPaginationModel}
         checkboxSelection
         slots={{
           basePagination: (props) => <DataGridPagination showFullPagination {...props} />,

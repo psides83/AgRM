@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import useListState from 'hooks/useListState';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -12,7 +12,7 @@ import ActiveSearchFilter from './ActiveSearchFilter';
 
 const Header = ({ toggleDrawer }) => {
   const { up } = useBreakpoints();
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useListState('hiring/candidate/job-list/Header:search', '');
 
   const upLg = up('lg');
 

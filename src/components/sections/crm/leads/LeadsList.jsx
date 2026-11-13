@@ -1,5 +1,6 @@
 'use client';
 
+import useListState from 'hooks/useListState';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
@@ -63,7 +64,7 @@ const callResults = [
 const LeadsList = () => {
   const supabase = useMemo(() => createClient(), []);
   const [leads, setLeads] = useState([]);
-  const [filters, setFilters] = useState(emptyFilters);
+  const [filters, setFilters] = useListState('crm/leads/LeadsList:filters', emptyFilters);
   const [editingLead, setEditingLead] = useState(null);
   const [callLead, setCallLead] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);

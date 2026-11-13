@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { useConfigFromQuery } from 'hooks/useConfigFromQuery';
+import PreviousPageProvider from 'providers/PreviousPageProvider';
 import SettingsPanelProvider from 'providers/SettingsPanelProvider';
 import SettingsPanel from 'components/settings-panel/SettingsPanel';
 
@@ -65,7 +66,7 @@ const App = ({ children }) => {
           }
         `}</style>
       )}
-      {children}
+      <PreviousPageProvider>{children}</PreviousPageProvider>
       {!isShowcase && showTemplateSettings && (
         <>
           <SettingsPanel />

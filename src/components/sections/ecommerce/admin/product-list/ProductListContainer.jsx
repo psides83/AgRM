@@ -1,3 +1,4 @@
+import useListState from 'hooks/useListState';
 import { useCallback, useState } from 'react';
 import { Button, Stack } from '@mui/material';
 import Grid from '@mui/material/Grid';
@@ -11,6 +12,7 @@ import FilterSection from './filters/FilterSection';
 
 const ProductListContainer = () => {
   const [filterButtonEl, setFilterButtonEl] = useState(null);
+  const [filterModel, setFilterModel] = useListState('admin-products:filters', { items: [] });
   const apiRef = useGridApiRef();
 
   const handleSearch = useCallback(
@@ -73,6 +75,7 @@ const ProductListContainer = () => {
             <SearchTextField
               fullWidth
               placeholder="Search product"
+              value={filterModel.quickFilterValues?.[0] ?? ''}
               onChange={handleSearch}
               sx={{
                 maxWidth: { sm: 360, xl: 220 },
@@ -105,7 +108,12 @@ const ProductListContainer = () => {
         </Stack>
       </Grid>
       <Grid size={12}>
-        <ProductsTable apiRef={apiRef} filterButtonEl={filterButtonEl} />
+        <ProductsTable
+          apiRef={apiRef}
+          filterButtonEl={filterButtonEl}
+          filterModel={filterModel}
+          onFilterModelChange={setFilterModel}
+        />
       </Grid>
     </Grid>
   );

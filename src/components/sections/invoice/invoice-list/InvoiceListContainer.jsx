@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import useListState from 'hooks/useListState';
+import { useState } from 'react';
 import { TabContext, TabList, TabPanel } from '@mui/lab';
 import { Box, Button, Stack, Tab } from '@mui/material';
 import { useGridApiRef } from '@mui/x-data-grid';
@@ -16,28 +17,22 @@ const InvoiceListContainer = () => {
   const apiRef = useGridApiRef();
 
   const [filterButtonEl, setFilterButtonEl] = useState(null);
-  const [value, setValue] = useState('all');
-  const [filterModel, setFilterMode] = useState({
+  const [value, setValue] = useListState('invoice/invoice-list/InvoiceListContainer:value', 'all');
+  const [filterModel, setFilterMode] = useListState('invoice/invoice-list/InvoiceListContainer:filterModel', {
     items: [],
   });
 
   const handleChange = (e, newValue) => {
     setValue(newValue);
-    if (newValue === 'all') {
-      setFilterMode({ items: [] });
-    } else {
-      setFilterMode({
-        items: [{ field: 'status', operator: 'equals', value: newValue }],
-      });
-    }
+    setFilterMode((current) => ({
+      ...current,
+      items: newValue === 'all' ? [] : [{ field: 'status', operator: 'equals', value: newValue }],
+    }));
   };
 
-  const handleSearch = useCallback(
-    (e) => {
-      apiRef.current?.setQuickFilterValues([e.target.value]);
-    },
-    [apiRef],
-  );
+  const handleSearch = (event) => {
+    setFilterMode((current) => ({ ...current, quickFilterValues: [event.target.value] }));
+  };
 
   const handleToggleFilterPanel = (e) => {
     const clickedEl = e.currentTarget;
@@ -97,6 +92,7 @@ const InvoiceListContainer = () => {
             {upMd && <Box component="span">Filter</Box>}
           </Button>
           <SearchTextField
+            value={filterModel.quickFilterValues?.[0] ?? ''}
             onChange={handleSearch}
             placeholder="Search invoice"
             fullWidth

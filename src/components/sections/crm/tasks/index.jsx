@@ -1,5 +1,6 @@
 'use client';
 
+import useListState from 'hooks/useListState';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
@@ -58,12 +59,12 @@ function getRelatedRecord(task) {
 
 export default function TasksPage() {
   const supabase = useMemo(() => createClient(), []);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useListState('crm/tasks/index:filters', {
     search: '',
     status: 'open',
     sort: 'dueFirst',
   });
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useListState('crm/tasks/index:page', 0);
   const [result, setResult] = useState({ tasks: [], count: 0, error: null });
   const [loading, setLoading] = useState(true);
   const [revision, setRevision] = useState(0);

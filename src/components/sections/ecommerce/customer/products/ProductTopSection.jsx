@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Box, Button, FormControl, MenuItem, Paper, Stack, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import paths from 'routes/paths';
@@ -15,9 +14,7 @@ const sortByOptions = [
 ];
 
 const ProductTopSection = ({ isDrawerOpen, toggleDrawer }) => {
-  const [sortBy, setSortBy] = useState('recommended');
-
-  const { handleProductsSort } = useProducts();
+  const { sortBy, handleProductsSort } = useProducts();
 
   return (
     <Paper sx={{ p: { xs: 3, md: 5 } }}>
@@ -108,10 +105,7 @@ const ProductTopSection = ({ isDrawerOpen, toggleDrawer }) => {
               <StyledTextField
                 select
                 value={sortBy}
-                onChange={(event) => {
-                  setSortBy(event.target.value);
-                  handleProductsSort(event.target.value);
-                }}
+                onChange={(event) => handleProductsSort(event.target.value)}
               >
                 {sortByOptions.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
