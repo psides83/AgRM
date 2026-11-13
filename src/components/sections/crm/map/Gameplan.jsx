@@ -1,9 +1,29 @@
+import { distanceFrom, geocodeAddress, getDirectionsLinks } from './navigation';
+import paths from 'routes/paths';
 import { useEffect, useState } from 'react';
 import { Alert, Autocomplete, Box, Button, Link, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
 import { addTarget, createGameplan, methods, targetKey } from './gameplanData';
 
 export default function Gameplan({ supabase, date, records, targets, onDaysChange, onChange, loading, loadError }) {
+  const [origin, setOrigin] = useState(null);
+  const [locationError, setLocationError] = useState('');
+  const [locating, setLocating] = useState(false);
+
+  function showDistances() {
+    if (!navigator.geolocation) {
+      setLocationError('Location is unavailable in this browser.');
+      return;
+    }
+    setLocating(true);
+    setLocationError('');
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => { setOrigin(coords); setLocating(false); },
+      () => { setLocationError('Could not get your location. Check your browser permissions.'); setLocating(false); },
+      { timeout: 10000, maximumAge: 10000 },
+    );
+  }
+
   const [record, setRecord] = useState(null);
   const [method, setMethod] = useState('Visit');
   const [busy, setBusy] = useState(false);
@@ -39,6 +59,12 @@ export default function Gameplan({ supabase, date, records, targets, onDaysChang
   return (
     <Stack direction="column" spacing={2} sx={{ p: 2 }}>
       <Typography variant="h6">Targets</Typography>
+      {targets.length > 0 && (
+        <Button sx={{ alignSelf: 'flex-start' }} size="small" disabled={locating} onClick={showDistances}>
+          {locating ? 'Getting location…' : origin ? 'Refresh distances' : 'Show distances'}
+        </Button>
+      )}
+      {locationError && <Alert severity="error">{locationError}</Alert>}
       <Typography variant="body2" color="text.secondary">
         Build your private list in the order you want to work it. Targets without a location stay in the list.
       </Typography>
@@ -70,6 +96,7 @@ export default function Gameplan({ supabase, date, records, targets, onDaysChang
             <Box component="li" key={target.id}>
               <Target
                 target={target}
+                origin={origin}
                 record={records.find((item) => item.id === key)}
 
                 disabled={disabled}
@@ -94,7 +121,25 @@ export default function Gameplan({ supabase, date, records, targets, onDaysChang
   );
 }
 
-function Target({ target, record, disabled, first, last, move, remove, save, followUp }) {
+function Target({ target, record, origin, disabled, first, last, move, remove, save, followUp }) {
+  const address = record?.address;
+  const storedCoordinates = record?.coordinates;
+  const [resolved, setResolved] = useState(null);
+  const showDistance = Boolean(origin);
+
+  useEffect(() => {
+    if (!showDistance || storedCoordinates || !address || !process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN) return;
+    let active = true;
+    geocodeAddress(address).then((coordinates) => {
+      if (active) setResolved({ address, coordinates });
+    });
+    return () => { active = false; };
+  }, [address, showDistance, storedCoordinates]);
+
+  const coordinates = storedCoordinates || (resolved?.address === address ? resolved?.coordinates : null);
+  const distance = origin && coordinates ? distanceFrom(origin, coordinates) : null;
+  const directions = record ? getDirectionsLinks({ ...record, coordinates }) : null;
+
   const [outcome, setOutcome] = useState(target.outcome);
   const [followUpDate, setFollowUpDate] = useState('');
   useEffect(() => setOutcome(target.outcome), [target.outcome]);
@@ -104,7 +149,45 @@ function Target({ target, record, disabled, first, last, move, remove, save, fol
       <Typography variant="subtitle2">
         {record ? <Link href={record.href}>{record.title}</Link> : 'CRM record unavailable'} · {target.method}
       </Typography>
+      {record?.company && (
+        <Typography variant="body2">
+          Company: <Link href={paths.companyDetails(record.company.id)}>{record.company.name}</Link>
+        </Typography>
+      )}
+      {record?.contact && (
+        <Typography variant="body2">
+          Contact: <Link href={paths.contactDetails(record.contact.id)}>{record.contact.name}</Link>
+        </Typography>
+      )}
+      {record?.kind === 'lead' && record.subtitle && (
+        <Typography variant="body2" color="text.secondary">{record.subtitle}</Typography>
+      )}
+      {record?.kind === 'contact' && (record.jobTitle || record.accountNumber) && (
+        <Typography variant="body2" color="text.secondary">
+          {[record.jobTitle, record.accountNumber && `Account ${record.accountNumber}`].filter(Boolean).join(' · ')}
+        </Typography>
+      )}
+      {record?.relatedLeads?.map((lead) => (
+        <Typography key={lead.id} variant="body2">
+          <Link href={lead.href}>Lead details</Link>{lead.subtitle && ` · ${lead.subtitle}`}
+        </Typography>
+      ))}
       {record?.address && <Typography variant="caption">{record.address}</Typography>}
+      {distance !== null && (
+        <Typography variant="caption" color="text.secondary">
+          {distance < 0.1 ? '<0.1' : distance.toFixed(1)} mi away (straight line)
+        </Typography>
+      )}
+      {directions && (
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+          <Button size="small" variant="outlined" href={directions.google} target="_blank" rel="noopener noreferrer">
+            Google Maps
+          </Button>
+          <Button size="small" variant="outlined" href={directions.apple} target="_blank" rel="noopener noreferrer">
+            Apple Maps
+          </Button>
+        </Stack>
+      )}
 
       <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
         <Button size="small" disabled={disabled || first} onClick={() => move(-1)}>Move up</Button>

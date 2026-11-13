@@ -52,11 +52,25 @@ export async function fetchMapRecords(supabase) {
 
   const queryError = contactsResult.error || leadsResult.error || companiesResult.error;
   if (queryError) throw queryError;
+  const leadsByRecord = new Map();
+  const leads = (leadsResult.data || []).map((lead) => {
+    const record = leadToMapRecord(lead);
+    if (!record.converted) {
+      for (const key of [
+        lead.contacts && `contact-${lead.contacts.id}`,
+        lead.companies && `company-${lead.companies.id}`,
+      ].filter(Boolean)) {
+        if (!leadsByRecord.has(key)) leadsByRecord.set(key, []);
+        leadsByRecord.get(key).push(record);
+      }
+    }
+    return record;
+  });
   return [
     ...(contactsResult.data || []).map(contactToMapRecord),
-    ...(leadsResult.data || []).map(leadToMapRecord),
+    ...leads,
     ...(companiesResult.data || []).map(companyToMapRecord),
-  ];
+  ].map((record) => ({ ...record, relatedLeads: leadsByRecord.get(record.id) || [] }));
 }
 
 function companyToMapRecord(company) {
@@ -78,6 +92,9 @@ function contactToMapRecord(contact) {
   return {
     id: `contact-${contact.id}`,
     kind: 'contact',
+    company: contact.companies,
+    jobTitle: contact.title,
+    accountNumber: contact.account_number,
     title: contactName(contact),
     subtitle: [contact.account_number, contact.title, contact.companies?.name].filter(Boolean).join(' · '),
     address,
@@ -93,6 +110,8 @@ function leadToMapRecord(lead) {
   return {
     id: `lead-${lead.id}`,
     kind: 'lead',
+    company: lead.companies,
+    contact: lead.contacts && { id: lead.contacts.id, name: contactName(lead.contacts) },
     converted: lead.status === 'converted',
     title: lead.companies?.name || (lead.contacts ? contactName(lead.contacts) : '') || (lead.account_number ? `Account ${lead.account_number}` : '') || lead.source || 'Lead',
     subtitle: [formatLeadStatus(lead.status), lead.account_number, lead.source, formatCurrency(lead.estimated_budget)].filter((value) => value && value !== '-').join(' · '),
