@@ -31,3 +31,23 @@
   outline: 2px solid var(--agrm-palette-primary-main, #246b4b);
   outline-offset: 2px;
 }
+
+.popupDirections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.popupDirections a {
+  padding: 5px 8px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  color: var(--agrm-palette-primary-dark, #195238);
+  text-decoration: none;
+}
+
+.popupDirections a:hover,
+.popupDirections a:focus-visible {
+  text-decoration: underline;
+}

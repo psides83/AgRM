@@ -274,6 +274,17 @@ const CrmMap = () => {
     [mapBounds, visibleMappedRecords],
   );
 
+  const fitFilteredRecords = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !visibleMappedRecords.length) return;
+
+    const bounds = new mapboxgl.LngLatBounds();
+    visibleMappedRecords.forEach((record) => bounds.extend(record.coordinates));
+    const { clientWidth, clientHeight } = map.getContainer();
+    const padding = Math.floor(Math.min(80, clientWidth / 4, clientHeight / 4));
+    map.fitBounds(bounds, { padding, maxZoom: 12, duration: 600 });
+  }, [visibleMappedRecords]);
+
   const recordsById = new Map(recordsInView.map((record) => [record.id, record]));
   const targetsInView = filter === 'gameplan'
     ? targets.map((target, index) => ({ target, index, record: recordsById.get(targetKey(target)) }))
@@ -393,9 +404,7 @@ const CrmMap = () => {
     const fitKey = JSON.stringify([filter, filter === 'gameplan' ? planDate : null,
       visibleMappedRecords.map(({ id, coordinates }) => [id, coordinates])]);
     if (visibleMappedRecords.length && fittedRecords.current !== fitKey) {
-      const bounds = new mapboxgl.LngLatBounds();
-      visibleMappedRecords.forEach((record) => bounds.extend(record.coordinates));
-      mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 12, duration: 600 });
+      fitFilteredRecords();
     }
     fittedRecords.current = fitKey;
     return () => {
@@ -405,7 +414,7 @@ const CrmMap = () => {
       });
       markersRef.current = [];
     };
-  }, [filter, planDate, planPositions, visibleMappedRecords]);
+  }, [filter, fitFilteredRecords, planDate, planPositions, visibleMappedRecords]);
 
   const fetchRecords = async () => {
     setError(null);
@@ -501,7 +510,7 @@ const CrmMap = () => {
             sx={{
               display: 'grid',
               gridTemplateRows: 'auto auto minmax(0, 1fr)',
-              height: panelHeight ? `${panelHeight}px` : '60dvh',
+              height: { xs: 'auto', lg: panelHeight ? `${panelHeight}px` : '60dvh' },
               bgcolor: 'background.paper',
             }}
           >
@@ -521,6 +530,10 @@ const CrmMap = () => {
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                   {recordsInView.length} records in view, {visibleUnmappedRecords.length} missing a usable location
                 </Typography>
+                  <Button size="small" variant="outlined" sx={{ mt: 1 }}
+                    disabled={!visibleMappedRecords.length} onClick={fitFilteredRecords}>
+                    Show all
+                  </Button>
               </Box>
 
               <Box
@@ -568,7 +581,7 @@ const CrmMap = () => {
               sx={{
                 display: 'grid',
                 gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) 380px', xl: 'minmax(0, 1fr) 410px' },
-                gridTemplateRows: { xs: 'minmax(0, 2fr) minmax(0, 1fr)', lg: 'minmax(0, 1fr)' },
+                gridTemplateRows: { xs: 'clamp(360px, 65svh, 640px) auto', lg: 'minmax(0, 1fr)' },
                 minHeight: 0,
               }}
             >
@@ -658,7 +671,7 @@ const CrmMap = () => {
                   )}
                 </Box>
 
-                <Box sx={{ overflowY: 'auto', minHeight: 0 }}>
+                <Box sx={{ overflowY: { xs: 'visible', lg: 'auto' }, minHeight: 0 }}>
                   {filter === 'gameplan' && reorderError?.date === planDate && (
                     <Alert severity="error">{reorderError.message}</Alert>
                   )}
@@ -827,6 +840,8 @@ function distanceFrom(origin, [longitude, latitude]) {
 }
 
 function MapRecordRow({ record, compact = false, onAdd, activity, distance, moveUp, moveDown }) {
+  const directions = getDirectionsLinks(record);
+
   return (
     <Box
       sx={{
@@ -874,6 +889,20 @@ function MapRecordRow({ record, compact = false, onAdd, activity, distance, move
             {record.address || formatCoordinates(record.coordinates) || 'No location'}
           </Typography>
           <Button size="small" onClick={() => onAdd(record)}>Add to gameplan</Button>
+          {directions && (
+            <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', mt: 0.5 }}>
+              <Button size="small" variant="outlined" target="_blank" rel="noopener noreferrer"
+                aria-label={`Driving directions to ${record.title} in Google Maps`}
+                href={directions.google}>
+                Google Maps
+              </Button>
+              <Button size="small" variant="outlined" target="_blank" rel="noopener noreferrer"
+                aria-label={`Driving directions to ${record.title} in Apple Maps`}
+                href={directions.apple}>
+                Apple Maps
+              </Button>
+            </Stack>
+          )}
           {activity && (
             <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
               <Typography variant="caption">{activity}</Typography>
@@ -1009,6 +1038,16 @@ function EmptyState({ label }) {
   );
 }
 
+function getDirectionsLinks(record) {
+  const destination = formatCoordinates(record.coordinates) || record.address;
+  if (!destination) return null;
+  const encoded = encodeURIComponent(destination);
+  return {
+    google: `https://www.google.com/maps/dir/?api=1&destination=${encoded}&travelmode=driving&dir_action=navigate`,
+    apple: `https://maps.apple.com/?daddr=${encoded}&dirflg=d`,
+  };
+}
+
 function popupContent(record, onAdd) {
   const container = document.createElement('div');
   container.innerHTML = `
@@ -1025,6 +1064,20 @@ function popupContent(record, onAdd) {
   add.className = styles.addToGameplan;
   add.addEventListener('click', () => onAdd(record));
   container.append(add);
+  const directions = getDirectionsLinks(record);
+  if (directions) {
+    const links = document.createElement('div');
+    links.className = styles.popupDirections;
+    for (const [label, href] of [['Google Maps', directions.google], ['Apple Maps', directions.apple]]) {
+      const link = document.createElement('a');
+      link.href = href;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = label;
+      links.append(link);
+    }
+    container.append(links);
+  }
   return container;
 }
 
