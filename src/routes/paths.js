@@ -118,6 +118,7 @@ const paths = {
   activities: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/activities`,
   deals: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/deals`,
   equipment: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/equipment`,
+  crmGameplan: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/gameplan`,
   crmMap: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/map`,
   aorMaps: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/aor-maps`,
   crmSearch: `/${rootPaths.appsRoot}/${rootPaths.crmRoot}/search`,

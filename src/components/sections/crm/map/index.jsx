@@ -1,6 +1,7 @@
 'use client';
 
-import Gameplan, { localDay, targetKey } from './Gameplan';
+import { localDay, targetKey, useGameplanDays, addTarget, methods } from './gameplanData';
+import { fetchMapRecords } from './records';
 import useListState from 'hooks/useListState';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -31,7 +32,6 @@ import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import {
-  formatLeadStatus,
   leadStatuses,
 } from 'components/sections/crm/constants';
 
@@ -58,7 +58,7 @@ const CrmMap = () => {
   const [records, setRecords] = useState([]);
   const [mappedRecords, setMappedRecords] = useState([]);
   const [unmappedRecords, setUnmappedRecords] = useState([]);
-  const [filter, setFilter] = useListState('crm/map/index:filter', 'all');
+  const [filter, setFilter, filterRestored] = useListState('crm/map/index:filter', 'all');
   const [isDroppingLeadPin, setIsDroppingLeadPin] = useState(false);
   const [leadPin, setLeadPin] = useState(null);
   const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false);
@@ -66,7 +66,21 @@ const CrmMap = () => {
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [error, setError] = useState(null);
 
-  const [planDate, setPlanDate] = useState(localDay);
+  const [planDate, setPlanDate] = useState(() => {
+    const date = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('gameplan');
+    return /^\d{4}-\d{2}-\d{2}$/.test(date || '') ? date : localDay();
+  });
+  const [pinTarget, setPinTarget] = useState(null);
+  const [addedMessage, setAddedMessage] = useState('');
+  const { days, error: daysError, loading: daysLoading } = useGameplanDays(supabase, filter === 'gameplan' || Boolean(pinTarget));
+  useEffect(() => {
+    if (!filterRestored) return;
+    const date = new URLSearchParams(window.location.search).get('gameplan');
+    if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      setPlanDate(date);
+      setFilter('gameplan');
+    }
+  }, [filterRestored, setFilter]);
   const [plan, setPlan] = useState(null);
   const planRequest = useRef(0);
   const activePlanDate = useRef(null);
@@ -86,12 +100,13 @@ const CrmMap = () => {
   useEffect(() => {
     if (filter !== 'gameplan') return undefined;
     activePlanDate.current = planDate;
-    loadPlan();
+    if (days.includes(planDate)) loadPlan();
+    else if (days.length) setPlanDate(days[0]);
     return () => {
       activePlanDate.current = null;
       planRequest.current += 1;
     };
-  }, [filter, loadPlan, planDate]);
+  }, [days, filter, loadPlan, planDate]);
 
   useEffect(() => {
     fetchRecords();
@@ -240,7 +255,7 @@ const CrmMap = () => {
 
       const marker = new mapboxgl.Marker({ element: node })
         .setLngLat(record.coordinates)
-        .setPopup(new mapboxgl.Popup({ offset: 18 }).setHTML(popupHtml(record)))
+        .setPopup(new mapboxgl.Popup({ offset: 18 }).setDOMContent(popupContent(record, setPinTarget)))
         .addTo(mapRef.current);
 
       markersRef.current.push({ marker, root });
@@ -263,68 +278,13 @@ const CrmMap = () => {
   const fetchRecords = async () => {
     setError(null);
     setIsLoading(true);
-
-    const [contactsResult, leadsResult, companiesResult] = await Promise.all([
-      supabase
-        .from('contacts')
-        .select(
-          `
-          id,
-          first_name,
-          last_name,
-          title,
-          account_number,
-          email,
-          phone,
-          mobile_phone,
-          address_line1,
-          address_line2,
-          city,
-          region,
-          postal_code,
-          country,
-          latitude,
-          longitude,
-          companies(id, name, address_line1, address_line2, city, region, postal_code, country, latitude, longitude)
-        `,
-        )
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('leads')
-        .select(
-          `
-          id,
-          source,
-          account_number,
-          status,
-          priority,
-          estimated_budget,
-          next_follow_up_at,
-          latitude,
-          longitude,
-          contacts(id, first_name, last_name, address_line1, address_line2, city, region, postal_code, country, latitude, longitude),
-          companies(id, name, address_line1, address_line2, city, region, postal_code, country, latitude, longitude)
-        `,
-        )
-        .order('created_at', { ascending: false }),
-      supabase.from('companies')
-        .select('id, name, account_number, address_line1, address_line2, city, region, postal_code, country, latitude, longitude')
-        .order('name'),
-    ]);
-
-    const queryError = contactsResult.error || leadsResult.error || companiesResult.error;
-    if (queryError) {
-      setError(queryError.message);
-      setRecords([]);
-    } else {
-      setRecords([
-        ...(contactsResult.data || []).map(contactToMapRecord),
-        ...(leadsResult.data || []).map(leadToMapRecord),
-        ...(companiesResult.data || []).map(companyToMapRecord),
-      ]);
+    try {
+      setRecords(await fetchMapRecords(supabase));
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   const geocodeRecords = async (nextRecords) => {
@@ -377,6 +337,7 @@ const CrmMap = () => {
               >
                 Drop Lead Pin
               </Button>
+              <Button href={paths.crmGameplan} variant="outlined">Daily Gameplan</Button>
               <Button href={paths.addContact} component={Link} underline="none" variant="contained" startIcon={<IconifyIcon icon="material-symbols:person-add-outline-rounded" />}>
                 Add Contact / Lead
               </Button>
@@ -434,11 +395,19 @@ const CrmMap = () => {
             </Box>
 
             <Box>
-            {filter === 'gameplan' && (
-              <TextField type="date" size="small" label="Gameplan date" value={planDate}
-                onChange={(event) => { if (event.target.value) setPlanDate(event.target.value); }}
-                slotProps={{ inputLabel: { shrink: true } }} sx={{ m: 2 }} />
+            {filter === 'gameplan' && !daysLoading && !daysError && !days.length && (
+              <Alert severity="info" action={<Button href={paths.crmGameplan}>Open planner</Button>} sx={{ m: 2 }}>
+                Create a gameplan to filter the map by date.
+              </Alert>
             )}
+            {filter === 'gameplan' && days.length > 0 && (
+              <TextField select size="small" label="Gameplan date" value={days.includes(planDate) ? planDate : ''}
+                onChange={(event) => setPlanDate(event.target.value)} sx={{ m: 2, minWidth: 200 }}>
+                {days.map((day) => <MenuItem key={day} value={day}>{day}</MenuItem>)}
+              </TextField>
+            )}
+            {filter === 'gameplan' && (planError || daysError) && <Alert severity="error">{planError || daysError}</Alert>}
+            {addedMessage && <Alert severity="success" onClose={() => setAddedMessage('')}>{addedMessage}</Alert>}
             {error && <Alert severity="error" sx={{ m: 2.5, mb: 0 }}>{error}</Alert>}
             </Box>
 
@@ -505,7 +474,7 @@ const CrmMap = () => {
               <Box
                 sx={{
                   display: 'grid',
-                  gridTemplateRows: filter === 'gameplan' ? 'minmax(0, 1fr)' : 'auto minmax(0, 1fr)',
+                  gridTemplateRows: 'auto minmax(0, 1fr)',
                   minHeight: { xs: 360, lg: 0 },
                   borderLeft: { lg: 1 },
                   borderTop: { xs: 1, lg: 0 },
@@ -514,12 +483,6 @@ const CrmMap = () => {
                   minWidth: 0,
                 }}
               >
-                {filter === 'gameplan' ? (
-                  <Box sx={{ overflowY: 'auto', maxHeight: { lg: 720 } }}>
-                    <Gameplan key={planDate} supabase={supabase} date={planDate} records={records}
-                      targets={targets} unmapped={visibleUnmappedRecords} onChange={loadPlan} loading={plan?.date !== planDate} loadError={planError} />
-                  </Box>
-                ) : <>
                 <Box sx={{ px: 2.5, py: 2, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                     Records
@@ -532,7 +495,7 @@ const CrmMap = () => {
                 <Box sx={{ overflowY: 'auto', minHeight: 0 }}>
                   <Box>
                     {visibleMappedRecords.map((record) => (
-                      <MapRecordRow key={record.id} record={record} />
+                      <MapRecordRow key={record.id} record={record} onAdd={setPinTarget} />
                     ))}
                     {!visibleMappedRecords.length && <EmptyState label="No mapped records yet" />}
                   </Box>
@@ -543,17 +506,22 @@ const CrmMap = () => {
                         Needs Location
                       </Typography>
                       {visibleUnmappedRecords.slice(0, 8).map((record) => (
-                        <MapRecordRow key={record.id} record={record} compact />
+                        <MapRecordRow key={record.id} record={record} compact onAdd={setPinTarget} />
                       ))}
                     </Box>
                   )}
                 </Box>
-                </>}
               </Box>
             </Box>
           </Box>
         </Paper>
       </Grid>
+      {pinTarget && <AddToGameplanDialog record={pinTarget} supabase={supabase} days={days}
+        daysError={daysError} loading={daysLoading} selectedDate={planDate} onClose={() => setPinTarget(null)}
+        onSaved={async (day) => {
+          setAddedMessage(`Added to the ${day} gameplan.`);
+          if (day === planDate) await loadPlan();
+        }} />}
       <CreateLeadFromPinDialog
         open={isLeadDialogOpen}
         pin={leadPin}
@@ -572,6 +540,62 @@ const CrmMap = () => {
     </Grid>
   );
 };
+
+function AddToGameplanDialog({ record, supabase, days, daysError, loading, selectedDate, onClose, onSaved }) {
+  const [date, setDate] = useState('');
+  const [method, setMethod] = useState('Visit');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const day = date || (days.includes(selectedDate) ? selectedDate : days[0]) || '';
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    try {
+      const { error } = await addTarget(supabase, day, {
+        [`${record.kind}_id`]: record.id.slice(record.kind.length + 1),
+        method,
+      });
+      if (error) throw error;
+      await onSaved(day);
+      onClose();
+    } catch (error) {
+      setError(error.code === '23505' ? 'This activity is already on that gameplan.' : error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Dialog open onClose={busy ? undefined : onClose} fullWidth maxWidth="xs">
+      <DialogTitle>Add to gameplan</DialogTitle>
+      <DialogContent>
+        <Box sx={{ display: 'grid', gap: 2, pt: 1 }}>
+          <Typography>{record.title}</Typography>
+          {(error || daysError) && <Alert severity="error">{error || daysError}</Alert>}
+          {loading && <Typography role="status">Loading saved plans…</Typography>}
+          {!loading && !daysError && !days.length && (
+            <Alert severity="info" action={<Button href={paths.crmGameplan}>Open planner</Button>}>
+              Create a gameplan first.
+            </Alert>
+          )}
+          {days.length > 0 && <>
+            <TextField select fullWidth label="Gameplan date" value={day} onChange={(event) => setDate(event.target.value)}>
+              {days.map((value) => <MenuItem key={value} value={value}>{value}</MenuItem>)}
+            </TextField>
+            <TextField select fullWidth label="Activity" value={method} onChange={(event) => setMethod(event.target.value)}>
+              {methods.map((value) => <MenuItem key={value} value={value}>{value}</MenuItem>)}
+            </TextField>
+          </>}
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button disabled={busy} onClick={onClose}>Cancel</Button>
+        <Button variant="contained" disabled={busy || !day || Boolean(daysError)} onClick={save}>Add target</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
 
 function MapStat({ label, value, color }) {
   return (
@@ -604,49 +628,6 @@ function recordIcon(kind) {
   }[kind];
 }
 
-function companyToMapRecord(company) {
-  return {
-    id: `company-${company.id}`,
-    kind: 'company',
-    title: company.name,
-    subtitle: company.account_number,
-    address: formatAddress(company),
-    coordinates: getCoordinates(company),
-    href: paths.companyDetails(company.id),
-  };
-}
-
-function contactToMapRecord(contact) {
-  const address = formatAddress(contact) || formatAddress(contact.companies);
-  const coordinates = getCoordinates(contact) || getCoordinates(contact.companies);
-
-  return {
-    id: `contact-${contact.id}`,
-    kind: 'contact',
-    title: contactName(contact),
-    subtitle: [contact.account_number, contact.title, contact.companies?.name].filter(Boolean).join(' · '),
-    address,
-    coordinates,
-    href: paths.contactDetails(contact.id),
-  };
-}
-
-function leadToMapRecord(lead) {
-  const address = formatAddress(lead.contacts) || formatAddress(lead.companies);
-  const coordinates = getCoordinates(lead) || getCoordinates(lead.contacts) || getCoordinates(lead.companies);
-
-  return {
-    id: `lead-${lead.id}`,
-    kind: 'lead',
-    converted: lead.status === 'converted',
-    title: lead.companies?.name || (lead.contacts ? contactName(lead.contacts) : '') || (lead.account_number ? `Account ${lead.account_number}` : '') || lead.source || 'Lead',
-    subtitle: [formatLeadStatus(lead.status), lead.account_number, lead.source, formatCurrency(lead.estimated_budget)].filter((value) => value && value !== '-').join(' · '),
-    address,
-    coordinates,
-    href: paths.leadDetails(lead.id),
-  };
-}
-
 async function geocodeAddress(address) {
   const url = new URL(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json`);
   url.searchParams.set('access_token', mapboxToken);
@@ -662,7 +643,7 @@ async function geocodeAddress(address) {
   }
 }
 
-function MapRecordRow({ record, compact = false }) {
+function MapRecordRow({ record, compact = false, onAdd }) {
   return (
     <Box
       sx={{
@@ -709,6 +690,7 @@ function MapRecordRow({ record, compact = false }) {
           <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', overflowWrap: 'anywhere', lineHeight: 1.4 }}>
             {record.address || formatCoordinates(record.coordinates) || 'No location'}
           </Typography>
+          <Button size="small" onClick={() => onAdd(record)}>Add to gameplan</Button>
         </Box>
       </Stack>
     </Box>
@@ -832,8 +814,9 @@ function EmptyState({ label }) {
   );
 }
 
-function popupHtml(record) {
-  return `
+function popupContent(record, onAdd) {
+  const container = document.createElement('div');
+  container.innerHTML = `
     <div style="font-family: Inter, Arial, sans-serif; max-width: 220px;">
       <strong>${escapeHtml(record.title)}</strong>
       <div style="margin-top: 4px; color: #637381;">${escapeHtml(record.subtitle || record.kind)}</div>
@@ -841,52 +824,18 @@ function popupHtml(record) {
       <a href="${record.href}" style="display: inline-block; margin-top: 8px;">Open ${record.kind}</a>
     </div>
   `;
-}
-
-function formatAddress(record) {
-  if (!record) return '';
-
-  return [
-    record.address_line1,
-    record.address_line2,
-    record.city,
-    record.region,
-    record.postal_code,
-    record.country,
-  ]
-    .filter(Boolean)
-    .join(', ');
-}
-
-function getCoordinates(record) {
-  if (record?.latitude === null || record?.longitude === null || typeof record?.latitude === 'undefined' || typeof record?.longitude === 'undefined') return null;
-
-  const latitude = Number(record.latitude);
-  const longitude = Number(record.longitude);
-
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
-  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
-
-  return [longitude, latitude];
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.textContent = 'Add to gameplan';
+  add.style.cssText = 'display:block;margin-top:8px;padding:5px 8px;cursor:pointer;';
+  add.addEventListener('click', () => onAdd(record));
+  container.append(add);
+  return container;
 }
 
 function formatCoordinates(coordinates) {
   if (!coordinates) return '';
   return `${coordinates[1].toFixed(6)}, ${coordinates[0].toFixed(6)}`;
-}
-
-function contactName(contact) {
-  return [contact?.first_name, contact?.last_name].filter(Boolean).join(' ') || 'Unnamed contact';
-}
-
-function formatCurrency(value) {
-  if (!value) return '-';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(value));
-}
-
-function formatEnum(value) {
-  if (!value) return '-';
-  return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function cleanText(value) {

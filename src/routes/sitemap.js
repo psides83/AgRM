@@ -72,6 +72,14 @@ const sitemap = [
         active: true,
       },
       {
+        name: 'Daily Gameplan',
+        key: 'crm_gameplan',
+        path: paths.crmGameplan,
+        pathName: 'gameplan',
+        icon: 'material-symbols:event-note-outline-rounded',
+        active: true,
+      },
+      {
         name: 'Map',
         key: 'crm_map',
         path: paths.crmMap,
