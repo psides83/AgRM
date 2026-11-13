@@ -1,0 +1,23 @@
+.addToGameplan {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  margin-top: 10px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--agrm-palette-primary-main, #246b4b);
+  color: var(--agrm-palette-primary-contrastText, #fff);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.addToGameplan:hover {
+  background: var(--agrm-palette-primary-dark, #195238);
+}
+
+.addToGameplan:focus-visible {
+  outline: 2px solid var(--agrm-palette-primary-main, #246b4b);
+  outline-offset: 2px;
+}

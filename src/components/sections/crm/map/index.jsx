@@ -27,6 +27,7 @@ import Grid from '@mui/material/Grid';
 import { useRouter } from 'next/navigation';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import styles from './map.module.css';
 import paths from 'routes/paths';
 import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
@@ -58,6 +59,7 @@ const CrmMap = () => {
   const geocodeCacheRef = useRef(new Map());
   const [records, setRecords] = useState([]);
   const [mappedRecords, setMappedRecords] = useState([]);
+  const [mapBounds, setMapBounds] = useState(null);
   const [unmappedRecords, setUnmappedRecords] = useState([]);
   const [filter, setFilter, filterRestored] = useListState('crm/map/index:filter', 'all');
   const [isDroppingLeadPin, setIsDroppingLeadPin] = useState(false);
@@ -136,8 +138,15 @@ const CrmMap = () => {
     });
 
     mapRef.current.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+    const map = mapRef.current;
+    const updateBounds = () => setMapBounds(map.getBounds());
+    map.on('moveend', updateBounds);
+    map.on('resize', updateBounds);
+    updateBounds();
 
     return () => {
+      map.off('moveend', updateBounds);
+      map.off('resize', updateBounds);
       mapRef.current?.remove();
       mapRef.current = null;
     };
@@ -214,6 +223,13 @@ const CrmMap = () => {
   const visibleMappedRecords = useMemo(
     () => mappedRecords.filter(isVisible),
     [isVisible, mappedRecords],
+  );
+
+  const recordsInView = useMemo(
+    () => mapBounds
+      ? visibleMappedRecords.filter((record) => mapBounds.contains(record.coordinates))
+      : [],
+    [mapBounds, visibleMappedRecords],
   );
 
   const visibleUnmappedRecords = useMemo(
@@ -375,7 +391,7 @@ const CrmMap = () => {
               <Box sx={{ minWidth: 0 }}>
                 <Typography variant="h6">{filter === 'gameplan' ? 'Gameplan Map' : 'Territory View'}</Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  {visibleMappedRecords.length} records on the map, {visibleUnmappedRecords.length} missing a usable location
+                  {recordsInView.length} records in view, {visibleUnmappedRecords.length} missing a usable location
                 </Typography>
               </Box>
 
@@ -387,7 +403,7 @@ const CrmMap = () => {
                   alignItems: 'center',
                 }}
               >
-                <MapStat label="On Map" value={visibleMappedRecords.length} color="primary.main" />
+                <MapStat label="In View" value={recordsInView.length} color="primary.main" />
                 <MapStat label="Needs Location" value={visibleUnmappedRecords.length} color="warning.main" />
                 <TextField select label="Show" value={filter} onChange={(event) => setFilter(event.target.value)} size="small">
                   {filters.map((option) => (
@@ -490,7 +506,7 @@ const CrmMap = () => {
               >
                 <Box sx={{ px: 2.5, py: 2, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                    Records
+                    Records in view
                   </Typography>
                   <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                     Select a row to open the CRM record.
@@ -499,10 +515,10 @@ const CrmMap = () => {
 
                 <Box sx={{ overflowY: 'auto', minHeight: 0 }}>
                   <Box>
-                    {visibleMappedRecords.map((record) => (
+                    {recordsInView.map((record) => (
                       <MapRecordRow key={record.id} record={record} onAdd={setPinTarget} />
                     ))}
-                    {!visibleMappedRecords.length && <EmptyState label="No mapped records yet" />}
+                    {!recordsInView.length && <EmptyState label="No records in this map area" />}
                   </Box>
 
                   {visibleUnmappedRecords.length > 0 && (
@@ -832,7 +848,7 @@ function popupContent(record, onAdd) {
   const add = document.createElement('button');
   add.type = 'button';
   add.textContent = 'Add to gameplan';
-  add.style.cssText = 'display:block;margin-top:8px;padding:5px 8px;cursor:pointer;';
+  add.className = styles.addToGameplan;
   add.addEventListener('click', () => onAdd(record));
   container.append(add);
   return container;
