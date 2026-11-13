@@ -1,3 +1,13 @@
+.locationBlip {
+  width: 18px;
+  height: 18px;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: #1677ff;
+  box-shadow: 0 0 0 6px rgb(22 119 255 / 30%);
+  pointer-events: none;
+}
+
 .addToGameplan {
   display: block;
   width: 100%;

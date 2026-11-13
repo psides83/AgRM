@@ -17,7 +17,6 @@ import {
   DialogContent,
   DialogTitle,
   Link,
-  MenuItem,
   Paper,
   Stack,
   TextField,
@@ -89,6 +88,7 @@ const CrmMap = () => {
   }, [filterRestored, setFilter]);
   const [plan, setPlan] = useState(null);
   const [reordering, setReordering] = useState(false);
+  const [distanceOrigin, setDistanceOrigin] = useState(null);
   const [reorderError, setReorderError] = useState(null);
   const fittedRecords = useRef(null);
   const planRequest = useRef(0);
@@ -144,6 +144,13 @@ const CrmMap = () => {
     });
 
     mapRef.current.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+    const locationControl = new mapboxgl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: false,
+      showUserLocation: false,
+    });
+    locationControl.on('geolocate', ({ coords }) => setDistanceOrigin(coords));
+    mapRef.current.addControl(locationControl, 'top-right');
     const map = mapRef.current;
     const resizeObserver = new ResizeObserver(() => map.resize());
     resizeObserver.observe(map.getContainer());
@@ -160,6 +167,32 @@ const CrmMap = () => {
       mapRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (!mapboxToken || !navigator.geolocation) return;
+
+    const watchId = navigator.geolocation.watchPosition(
+      ({ coords }) => setDistanceOrigin(coords),
+      () => {},
+      { maximumAge: 10000, timeout: 15000 },
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !distanceOrigin) return;
+
+    const blip = document.createElement('div');
+    blip.className = styles.locationBlip;
+    blip.setAttribute('role', 'img');
+    blip.setAttribute('aria-label', 'Your location');
+    const marker = new mapboxgl.Marker({ element: blip })
+      .setLngLat([distanceOrigin.longitude, distanceOrigin.latitude])
+      .addTo(map);
+
+    return () => marker.remove();
+  }, [distanceOrigin]);
 
   useEffect(() => {
     if (!mapRef.current || !isDroppingLeadPin) return undefined;
@@ -258,7 +291,7 @@ const CrmMap = () => {
     await saveOrder(ids);
   }
 
-  async function sortByDistance() {
+  async function updateDistances(sort) {
     if (reordering) return;
     setReordering(true);
     setReorderError(null);
@@ -268,6 +301,8 @@ const CrmMap = () => {
         navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
       });
       if (activePlanDate.current !== planDate) return;
+      setDistanceOrigin(coords);
+      if (!sort) return;
 
       const coordinatesById = new Map(mappedRecords.map(({ id, coordinates }) => [id, coordinates]));
       const rankedTargets = targets.map((target) => {
@@ -502,11 +537,11 @@ const CrmMap = () => {
                 <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
                   <MapStat label="Needs Location" value={visibleUnmappedRecords.length} color="warning.main" />
                 </Box>
-                <TextField select label="Show" value={filter} onChange={(event) => setFilter(event.target.value)} size="small">
+                <TextField select slotProps={{ select: { native: true }, inputLabel: { shrink: true } }} label="Show" value={filter} onChange={(event) => setFilter(event.target.value)} size="small">
                   {filters.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
+                    <option key={option.value} value={option.value}>
                       {option.label}
-                    </MenuItem>
+                    </option>
                   ))}
                 </TextField>
               </Box>
@@ -519,9 +554,9 @@ const CrmMap = () => {
               </Alert>
             )}
             {filter === 'gameplan' && days.length > 0 && (
-              <TextField select size="small" label="Gameplan date" value={days.includes(planDate) ? planDate : ''}
+              <TextField select slotProps={{ select: { native: true }, inputLabel: { shrink: true } }} size="small" label="Gameplan date" value={days.includes(planDate) ? planDate : ''}
                 onChange={(event) => setPlanDate(event.target.value)} sx={{ m: 2, minWidth: 200 }}>
-                {days.map((day) => <MenuItem key={day} value={day}>{day}</MenuItem>)}
+                {days.map((day) => <option key={day} value={day}>{day}</option>)}
               </TextField>
             )}
             {filter === 'gameplan' && (planError || daysError) && <Alert severity="error">{planError || daysError}</Alert>}
@@ -611,10 +646,15 @@ const CrmMap = () => {
                     Select a row to open the CRM record.
                   </Typography>
                   {filter === 'gameplan' && (
-                    <Button size="small" disabled={reordering || isLoading || isGeocoding || targets.length < 2}
-                      onClick={sortByDistance}>
-                      Sort by distance
-                    </Button>
+                    <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
+                      <Button size="small" disabled={reordering} onClick={() => updateDistances(false)}>
+                        {distanceOrigin ? 'Refresh distances' : 'Show distances'}
+                      </Button>
+                      <Button size="small" disabled={reordering || isLoading || isGeocoding || targets.length < 2}
+                        onClick={() => updateDistances(true)}>
+                        Sort by distance
+                      </Button>
+                    </Stack>
                   )}
                 </Box>
 
@@ -626,6 +666,7 @@ const CrmMap = () => {
                     {filter === 'gameplan' ? targetsInView.map(({ target, index, record }, rowIndex) => (
                       <MapRecordRow key={target.id} record={record} onAdd={setPinTarget}
                         activity={`${index + 1}. ${target.method}`}
+                        distance={distanceOrigin ? distanceFrom(distanceOrigin, record.coordinates) : undefined}
                         moveUp={rowIndex > 0 && !reordering ? () => moveTarget(rowIndex, -1) : undefined}
                         moveDown={rowIndex < targetsInView.length - 1 && !reordering ? () => moveTarget(rowIndex, 1) : undefined} />
                     )) : recordsInView.map((record) => (
@@ -714,11 +755,11 @@ function AddToGameplanDialog({ record, supabase, days, daysError, loading, selec
             </Alert>
           )}
           {days.length > 0 && <>
-            <TextField select fullWidth label="Gameplan date" value={day} onChange={(event) => setDate(event.target.value)}>
-              {days.map((value) => <MenuItem key={value} value={value}>{value}</MenuItem>)}
+            <TextField select slotProps={{ select: { native: true }, inputLabel: { shrink: true } }} fullWidth label="Gameplan date" value={day} onChange={(event) => setDate(event.target.value)}>
+              {days.map((value) => <option key={value} value={value}>{value}</option>)}
             </TextField>
-            <TextField select fullWidth label="Activity" value={method} onChange={(event) => setMethod(event.target.value)}>
-              {methods.map((value) => <MenuItem key={value} value={value}>{value}</MenuItem>)}
+            <TextField select slotProps={{ select: { native: true }, inputLabel: { shrink: true } }} fullWidth label="Activity" value={method} onChange={(event) => setMethod(event.target.value)}>
+              {methods.map((value) => <option key={value} value={value}>{value}</option>)}
             </TextField>
           </>}
         </Box>
@@ -779,13 +820,13 @@ async function geocodeAddress(address) {
 
 function distanceFrom(origin, [longitude, latitude]) {
   const radians = Math.PI / 180;
-  // The haversine term increases with great-circle distance.
-  return Math.sin((latitude - origin.latitude) * radians / 2) ** 2
+  const haversine = Math.sin((latitude - origin.latitude) * radians / 2) ** 2
     + Math.cos(origin.latitude * radians) * Math.cos(latitude * radians)
     * Math.sin((longitude - origin.longitude) * radians / 2) ** 2;
+  return 2 * 3959 * Math.asin(Math.sqrt(Math.min(1, haversine)));
 }
 
-function MapRecordRow({ record, compact = false, onAdd, activity, moveUp, moveDown }) {
+function MapRecordRow({ record, compact = false, onAdd, activity, distance, moveUp, moveDown }) {
   return (
     <Box
       sx={{
@@ -836,6 +877,11 @@ function MapRecordRow({ record, compact = false, onAdd, activity, moveUp, moveDo
           {activity && (
             <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
               <Typography variant="caption">{activity}</Typography>
+              {distance !== undefined && (
+                <Typography variant="caption" color="text.secondary">
+                  {distance < 0.1 ? '<0.1' : distance.toFixed(1)} mi away
+                </Typography>
+              )}
               <Button size="small" disabled={!moveUp} onClick={moveUp}>Move up</Button>
               <Button size="small" disabled={!moveDown} onClick={moveDown}>Move down</Button>
             </Stack>
@@ -927,11 +973,11 @@ function CreateLeadFromPinDialog({ open, pin, supabase, onClose, onSaved }) {
           <TextField label="Lead Source" value={form.source} onChange={handleField(setForm, 'source')} fullWidth />
           <TextField label="Account Number" value={form.accountNumber} onChange={handleField(setForm, 'accountNumber')} fullWidth />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ minWidth: 0 }}>
-            <TextField select label="Status" value={form.status} onChange={handleField(setForm, 'status')} fullWidth>
+            <TextField select slotProps={{ select: { native: true }, inputLabel: { shrink: true } }} label="Status" value={form.status} onChange={handleField(setForm, 'status')} fullWidth>
               {leadStatuses.filter((status) => status !== 'converted').map((status) => (
-                <MenuItem key={status} value={status}>
+                <option key={status} value={status}>
                   {formatLeadStatus(status)}
-                </MenuItem>
+                </option>
               ))}
             </TextField>
             <TextField label="Priority" type="number" value={form.priority} onChange={handleField(setForm, 'priority')} fullWidth inputProps={{ min: 1, max: 5 }} />
