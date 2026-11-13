@@ -53,6 +53,9 @@ const CrmMap = () => {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const mapContainerRef = useRef(null);
+  const pageHeaderRef = useRef(null);
+  const mapPanelRef = useRef(null);
+  const [panelHeight, setPanelHeight] = useState(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const droppedLeadMarkerRef = useRef(null);
@@ -85,6 +88,9 @@ const CrmMap = () => {
     }
   }, [filterRestored, setFilter]);
   const [plan, setPlan] = useState(null);
+  const [reordering, setReordering] = useState(false);
+  const [reorderError, setReorderError] = useState(null);
+  const fittedRecords = useRef(null);
   const planRequest = useRef(0);
   const activePlanDate = useRef(null);
   const targets = plan?.date === planDate ? plan.targets : emptyTargets;
@@ -235,6 +241,70 @@ const CrmMap = () => {
     [mapBounds, visibleMappedRecords],
   );
 
+  const recordsById = new Map(recordsInView.map((record) => [record.id, record]));
+  const targetsInView = filter === 'gameplan'
+    ? targets.map((target, index) => ({ target, index, record: recordsById.get(targetKey(target)) }))
+      .filter(({ record }) => record)
+    : [];
+
+  async function moveTarget(index, offset) {
+    const current = targetsInView[index];
+    const neighbor = targetsInView[index + offset];
+    if (reordering || !current || !neighbor) return;
+
+    const ids = targets.map(({ id }) => id);
+    ids[current.index] = neighbor.target.id;
+    ids[neighbor.index] = current.target.id;
+    await saveOrder(ids);
+  }
+
+  async function sortByDistance() {
+    if (reordering) return;
+    setReordering(true);
+    setReorderError(null);
+    try {
+      if (!navigator.geolocation) throw new Error('Location is unavailable in this browser.');
+      const { coords } = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+      });
+      if (activePlanDate.current !== planDate) return;
+
+      const coordinatesById = new Map(mappedRecords.map(({ id, coordinates }) => [id, coordinates]));
+      const rankedTargets = targets.map((target) => {
+        const coordinates = coordinatesById.get(targetKey(target));
+        return {
+          id: target.id,
+          distance: coordinates
+            ? distanceFrom(coords, coordinates)
+            : Infinity,
+        };
+      });
+      rankedTargets.sort((a, b) => a.distance - b.distance);
+      await saveOrder(rankedTargets.map(({ id }) => id));
+    } catch (error) {
+      setReorderError({ date: planDate, message: error.message || 'Could not determine your location.' });
+    } finally {
+      setReordering(false);
+    }
+  }
+
+  async function saveOrder(ids) {
+    setReordering(true);
+    setReorderError(null);
+    try {
+      const { error } = await supabase.rpc('reorder_crm_gameplan', {
+        target_date: planDate,
+        ordered_ids: ids,
+      });
+      if (error) throw error;
+      await loadPlan();
+    } catch (error) {
+      setReorderError({ date: planDate, message: error.message });
+    } finally {
+      setReordering(false);
+    }
+  }
+
   const visibleUnmappedRecords = useMemo(
     () => unmappedRecords.filter(isVisible),
     [isVisible, unmappedRecords],
@@ -285,11 +355,14 @@ const CrmMap = () => {
       markersRef.current.push({ marker, root });
     });
 
-    if (visibleMappedRecords.length) {
+    const fitKey = JSON.stringify([filter, filter === 'gameplan' ? planDate : null,
+      visibleMappedRecords.map(({ id, coordinates }) => [id, coordinates])]);
+    if (visibleMappedRecords.length && fittedRecords.current !== fitKey) {
       const bounds = new mapboxgl.LngLatBounds();
       visibleMappedRecords.forEach((record) => bounds.extend(record.coordinates));
       mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 12, duration: 600 });
     }
+    fittedRecords.current = fitKey;
     return () => {
       markersRef.current.forEach(({ marker, root }) => {
         marker.remove();
@@ -297,7 +370,7 @@ const CrmMap = () => {
       });
       markersRef.current = [];
     };
-  }, [filter, planPositions, visibleMappedRecords]);
+  }, [filter, planDate, planPositions, visibleMappedRecords]);
 
   const fetchRecords = async () => {
     setError(null);
@@ -341,9 +414,26 @@ const CrmMap = () => {
     setIsGeocoding(false);
   };
 
+  useEffect(() => {
+    const panel = mapPanelRef.current;
+    const updateHeight = () => {
+      const pageTop = panel.getBoundingClientRect().top + window.scrollY;
+      setPanelHeight(Math.max(320, Math.floor(window.innerHeight - pageTop - 16)));
+    };
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(pageHeaderRef.current);
+    window.addEventListener('resize', updateHeight);
+    updateHeight();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, []);
+
   return (
     <Grid container spacing={3}>
-      <Grid size={12}>
+      <Grid size={12} ref={pageHeaderRef}>
         <PageHeader
           title="CRM Map"
           breadcrumb={[
@@ -371,12 +461,12 @@ const CrmMap = () => {
       </Grid>
 
       <Grid size={12}>
-        <Paper sx={{ overflow: 'hidden' }}>
+        <Paper ref={mapPanelRef} sx={{ overflow: 'hidden' }}>
           <Box
             sx={{
               display: 'grid',
               gridTemplateRows: 'auto auto minmax(0, 1fr)',
-              minHeight: { xs: 820, lg: 720 },
+              height: panelHeight ? `${panelHeight}px` : '60dvh',
               bgcolor: 'background.paper',
             }}
           >
@@ -401,13 +491,17 @@ const CrmMap = () => {
               <Box
                 sx={{
                   display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 132px) 150px' },
+                  gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(2, 132px) 150px' },
                   gap: 1,
                   alignItems: 'center',
                 }}
               >
-                <MapStat label="In View" value={recordsInView.length} color="primary.main" />
-                <MapStat label="Needs Location" value={visibleUnmappedRecords.length} color="warning.main" />
+                <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                  <MapStat label="In View" value={recordsInView.length} color="primary.main" />
+                </Box>
+                <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                  <MapStat label="Needs Location" value={visibleUnmappedRecords.length} color="warning.main" />
+                </Box>
                 <TextField select label="Show" value={filter} onChange={(event) => setFilter(event.target.value)} size="small">
                   {filters.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
@@ -439,10 +533,11 @@ const CrmMap = () => {
               sx={{
                 display: 'grid',
                 gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) 380px', xl: 'minmax(0, 1fr) 410px' },
+                gridTemplateRows: { xs: 'minmax(0, 2fr) minmax(0, 1fr)', lg: 'minmax(0, 1fr)' },
                 minHeight: 0,
               }}
             >
-              <Box sx={{ minHeight: { xs: 430, lg: 0 }, position: 'relative', minWidth: 0, overflow: 'hidden' }}>
+              <Box sx={{ minHeight: 0, position: 'relative', minWidth: 0, overflow: 'hidden' }}>
                 {!mapboxToken ? (
                   <Alert severity="warning" sx={{ m: 3 }}>
                     Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to your environment to enable the CRM map.
@@ -499,7 +594,8 @@ const CrmMap = () => {
                 sx={{
                   display: 'grid',
                   gridTemplateRows: 'auto minmax(0, 1fr)',
-                  minHeight: { xs: 360, lg: 0 },
+                  minHeight: 0,
+                  overflow: 'hidden',
                   borderLeft: { lg: 1 },
                   borderTop: { xs: 1, lg: 0 },
                   borderColor: 'divider',
@@ -507,18 +603,32 @@ const CrmMap = () => {
                   minWidth: 0,
                 }}
               >
-                <Box sx={{ px: 2.5, py: 2, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+                <Box sx={{ px: 2.5, py: { xs: 0.5, lg: 2 }, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                     Records in view
                   </Typography>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: { xs: 'none', lg: 'block' } }}>
                     Select a row to open the CRM record.
                   </Typography>
+                  {filter === 'gameplan' && (
+                    <Button size="small" disabled={reordering || isLoading || isGeocoding || targets.length < 2}
+                      onClick={sortByDistance}>
+                      Sort by distance
+                    </Button>
+                  )}
                 </Box>
 
                 <Box sx={{ overflowY: 'auto', minHeight: 0 }}>
+                  {filter === 'gameplan' && reorderError?.date === planDate && (
+                    <Alert severity="error">{reorderError.message}</Alert>
+                  )}
                   <Box>
-                    {recordsInView.map((record) => (
+                    {filter === 'gameplan' ? targetsInView.map(({ target, index, record }, rowIndex) => (
+                      <MapRecordRow key={target.id} record={record} onAdd={setPinTarget}
+                        activity={`${index + 1}. ${target.method}`}
+                        moveUp={rowIndex > 0 && !reordering ? () => moveTarget(rowIndex, -1) : undefined}
+                        moveDown={rowIndex < targetsInView.length - 1 && !reordering ? () => moveTarget(rowIndex, 1) : undefined} />
+                    )) : recordsInView.map((record) => (
                       <MapRecordRow key={record.id} record={record} onAdd={setPinTarget} />
                     ))}
                     {!recordsInView.length && <EmptyState label="No records in this map area" />}
@@ -667,7 +777,15 @@ async function geocodeAddress(address) {
   }
 }
 
-function MapRecordRow({ record, compact = false, onAdd }) {
+function distanceFrom(origin, [longitude, latitude]) {
+  const radians = Math.PI / 180;
+  // The haversine term increases with great-circle distance.
+  return Math.sin((latitude - origin.latitude) * radians / 2) ** 2
+    + Math.cos(origin.latitude * radians) * Math.cos(latitude * radians)
+    * Math.sin((longitude - origin.longitude) * radians / 2) ** 2;
+}
+
+function MapRecordRow({ record, compact = false, onAdd, activity, moveUp, moveDown }) {
   return (
     <Box
       sx={{
@@ -715,6 +833,13 @@ function MapRecordRow({ record, compact = false, onAdd }) {
             {record.address || formatCoordinates(record.coordinates) || 'No location'}
           </Typography>
           <Button size="small" onClick={() => onAdd(record)}>Add to gameplan</Button>
+          {activity && (
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+              <Typography variant="caption">{activity}</Typography>
+              <Button size="small" disabled={!moveUp} onClick={moveUp}>Move up</Button>
+              <Button size="small" disabled={!moveDown} onClick={moveDown}>Move down</Button>
+            </Stack>
+          )}
         </Box>
       </Stack>
     </Box>
