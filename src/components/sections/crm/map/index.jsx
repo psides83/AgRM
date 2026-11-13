@@ -32,6 +32,7 @@ import { createClient } from 'lib/supabase/client';
 import IconifyIcon from 'components/base/IconifyIcon';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import {
+  formatLeadStatus,
   leadStatuses,
 } from 'components/sections/crm/constants';
 
