@@ -1,7 +1,8 @@
 'use client';
 
+import Gameplan, { localDay, targetKey } from './Gameplan';
 import useListState from 'hooks/useListState';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   Alert,
@@ -34,6 +35,7 @@ import {
   leadStatuses,
 } from 'components/sections/crm/constants';
 
+const emptyTargets = [];
 const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
 mapboxgl.accessToken = mapboxToken;
 
@@ -41,6 +43,8 @@ const filters = [
   { value: 'all', label: 'All' },
   { value: 'contact', label: 'Contacts' },
   { value: 'lead', label: 'Leads' },
+  { value: 'company', label: 'Companies' },
+  { value: 'gameplan', label: 'Daily Gameplan' },
 ];
 
 const CrmMap = () => {
@@ -61,6 +65,33 @@ const CrmMap = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [error, setError] = useState(null);
+
+  const [planDate, setPlanDate] = useState(localDay);
+  const [plan, setPlan] = useState(null);
+  const planRequest = useRef(0);
+  const activePlanDate = useRef(null);
+  const targets = plan?.date === planDate ? plan.targets : emptyTargets;
+  const planError = plan?.date === planDate ? plan.error : null;
+
+  const loadPlan = useCallback(async () => {
+    if (activePlanDate.current !== planDate) return;
+    const request = ++planRequest.current;
+    const { data, error } = await supabase.from('crm_gameplan_targets').select('*')
+      .eq('plan_date', planDate).order('position').order('id');
+    if (request === planRequest.current) {
+      setPlan({ date: planDate, targets: data || [], error: error?.message });
+    }
+  }, [planDate, supabase]);
+
+  useEffect(() => {
+    if (filter !== 'gameplan') return undefined;
+    activePlanDate.current = planDate;
+    loadPlan();
+    return () => {
+      activePlanDate.current = null;
+      planRequest.current += 1;
+    };
+  }, [filter, loadPlan, planDate]);
 
   useEffect(() => {
     fetchRecords();
@@ -152,21 +183,30 @@ const CrmMap = () => {
     geocodeRecords(records);
   }, [records]);
 
+  const planPositions = useMemo(() => {
+    const positions = new Map();
+    for (const [index, target] of targets.entries()) {
+      const key = targetKey(target);
+      positions.set(key, [...(positions.get(key) || []), index + 1]);
+    }
+    return positions;
+  }, [targets]);
+  const isVisible = useCallback((record) => filter === 'gameplan'
+    ? planPositions.has(record.id)
+    : !record.converted && (filter === 'all' || record.kind === filter), [filter, planPositions]);
+
   const visibleMappedRecords = useMemo(
-    () => mappedRecords.filter((record) => filter === 'all' || record.kind === filter),
-    [filter, mappedRecords],
+    () => mappedRecords.filter(isVisible),
+    [isVisible, mappedRecords],
   );
 
   const visibleUnmappedRecords = useMemo(
-    () => unmappedRecords.filter((record) => filter === 'all' || record.kind === filter),
-    [filter, unmappedRecords],
+    () => unmappedRecords.filter(isVisible),
+    [isVisible, unmappedRecords],
   );
 
   useEffect(() => {
     if (!mapRef.current) return;
-
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = [];
 
     visibleMappedRecords.forEach((record) => {
       const node = document.createElement('button');
@@ -176,10 +216,15 @@ const CrmMap = () => {
       node.style.padding = '0';
       node.style.cursor = 'pointer';
 
-      createRoot(node).render(
+      const root = createRoot(node);
+      const positions = filter === 'gameplan' ? planPositions.get(record.id) : null;
+      node.setAttribute('aria-label', record.title);
+      root.render(
         <Box
           sx={{
-            width: 34,
+            width: positions ? 'auto' : 34,
+            minWidth: 34,
+            px: positions ? 0.75 : 0,
             height: 34,
             borderRadius: '50%',
             bgcolor: record.kind === 'lead' ? 'warning.main' : 'primary.main',
@@ -189,7 +234,7 @@ const CrmMap = () => {
             boxShadow: 3,
           }}
         >
-          <IconifyIcon icon={record.kind === 'lead' ? 'material-symbols:filter-alt-rounded' : 'material-symbols:person-pin-circle-rounded'} fontSize={21} />
+          {positions ? positions.join(', ') : <IconifyIcon icon={recordIcon(record.kind)} fontSize={21} />}
         </Box>,
       );
 
@@ -198,7 +243,7 @@ const CrmMap = () => {
         .setPopup(new mapboxgl.Popup({ offset: 18 }).setHTML(popupHtml(record)))
         .addTo(mapRef.current);
 
-      markersRef.current.push(marker);
+      markersRef.current.push({ marker, root });
     });
 
     if (visibleMappedRecords.length) {
@@ -206,13 +251,20 @@ const CrmMap = () => {
       visibleMappedRecords.forEach((record) => bounds.extend(record.coordinates));
       mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 12, duration: 600 });
     }
-  }, [visibleMappedRecords]);
+    return () => {
+      markersRef.current.forEach(({ marker, root }) => {
+        marker.remove();
+        queueMicrotask(() => root.unmount());
+      });
+      markersRef.current = [];
+    };
+  }, [filter, planPositions, visibleMappedRecords]);
 
   const fetchRecords = async () => {
     setError(null);
     setIsLoading(true);
 
-    const [contactsResult, leadsResult] = await Promise.all([
+    const [contactsResult, leadsResult, companiesResult] = await Promise.all([
       supabase
         .from('contacts')
         .select(
@@ -254,11 +306,13 @@ const CrmMap = () => {
           companies(id, name, address_line1, address_line2, city, region, postal_code, country, latitude, longitude)
         `,
         )
-        .neq('status', 'converted')
         .order('created_at', { ascending: false }),
+      supabase.from('companies')
+        .select('id, name, account_number, address_line1, address_line2, city, region, postal_code, country, latitude, longitude')
+        .order('name'),
     ]);
 
-    const queryError = contactsResult.error || leadsResult.error;
+    const queryError = contactsResult.error || leadsResult.error || companiesResult.error;
     if (queryError) {
       setError(queryError.message);
       setRecords([]);
@@ -266,6 +320,7 @@ const CrmMap = () => {
       setRecords([
         ...(contactsResult.data || []).map(contactToMapRecord),
         ...(leadsResult.data || []).map(leadToMapRecord),
+        ...(companiesResult.data || []).map(companyToMapRecord),
       ]);
     }
 
@@ -335,7 +390,7 @@ const CrmMap = () => {
           <Box
             sx={{
               display: 'grid',
-              gridTemplateRows: 'auto minmax(0, 1fr)',
+              gridTemplateRows: 'auto auto minmax(0, 1fr)',
               minHeight: { xs: 820, lg: 720 },
               bgcolor: 'background.paper',
             }}
@@ -352,7 +407,7 @@ const CrmMap = () => {
               }}
             >
               <Box sx={{ minWidth: 0 }}>
-                <Typography variant="h6">Territory View</Typography>
+                <Typography variant="h6">{filter === 'gameplan' ? 'Gameplan Map' : 'Territory View'}</Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                   {visibleMappedRecords.length} records on the map, {visibleUnmappedRecords.length} missing a usable location
                 </Typography>
@@ -378,7 +433,14 @@ const CrmMap = () => {
               </Box>
             </Box>
 
+            <Box>
+            {filter === 'gameplan' && (
+              <TextField type="date" size="small" label="Gameplan date" value={planDate}
+                onChange={(event) => { if (event.target.value) setPlanDate(event.target.value); }}
+                slotProps={{ inputLabel: { shrink: true } }} sx={{ m: 2 }} />
+            )}
             {error && <Alert severity="error" sx={{ m: 2.5, mb: 0 }}>{error}</Alert>}
+            </Box>
 
             <Box
               sx={{
@@ -443,7 +505,7 @@ const CrmMap = () => {
               <Box
                 sx={{
                   display: 'grid',
-                  gridTemplateRows: 'auto minmax(0, 1fr)',
+                  gridTemplateRows: filter === 'gameplan' ? 'minmax(0, 1fr)' : 'auto minmax(0, 1fr)',
                   minHeight: { xs: 360, lg: 0 },
                   borderLeft: { lg: 1 },
                   borderTop: { xs: 1, lg: 0 },
@@ -452,6 +514,12 @@ const CrmMap = () => {
                   minWidth: 0,
                 }}
               >
+                {filter === 'gameplan' ? (
+                  <Box sx={{ overflowY: 'auto', maxHeight: { lg: 720 } }}>
+                    <Gameplan key={planDate} supabase={supabase} date={planDate} records={records}
+                      targets={targets} unmapped={visibleUnmappedRecords} onChange={loadPlan} loading={plan?.date !== planDate} loadError={planError} />
+                  </Box>
+                ) : <>
                 <Box sx={{ px: 2.5, py: 2, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                     Records
@@ -480,6 +548,7 @@ const CrmMap = () => {
                     </Box>
                   )}
                 </Box>
+                </>}
               </Box>
             </Box>
           </Box>
@@ -527,6 +596,26 @@ function MapStat({ label, value, color }) {
   );
 }
 
+function recordIcon(kind) {
+  return {
+    lead: 'material-symbols:filter-alt-rounded',
+    contact: 'material-symbols:person-pin-circle-rounded',
+    company: 'material-symbols:business-rounded',
+  }[kind];
+}
+
+function companyToMapRecord(company) {
+  return {
+    id: `company-${company.id}`,
+    kind: 'company',
+    title: company.name,
+    subtitle: company.account_number,
+    address: formatAddress(company),
+    coordinates: getCoordinates(company),
+    href: paths.companyDetails(company.id),
+  };
+}
+
 function contactToMapRecord(contact) {
   const address = formatAddress(contact) || formatAddress(contact.companies);
   const coordinates = getCoordinates(contact) || getCoordinates(contact.companies);
@@ -549,6 +638,7 @@ function leadToMapRecord(lead) {
   return {
     id: `lead-${lead.id}`,
     kind: 'lead',
+    converted: lead.status === 'converted',
     title: lead.companies?.name || (lead.contacts ? contactName(lead.contacts) : '') || (lead.account_number ? `Account ${lead.account_number}` : '') || lead.source || 'Lead',
     subtitle: [formatLeadStatus(lead.status), lead.account_number, lead.source, formatCurrency(lead.estimated_budget)].filter((value) => value && value !== '-').join(' · '),
     address,
@@ -601,7 +691,7 @@ function MapRecordRow({ record, compact = false }) {
             placeItems: 'center',
           }}
         >
-          <IconifyIcon icon={record.kind === 'lead' ? 'material-symbols:filter-alt-rounded' : 'material-symbols:person-pin-circle-rounded'} fontSize={20} />
+          <IconifyIcon icon={recordIcon(record.kind)} fontSize={20} />
         </Box>
 
         <Box sx={{ minWidth: 0, flex: 1 }}>
@@ -609,7 +699,7 @@ function MapRecordRow({ record, compact = false }) {
             <Link href={record.href} underline="hover" sx={{ color: 'text.primary', fontWeight: 700, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {record.title}
             </Link>
-            <Chip label={record.kind === 'lead' ? 'Lead' : 'Contact'} size="small" color={record.kind === 'lead' ? 'warning' : 'primary'} variant="soft" sx={{ flexShrink: 0 }} />
+            <Chip label={({ lead: 'Lead', contact: 'Contact', company: 'Company' })[record.kind]} size="small" color={record.kind === 'lead' ? 'warning' : 'primary'} variant="soft" sx={{ flexShrink: 0 }} />
           </Stack>
           {!compact && record.subtitle && (
             <Typography variant="body2" sx={{ color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
