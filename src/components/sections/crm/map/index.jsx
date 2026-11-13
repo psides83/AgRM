@@ -139,12 +139,15 @@ const CrmMap = () => {
 
     mapRef.current.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
     const map = mapRef.current;
+    const resizeObserver = new ResizeObserver(() => map.resize());
+    resizeObserver.observe(map.getContainer());
     const updateBounds = () => setMapBounds(map.getBounds());
     map.on('moveend', updateBounds);
     map.on('resize', updateBounds);
     updateBounds();
 
     return () => {
+      resizeObserver.disconnect();
       map.off('moveend', updateBounds);
       map.off('resize', updateBounds);
       mapRef.current?.remove();
@@ -439,7 +442,7 @@ const CrmMap = () => {
                 minHeight: 0,
               }}
             >
-              <Box sx={{ minHeight: { xs: 430, lg: 0 }, position: 'relative', minWidth: 0 }}>
+              <Box sx={{ minHeight: { xs: 430, lg: 0 }, position: 'relative', minWidth: 0, overflow: 'hidden' }}>
                 {!mapboxToken ? (
                   <Alert severity="warning" sx={{ m: 3 }}>
                     Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to your environment to enable the CRM map.
