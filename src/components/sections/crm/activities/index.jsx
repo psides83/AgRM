@@ -83,7 +83,7 @@ const ActivitiesPage = () => {
         created_at,
         contacts(id, first_name, last_name, city, region, companies(id, name)),
         companies(id, name, city, region),
-        leads(id, source, status, contacts(id, first_name, last_name, city, region), companies(id, name, city, region)),
+        leads(id, status, contacts(id, first_name, last_name, city, region), companies(id, name, city, region)),
         deals(id, name, stage, contacts(id, first_name, last_name, city, region), companies(id, name, city, region))
       `,
       )
@@ -991,9 +991,12 @@ function recordLabel(activity) {
   if (activity.deals) return activity.deals.name;
   if (activity.leads) {
     return (
-      activity.leads.source ||
       contactName(activity.leads.contacts) ||
+      contactName(activity.contacts) ||
       activity.leads.companies?.name ||
+      activity.companies?.name ||
+      activity.leads.contacts?.companies?.name ||
+      activity.contacts?.companies?.name ||
       "Lead"
     );
   }
