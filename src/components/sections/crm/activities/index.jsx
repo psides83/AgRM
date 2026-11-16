@@ -40,7 +40,7 @@ const emptyFilters = {
   search: "",
   type: "all",
   direction: "all",
-  status: "open",
+  status: "all",
 };
 
 const emptyExportRange = {
@@ -274,6 +274,11 @@ const ActivitiesPage = () => {
                 {filteredActivities.length} shown from {activities.length} total
                 activit{activities.length === 1 ? "y" : "ies"}
               </Typography>
+              {filters.status === "open" && activities.some((activity) => activity.completed_at) && (
+                <Button size="small" onClick={() => setFilters((prev) => ({ ...prev, status: "all" }))}>
+                  Include completed activities
+                </Button>
+              )}
             </Box>
             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
               <TextField
