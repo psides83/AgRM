@@ -1,7 +1,7 @@
 import { distanceFrom, geocodeAddress, getDirectionsLinks } from './navigation';
 import paths from 'routes/paths';
 import { useEffect, useState } from 'react';
-import { Alert, Autocomplete, Box, Button, Link, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Autocomplete, Box, Button, Chip, Link, MenuItem, Stack, TextField, Typography } from '@mui/material';
 
 import { addTarget, createGameplan, methods, targetKey } from './gameplanData';
 
@@ -63,6 +63,7 @@ export default function Gameplan({ supabase, date, records, targets, onDaysChang
       const { lead_id, contact_id, company_id, method, outcome } = target;
       return supabase.from('activities').insert({
         owner_id: data.user.id,
+        gameplan_target_id: target.id,
         lead_id,
         contact_id: contact_id || record.contact?.id || null,
         company_id: company_id || record.company?.id || null,
@@ -163,6 +164,8 @@ function Target({ target, record, origin, disabled, first, last, move, remove, s
   const directions = record ? getDirectionsLinks({ ...record, coordinates }) : null;
 
   const [outcome, setOutcome] = useState(target.outcome);
+  const outcomeLogged = outcome.trim() === target.outcome &&
+    target.activities?.some((activity) => activity.body === target.outcome);
   const [followUpDate, setFollowUpDate] = useState('');
   useEffect(() => setOutcome(target.outcome), [target.outcome]);
 
@@ -218,7 +221,10 @@ function Target({ target, record, origin, disabled, first, last, move, remove, s
       </Stack>
       <TextField label="Outcome" size="small" multiline value={outcome} onChange={(event) => setOutcome(event.target.value)} />
       <Button size="small" disabled={disabled || outcome.trim() === target.outcome} onClick={() => save(outcome.trim())}>Save outcome</Button>
-      {record && target.outcome.trim() && (
+      {outcomeLogged && (
+        <Chip label="Logged as activity" color="success" size="small" sx={{ alignSelf: 'flex-start' }} />
+      )}
+      {!outcomeLogged && record && target.outcome.trim() && (
         <Button size="small" variant="outlined"
           disabled={disabled || outcome.trim() !== target.outcome}
           onClick={() => logOutcome(target, record)}>

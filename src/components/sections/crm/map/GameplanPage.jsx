@@ -86,7 +86,7 @@ function Plan({ date, supabase, records, onDaysChange }) {
   const [result, setResult] = useState(null);
 
   const reload = useMemo(() => async () => {
-    const { data, error } = await supabase.from('crm_gameplan_targets').select('*')
+    const { data, error } = await supabase.from('crm_gameplan_targets').select('*, activities(body)')
       .eq('plan_date', date).order('position').order('id');
     setResult({ targets: data || [], error: error?.message });
   }, [date, supabase]);

@@ -100,7 +100,7 @@ const CrmMap = () => {
   const loadPlan = useCallback(async () => {
     if (activePlanDate.current !== planDate) return;
     const request = ++planRequest.current;
-    const { data, error } = await supabase.from('crm_gameplan_targets').select('*')
+    const { data, error } = await supabase.from('crm_gameplan_targets').select('*, activities(body)')
       .eq('plan_date', planDate).order('position').order('id');
     if (request === planRequest.current) {
       setPlan({ date: planDate, targets: data || [], error: error?.message });
