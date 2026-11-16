@@ -611,6 +611,7 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
     body: "",
     occurredAt: "",
     dueAt: "",
+    status: "open",
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -628,6 +629,7 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
         activity?.occurred_at || activity?.created_at,
       ),
       dueAt: toDateTimeLocal(activity?.due_at),
+      status: activity?.completed_at ? "complete" : "open",
     });
   }, [activity, open]);
 
@@ -637,9 +639,12 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
     setIsSaving(true);
     setError(null);
 
+    const isComplete = form.status === "complete";
+    const statusChanged = isComplete !== Boolean(activity.completed_at);
     const { error: updateError } = await supabase
       .from("activities")
       .update({
+        ...(statusChanged && { completed_at: isComplete ? new Date().toISOString() : null }),
         type: form.type,
         direction: form.direction,
         subject: cleanText(form.subject) || formatEnum(form.type),
@@ -695,6 +700,16 @@ function EditActivityDialog({ open, activity, onClose, onSaved, supabase }) {
               ))}
             </TextField>
           </Stack>
+          <TextField
+            select
+            label="Status"
+            value={form.status}
+            onChange={handleField(setForm, "status")}
+            fullWidth
+          >
+            <MenuItem value="open">Open</MenuItem>
+            <MenuItem value="complete">Complete</MenuItem>
+          </TextField>
           <TextField
             label="Subject"
             value={form.subject}
