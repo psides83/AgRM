@@ -224,7 +224,12 @@ function Target({ target, record, origin, disabled, first, last, move, remove, s
       {outcomeLogged && (
         <Chip label="Logged as activity" color="success" size="small" sx={{ alignSelf: 'flex-start' }} />
       )}
-      {!outcomeLogged && record && target.outcome.trim() && (
+      {target.activityLinkUnavailable && target.outcome.trim() && (
+        <Typography variant="body2" color="text.secondary">
+          Activity logging is temporarily unavailable.
+        </Typography>
+      )}
+      {!target.activityLinkUnavailable && !outcomeLogged && record && target.outcome.trim() && (
         <Button size="small" variant="outlined"
           disabled={disabled || outcome.trim() !== target.outcome}
           onClick={() => logOutcome(target, record)}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { localDay, targetKey, useGameplanDays, addTarget, methods } from './gameplanData';
+import { fetchGameplanTargets, localDay, targetKey, useGameplanDays, addTarget, methods } from './gameplanData';
 import { distanceFrom, formatCoordinates, geocodeAddress, getDirectionsLinks } from './navigation';
 import { fetchMapRecords } from './records';
 import useListState from 'hooks/useListState';
@@ -100,8 +100,7 @@ const CrmMap = () => {
   const loadPlan = useCallback(async () => {
     if (activePlanDate.current !== planDate) return;
     const request = ++planRequest.current;
-    const { data, error } = await supabase.from('crm_gameplan_targets').select('*, activities(body)')
-      .eq('plan_date', planDate).order('position').order('id');
+    const { data, error } = await fetchGameplanTargets(supabase, planDate);
     if (request === planRequest.current) {
       setPlan({ date: planDate, targets: data || [], error: error?.message });
     }

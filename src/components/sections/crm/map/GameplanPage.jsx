@@ -7,7 +7,7 @@ import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import { createClient } from 'lib/supabase/client';
 import paths from 'routes/paths';
 import Gameplan from './Gameplan';
-import { createGameplan, localDay, useGameplanDays } from './gameplanData';
+import { fetchGameplanTargets, createGameplan, localDay, useGameplanDays } from './gameplanData';
 import { fetchMapRecords } from './records';
 
 export default function GameplanPage() {
@@ -86,8 +86,7 @@ function Plan({ date, supabase, records, onDaysChange }) {
   const [result, setResult] = useState(null);
 
   const reload = useMemo(() => async () => {
-    const { data, error } = await supabase.from('crm_gameplan_targets').select('*, activities(body)')
-      .eq('plan_date', date).order('position').order('id');
+    const { data, error } = await fetchGameplanTargets(supabase, date);
     setResult({ targets: data || [], error: error?.message });
   }, [date, supabase]);
 

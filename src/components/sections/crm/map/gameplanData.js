@@ -36,3 +36,17 @@ export async function addTarget(supabase, day, fields) {
 export function createGameplan(supabase, day) {
   return supabase.from('crm_gameplans').upsert({ plan_date: day }, { ignoreDuplicates: true });
 }
+
+export async function fetchGameplanTargets(supabase, date) {
+  const query = (columns) => supabase.from('crm_gameplan_targets').select(columns)
+    .eq('plan_date', date).order('position').order('id');
+
+  const result = await query('*, activities(body)');
+  if (result.error?.code !== 'PGRST200') return result;
+
+  const fallback = await query('*');
+  return {
+    ...fallback,
+    data: fallback.data?.map((target) => ({ ...target, activityLinkUnavailable: true })),
+  };
+}
