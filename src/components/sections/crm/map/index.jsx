@@ -24,6 +24,7 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
+import SvgIcon from '@mui/material/SvgIcon';
 import { useRouter } from 'next/navigation';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -388,7 +389,7 @@ const CrmMap = () => {
             boxShadow: 3,
           }}
         >
-          {showIcon && <IconifyIcon icon={recordIcon(record.kind)} fontSize={21} />}
+          {showIcon && <RecordIcon kind={record.kind} size={21} />}
           {positions && <span>{positions.join(', ')}</span>}
         </Box>,
       );
@@ -808,12 +809,21 @@ function MapStat({ label, value, color }) {
   );
 }
 
-function recordIcon(kind) {
-  return {
+function RecordIcon({ kind, size }) {
+  if (kind === 'company') {
+    return (
+      <SvgIcon sx={{ fontSize: size }} aria-hidden="true">
+        <path d="M12 7V3H2v18h20V7H12ZM6 19H4v-2h2v2Zm0-4H4v-2h2v2Zm0-4H4V9h2v2Zm0-4H4V5h2v2Zm4 12H8v-2h2v2Zm0-4H8v-2h2v2Zm0-4H8V9h2v2Zm0-4H8V5h2v2Zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10Zm-2-8h-2v2h2v-2Zm0 4h-2v2h2v-2Z" />
+      </SvgIcon>
+    );
+  }
+
+  const icon = {
     lead: 'material-symbols:filter-alt-rounded',
     contact: 'material-symbols:person-pin-circle-rounded',
-    company: 'material-symbols:business-rounded',
   }[kind];
+
+  return <IconifyIcon icon={icon} fontSize={size} />;
 }
 
 function MapRecordRow({ record, compact = false, onAdd, activity, distance, moveUp, moveDown }) {
@@ -847,7 +857,7 @@ function MapRecordRow({ record, compact = false, onAdd, activity, distance, move
             placeItems: 'center',
           }}
         >
-          <IconifyIcon icon={recordIcon(record.kind)} fontSize={20} />
+          <RecordIcon kind={record.kind} size={20} />
         </Box>
 
         <Box sx={{ minWidth: 0, flex: 1 }}>
