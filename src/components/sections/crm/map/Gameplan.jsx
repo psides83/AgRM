@@ -1,3 +1,4 @@
+import AutocompleteTextField from 'components/base/AutocompleteTextField';
 import { distanceFrom, geocodeAddress, getDirectionsLinks } from './navigation';
 import paths from 'routes/paths';
 import { useEffect, useState } from 'react';
@@ -99,7 +100,7 @@ export default function Gameplan({ supabase, date, records, targets, onDaysChang
         getOptionKey={(option) => option.id}
         getOptionLabel={(option) => `${option.title} · ${option.kind}${option.address ? ` · ${option.address}` : ''}`}
         onChange={(_, value) => setRecord(value)}
-        renderInput={(params) => <TextField {...params} size="small" label="Find a lead, contact, or company" />}
+        renderInput={(params) => <AutocompleteTextField params={params} size="small" label="Find a lead, contact, or company" />}
       />
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'minmax(140px, 1fr) auto' }, gap: 1 }}>
         <TextField select size="small" label="Activity" value={method} onChange={(event) => setMethod(event.target.value)} sx={{ flex: 1 }}>
@@ -164,8 +165,7 @@ function Target({ target, record, origin, disabled, first, last, move, remove, s
   const directions = record ? getDirectionsLinks({ ...record, coordinates }) : null;
 
   const [outcome, setOutcome] = useState(target.outcome);
-  const outcomeLogged = outcome.trim() === target.outcome &&
-    target.activities?.some((activity) => activity.body === target.outcome);
+  const outcomeLogged = Boolean(target.activities?.length);
   const [followUpDate, setFollowUpDate] = useState('');
   useEffect(() => setOutcome(target.outcome), [target.outcome]);
 

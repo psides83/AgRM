@@ -1,5 +1,6 @@
 'use client';
 
+import AutocompleteTextField from 'components/base/AutocompleteTextField';
 import useListState from 'hooks/useListState';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -801,8 +802,8 @@ function AddEquipmentDialog({
                 }
                 isOptionEqualToValue={(option, value) => option.id === value.id}
                 renderInput={(params) => (
-                  <TextField
-                    {...params}
+                  <AutocompleteTextField
+                    params={params}
                     label="Related Record"
                     placeholder="Search"
                   />

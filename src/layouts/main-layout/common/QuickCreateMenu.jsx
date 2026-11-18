@@ -306,7 +306,7 @@ function CreateContactDialog({ open, onClose, supabase, companies, onCreated }) 
             <TextField label="First Name" value={form.firstName} onChange={handleField(setForm, 'firstName')} fullWidth required />
             <TextField label="Last Name" value={form.lastName} onChange={handleField(setForm, 'lastName')} fullWidth required />
           </Stack>
-          <Autocomplete options={companies} value={company} onChange={(_event, value) => setCompany(value)} getOptionLabel={(option) => option?.name || ''} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <TextField {...params} label="Existing Company" placeholder="Search companies" />} />
+          <Autocomplete options={companies} value={company} onChange={(_event, value) => setCompany(value)} getOptionLabel={(option) => option?.name || ''} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <AutocompleteTextField params={params} label="Existing Company" placeholder="Search companies" />} />
           {!company && <TextField label="New Company Name" value={form.companyName} onChange={handleField(setForm, 'companyName')} fullWidth />}
           <TextField label="Title" value={form.title} onChange={handleField(setForm, 'title')} fullWidth />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -373,8 +373,8 @@ function CreateLeadDialog({ open, onClose, supabase, contacts, companies, onCrea
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ pt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
-          <Autocomplete options={contacts} value={contact} onChange={(_event, value) => setContact(value)} getOptionLabel={contactOptionLabel} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <TextField {...params} label="Contact" placeholder="Search contacts" />} />
-          <Autocomplete options={companies} value={company} onChange={(_event, value) => setCompany(value)} getOptionLabel={(option) => option?.name || ''} isOptionEqualToValue={(option, value) => option.id === value.id} disabled={Boolean(contact?.company_id)} renderInput={(params) => <TextField {...params} label="Company" placeholder="Search companies" helperText={contact?.company_id ? 'Company is set by the selected contact.' : undefined} />} />
+          <Autocomplete options={contacts} value={contact} onChange={(_event, value) => setContact(value)} getOptionLabel={contactOptionLabel} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <AutocompleteTextField params={params} label="Contact" placeholder="Search contacts" />} />
+          <Autocomplete options={companies} value={company} onChange={(_event, value) => setCompany(value)} getOptionLabel={(option) => option?.name || ''} isOptionEqualToValue={(option, value) => option.id === value.id} disabled={Boolean(contact?.company_id)} renderInput={(params) => <AutocompleteTextField params={params} label="Company" placeholder="Search companies" helperText={contact?.company_id ? 'Company is set by the selected contact.' : undefined} />} />
           <TextField label="Lead Source" value={form.source} onChange={handleField(setForm, 'source')} fullWidth />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField select label="Lead Status" value={form.status} onChange={handleField(setForm, 'status')} fullWidth>{leadStatuses.map((status) => <MenuItem key={status} value={status}>{formatLeadStatus(status)}</MenuItem>)}</TextField>
@@ -592,7 +592,7 @@ function CreateActivityDialog({ open, onClose, supabase, contacts, companies, le
               <MenuItem value="lead">Lead</MenuItem>
               <MenuItem value="deal">Deal</MenuItem>
             </TextField>
-            <Autocomplete options={options} value={options.find((item) => item.id === form.relatedId) || null} onChange={handleRelatedRecordChange} getOptionLabel={(option) => relatedOptionLabel(option, form.relatedType)} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <TextField {...params} label="Record" placeholder="Search" />} />
+            <Autocomplete options={options} value={options.find((item) => item.id === form.relatedId) || null} onChange={handleRelatedRecordChange} getOptionLabel={(option) => relatedOptionLabel(option, form.relatedType)} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <AutocompleteTextField params={params} label="Record" placeholder="Search" />} />
           </Stack>
           {form.relatedType === 'contact' && contactCompanies.length > 1 && (
             <TextField select label="Company" value={form.companyId} onChange={handleField(setForm, 'companyId')} helperText="Choose which linked company should receive this activity." fullWidth required>
@@ -676,7 +676,7 @@ function CreateTaskDialog({ open, onClose, supabase, contacts, leads, onCreated 
               <MenuItem value="contact">Contact</MenuItem>
               <MenuItem value="lead">Lead</MenuItem>
             </TextField>
-            <Autocomplete options={options} value={options.find((item) => item.id === form.relatedId) || null} onChange={(_event, value) => setForm((prev) => ({ ...prev, relatedId: value?.id || '' }))} getOptionLabel={(option) => relatedOptionLabel(option, form.relatedType)} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <TextField {...params} label="Record" placeholder="Search" />} />
+            <Autocomplete options={options} value={options.find((item) => item.id === form.relatedId) || null} onChange={(_event, value) => setForm((prev) => ({ ...prev, relatedId: value?.id || '' }))} getOptionLabel={(option) => relatedOptionLabel(option, form.relatedType)} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <AutocompleteTextField params={params} label="Record" placeholder="Search" />} />
           </Stack>
           <TextField label="Task" value={form.title} onChange={handleField(setForm, 'title')} fullWidth />
           <TextField label="Details" value={form.body} onChange={handleField(setForm, 'body')} fullWidth multiline rows={3} />
@@ -758,7 +758,7 @@ function CreateEquipmentDialog({ open, onClose, supabase, contacts, leads, deals
               <MenuItem value="lead">Lead</MenuItem>
               <MenuItem value="deal">Deal</MenuItem>
             </TextField>
-            <Autocomplete options={options} value={options.find((item) => item.id === form.relatedId) || null} onChange={(_event, value) => setForm((prev) => ({ ...prev, relatedId: value?.id || '' }))} getOptionLabel={(option) => relatedOptionLabel(option, form.relatedType)} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <TextField {...params} label="Record" placeholder="Search" />} />
+            <Autocomplete options={options} value={options.find((item) => item.id === form.relatedId) || null} onChange={(_event, value) => setForm((prev) => ({ ...prev, relatedId: value?.id || '' }))} getOptionLabel={(option) => relatedOptionLabel(option, form.relatedType)} isOptionEqualToValue={(option, value) => option.id === value.id} renderInput={(params) => <AutocompleteTextField params={params} label="Record" placeholder="Search" />} />
           </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField select label="Category" value={form.category} onChange={handleField(setForm, 'category')} fullWidth>{equipmentCategories.map((category) => <MenuItem key={category} value={category}>{formatEnum(category)}</MenuItem>)}</TextField>

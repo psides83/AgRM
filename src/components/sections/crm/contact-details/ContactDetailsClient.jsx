@@ -1,5 +1,7 @@
 "use client";
 
+import AddToGameplanButton from 'components/sections/crm/shared/AddToGameplanButton';
+
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -350,6 +352,7 @@ const ContactDetailsClient = ({ contactId }) => {
       <Grid container spacing={3}>
         <Grid size={12}>
           <PageHeader
+            actionComponent={<AddToGameplanButton kind="contact" id={contact.id} title={[contact.first_name, contact.last_name].filter(Boolean).join(" ")} />}
             title={null}
             breadcrumb={[
               { label: "Home", url: paths.crm },

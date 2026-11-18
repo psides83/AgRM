@@ -1,5 +1,7 @@
 'use client';
 
+import AddToGameplanButton from 'components/sections/crm/shared/AddToGameplanButton';
+
 import useListState from 'hooks/useListState';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -859,6 +861,7 @@ function LeadRow({ lead, selected, onSelect, onEdit, onLogCall }) {
           >
             Edit
           </Button>
+          <AddToGameplanButton kind="lead" id={lead.id} title={leadDisplayName(lead)} />
         </Stack>
       </TableCell>
     </TableRow>

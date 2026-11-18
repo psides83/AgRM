@@ -1,3 +1,4 @@
+import AutocompleteTextField from 'components/base/AutocompleteTextField';
 import { useEffect } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import {
@@ -415,7 +416,7 @@ const PersonalInfoForm = ({ label }) => {
                 options={tagSuggestions}
                 value={field.value || []}
                 onChange={(_, value) => field.onChange(value)}
-                renderInput={(params) => <TextField {...params} label="Tags" />}
+                renderInput={(params) => <AutocompleteTextField params={params} label="Tags" />}
               />
             )}
           />

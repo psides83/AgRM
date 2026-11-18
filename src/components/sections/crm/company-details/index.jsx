@@ -1,5 +1,7 @@
 "use client";
 
+import AddToGameplanButton from 'components/sections/crm/shared/AddToGameplanButton';
+
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -310,6 +312,7 @@ const CompanyDetails = ({ companyId }) => {
     <Grid container spacing={3}>
       <Grid size={12}>
         <PageHeader
+            actionComponent={<AddToGameplanButton kind="company" id={company.id} title={company.name} />}
           title={null}
           breadcrumb={[
             { label: "Home", url: paths.crm },

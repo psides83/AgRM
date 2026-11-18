@@ -1,5 +1,7 @@
 "use client";
 
+import AddToGameplanButton from 'components/sections/crm/shared/AddToGameplanButton';
+
 import useListState from 'hooks/useListState';
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -358,6 +360,7 @@ const CompaniesList = () => {
                         >
                           {company.name}
                         </Link>
+                        <Box><AddToGameplanButton kind="company" id={company.id} title={company.name} /></Box>
                         {company.website && (
                           <Typography
                             variant="caption"

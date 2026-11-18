@@ -1,5 +1,7 @@
 "use client";
 
+import AddToGameplanButton from 'components/sections/crm/shared/AddToGameplanButton';
+
 import useListState from 'hooks/useListState';
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -339,6 +341,7 @@ const ContactsList = () => {
                         >
                           {contact.first_name} {contact.last_name}
                         </Link>
+                        <Box><AddToGameplanButton kind="contact" id={contact.id} title={[contact.first_name, contact.last_name].filter(Boolean).join(" ")} /></Box>
                         {contact.title && (
                           <Typography
                             variant="caption"
