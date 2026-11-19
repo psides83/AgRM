@@ -65,6 +65,7 @@ const CrmMap = () => {
   const [records, setRecords] = useState([]);
   const [mappedRecords, setMappedRecords] = useState([]);
   const [selection, setSelection] = useState(null);
+  const [listSearch, setListSearch] = useState('');
   const [mapBounds, setMapBounds] = useState(null);
   const [unmappedRecords, setUnmappedRecords] = useState([]);
   const [filter, setFilter, filterRestored] = useListState('crm/map/index:filter', 'all');
@@ -290,6 +291,11 @@ const CrmMap = () => {
     [mapBounds, visibleMappedRecords],
   );
 
+  const searchQuery = listSearch.trim().toLocaleLowerCase();
+  const matchesSearch = (record) => !searchQuery || [record.title, record.subtitle, record.address, record.kind]
+    .some((value) => String(value || '').toLocaleLowerCase().includes(searchQuery));
+  const searchedRecordsInView = recordsInView.filter(matchesSearch);
+
   const fitFilteredRecords = useCallback(() => {
     const map = mapRef.current;
     if (!map || !visibleMappedRecords.length) return;
@@ -371,6 +377,8 @@ const CrmMap = () => {
     () => unmappedRecords.filter(isVisible),
     [isVisible, unmappedRecords],
   );
+
+  const searchedUnmappedRecords = visibleUnmappedRecords.filter(matchesSearch);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -674,6 +682,16 @@ const CrmMap = () => {
                   <Typography variant="caption" sx={{ color: 'text.secondary', display: { xs: 'none', lg: 'block' } }}>
                     Select a row to show only its pin. Select it again or use Show all to reset.
                   </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="search"
+                    label="Search records"
+                    placeholder="Name, company, or address"
+                    value={listSearch}
+                    onChange={(event) => setListSearch(event.target.value)}
+                    sx={{ mt: 1.5, mb: 0.5 }}
+                  />
                   {filter === 'gameplan' && (
                     <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
                       <Button size="small" disabled={reordering} onClick={() => updateDistances(false)}>
@@ -692,26 +710,28 @@ const CrmMap = () => {
                     <Alert severity="error">{reorderError.message}</Alert>
                   )}
                   <Box>
-                    {filter === 'gameplan' ? targetsInView.map(({ target, index, record }, rowIndex) => (
+                    {filter === 'gameplan' ? targetsInView.map((entry, rowIndex) => ({ ...entry, rowIndex }))
+                      .filter(({ record }) => matchesSearch(record))
+                      .map(({ target, index, record, rowIndex }) => (
                       <MapRecordRow key={target.id} record={record} onAdd={setPinTarget}
                         onSelect={selectRecord} selected={selectedRecordId === record.id}
                         activity={`${index + 1}. ${target.method}`}
                         distance={distanceOrigin ? distanceFrom(distanceOrigin, record.coordinates) : undefined}
                         moveUp={rowIndex > 0 && !reordering ? () => moveTarget(rowIndex, -1) : undefined}
                         moveDown={rowIndex < targetsInView.length - 1 && !reordering ? () => moveTarget(rowIndex, 1) : undefined} />
-                    )) : recordsInView.map((record) => (
+                    )) : searchedRecordsInView.map((record) => (
                       <MapRecordRow key={record.id} record={record} onAdd={setPinTarget}
                         onSelect={selectRecord} selected={selectedRecordId === record.id} />
                     ))}
-                    {!recordsInView.length && <EmptyState label="No records in this map area" />}
+                    {!searchedRecordsInView.length && <EmptyState label={searchQuery ? "No matching records in this map area" : "No records in this map area"} />}
                   </Box>
 
-                  {visibleUnmappedRecords.length > 0 && (
+                  {searchedUnmappedRecords.length > 0 && (
                     <Box sx={{ borderTop: 1, borderColor: 'divider' }}>
                       <Typography variant="subtitle2" sx={{ px: 2.5, pt: 2, pb: 0.75 }}>
                         Needs Location
                       </Typography>
-                      {visibleUnmappedRecords.slice(0, 8).map((record) => (
+                      {searchedUnmappedRecords.slice(0, 8).map((record) => (
                         <MapRecordRow key={record.id} record={record} compact onAdd={setPinTarget} />
                       ))}
                     </Box>
