@@ -23,6 +23,8 @@ import {
   Stack,
   TextField,
   Typography,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import SvgIcon from '@mui/material/SvgIcon';
@@ -66,6 +68,7 @@ const CrmMap = () => {
   const [mappedRecords, setMappedRecords] = useState([]);
   const [selection, setSelection] = useState(null);
   const [listSearch, setListSearch] = useState('');
+  const [mapView, setMapView] = useListState('crm/map/index:view', 'map');
   const [mapBounds, setMapBounds] = useState(null);
   const [unmappedRecords, setUnmappedRecords] = useState([]);
   const [filter, setFilter, filterRestored] = useListState('crm/map/index:filter', 'all');
@@ -171,6 +174,12 @@ const CrmMap = () => {
       mapRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    mapRef.current?.setStyle(mapView === 'satellite'
+      ? 'mapbox://styles/mapbox/standard-satellite'
+      : 'mapbox://styles/mapbox/streets-v12');
+  }, [mapView]);
 
   useEffect(() => {
     if (!mapboxToken || !navigator.geolocation) return;
@@ -554,10 +563,22 @@ const CrmMap = () => {
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                   {recordsInView.length} records in view, {visibleUnmappedRecords.length} missing a usable location
                 </Typography>
-                  <Button size="small" variant="outlined" sx={{ mt: 1 }}
+                <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}>
+                  <Button size="small" variant="outlined"
                     disabled={!visibleMappedRecords.length} onClick={() => { setSelection(null); fitFilteredRecords(); }}>
                     Show all
                   </Button>
+                  <ToggleButtonGroup
+                    exclusive
+                    size="small"
+                    value={mapView === 'satellite' ? 'satellite' : 'map'}
+                    onChange={(_, value) => { if (value) setMapView(value); }}
+                    aria-label="Map view"
+                  >
+                    <ToggleButton value="map">Map</ToggleButton>
+                    <ToggleButton value="satellite">Satellite</ToggleButton>
+                  </ToggleButtonGroup>
+                </Stack>
               </Box>
 
               <Box
