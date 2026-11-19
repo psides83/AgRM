@@ -64,6 +64,7 @@ const CrmMap = () => {
   const geocodeCacheRef = useRef(new Map());
   const [records, setRecords] = useState([]);
   const [mappedRecords, setMappedRecords] = useState([]);
+  const [selection, setSelection] = useState(null);
   const [mapBounds, setMapBounds] = useState(null);
   const [unmappedRecords, setUnmappedRecords] = useState([]);
   const [filter, setFilter, filterRestored] = useListState('crm/map/index:filter', 'all');
@@ -269,6 +270,19 @@ const CrmMap = () => {
     [isVisible, mappedRecords],
   );
 
+  const selectedRecordId = selection?.filter === filter && selection?.planDate === planDate
+    ? selection.id
+    : null;
+  const selectRecord = (record) => setSelection((current) => (
+    current?.id === record.id && current?.filter === filter && current?.planDate === planDate
+      ? null
+      : { id: record.id, filter, planDate }
+  ));
+  const pinnedRecords = useMemo(
+    () => selectedRecordId ? visibleMappedRecords.filter((record) => record.id === selectedRecordId) : visibleMappedRecords,
+    [selectedRecordId, visibleMappedRecords],
+  );
+
   const recordsInView = useMemo(
     () => mapBounds
       ? visibleMappedRecords.filter((record) => mapBounds.contains(record.coordinates))
@@ -361,7 +375,7 @@ const CrmMap = () => {
   useEffect(() => {
     if (!mapRef.current) return;
 
-    visibleMappedRecords.forEach((record) => {
+    pinnedRecords.forEach((record) => {
       const node = document.createElement('button');
       node.type = 'button';
       node.style.border = '0';
@@ -416,7 +430,7 @@ const CrmMap = () => {
       });
       markersRef.current = [];
     };
-  }, [filter, fitFilteredRecords, planDate, planPositions, visibleMappedRecords]);
+  }, [filter, fitFilteredRecords, planDate, planPositions, pinnedRecords, visibleMappedRecords]);
 
   const fetchRecords = async () => {
     setError(null);
@@ -533,7 +547,7 @@ const CrmMap = () => {
                   {recordsInView.length} records in view, {visibleUnmappedRecords.length} missing a usable location
                 </Typography>
                   <Button size="small" variant="outlined" sx={{ mt: 1 }}
-                    disabled={!visibleMappedRecords.length} onClick={fitFilteredRecords}>
+                    disabled={!visibleMappedRecords.length} onClick={() => { setSelection(null); fitFilteredRecords(); }}>
                     Show all
                   </Button>
               </Box>
@@ -658,7 +672,7 @@ const CrmMap = () => {
                     Records in view
                   </Typography>
                   <Typography variant="caption" sx={{ color: 'text.secondary', display: { xs: 'none', lg: 'block' } }}>
-                    Select a row to open the CRM record.
+                    Select a row to show only its pin. Select it again or use Show all to reset.
                   </Typography>
                   {filter === 'gameplan' && (
                     <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
@@ -680,12 +694,14 @@ const CrmMap = () => {
                   <Box>
                     {filter === 'gameplan' ? targetsInView.map(({ target, index, record }, rowIndex) => (
                       <MapRecordRow key={target.id} record={record} onAdd={setPinTarget}
+                        onSelect={selectRecord} selected={selectedRecordId === record.id}
                         activity={`${index + 1}. ${target.method}`}
                         distance={distanceOrigin ? distanceFrom(distanceOrigin, record.coordinates) : undefined}
                         moveUp={rowIndex > 0 && !reordering ? () => moveTarget(rowIndex, -1) : undefined}
                         moveDown={rowIndex < targetsInView.length - 1 && !reordering ? () => moveTarget(rowIndex, 1) : undefined} />
                     )) : recordsInView.map((record) => (
-                      <MapRecordRow key={record.id} record={record} onAdd={setPinTarget} />
+                      <MapRecordRow key={record.id} record={record} onAdd={setPinTarget}
+                        onSelect={selectRecord} selected={selectedRecordId === record.id} />
                     ))}
                     {!recordsInView.length && <EmptyState label="No records in this map area" />}
                   </Box>
@@ -772,21 +788,25 @@ function RecordIcon({ kind, size }) {
   return <IconifyIcon icon={icon} fontSize={size} />;
 }
 
-function MapRecordRow({ record, compact = false, onAdd, activity, distance, moveUp, moveDown }) {
+function MapRecordRow({ record, compact = false, onAdd, onSelect, selected = false, activity, distance, moveUp, moveDown }) {
   const directions = getDirectionsLinks(record);
 
   return (
     <Box
+      onClick={onSelect ? (event) => {
+        if (!event.target.closest('a, button, input, select, textarea')) onSelect(record);
+      } : undefined}
       sx={{
         minWidth: 0,
         px: 2.5,
         py: compact ? 1.25 : 1.75,
         borderBottom: 1,
         borderColor: 'divider',
-        bgcolor: 'background.paper',
+        bgcolor: selected ? 'action.selected' : 'background.paper',
+        cursor: onSelect ? 'pointer' : undefined,
         transition: 'background-color 120ms ease',
         '&:hover': {
-          bgcolor: 'action.hover',
+          bgcolor: selected ? 'action.selected' : 'action.hover',
         },
       }}
     >
@@ -808,7 +828,9 @@ function MapRecordRow({ record, compact = false, onAdd, activity, distance, move
 
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 0.25, minWidth: 0 }}>
-            <Link href={record.href} underline="hover" sx={{ color: 'text.primary', fontWeight: 700, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <Link component={onSelect ? 'button' : 'a'} href={onSelect ? undefined : record.href}
+              onClick={onSelect ? () => onSelect(record) : undefined} aria-pressed={onSelect ? selected : undefined}
+              underline="hover" sx={{ textAlign: 'left', cursor: 'pointer', color: 'text.primary', fontWeight: 700, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {record.title}
             </Link>
             <Chip label={({ lead: 'Lead', contact: 'Contact', company: 'Company' })[record.kind]} size="small" color={record.kind === 'lead' ? 'warning' : 'primary'} variant="soft" sx={{ flexShrink: 0 }} />
@@ -821,6 +843,7 @@ function MapRecordRow({ record, compact = false, onAdd, activity, distance, move
           <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', overflowWrap: 'anywhere', lineHeight: 1.4 }}>
             {record.address || formatCoordinates(record.coordinates) || 'No location'}
           </Typography>
+          {onSelect && <Button size="small" href={record.href}>Open record</Button>}
           <Button size="small" onClick={() => onAdd(record)}>Add to gameplan</Button>
           {directions && (
             <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', mt: 0.5 }}>
