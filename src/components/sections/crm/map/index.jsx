@@ -680,7 +680,7 @@ const CrmMap = () => {
                     Records in view
                   </Typography>
                   <Typography variant="caption" sx={{ color: 'text.secondary', display: { xs: 'none', lg: 'block' } }}>
-                    Select a row to show only its pin. Select it again or use Show all to reset.
+                    Select a row to show only its pin. Click the name to open the record.
                   </Typography>
                   <TextField
                     fullWidth
@@ -848,9 +848,7 @@ function MapRecordRow({ record, compact = false, onAdd, onSelect, selected = fal
 
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 0.25, minWidth: 0 }}>
-            <Link component={onSelect ? 'button' : 'a'} href={onSelect ? undefined : record.href}
-              onClick={onSelect ? () => onSelect(record) : undefined} aria-pressed={onSelect ? selected : undefined}
-              underline="hover" sx={{ textAlign: 'left', cursor: 'pointer', color: 'text.primary', fontWeight: 700, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <Link href={record.href} underline="hover" sx={{ textAlign: 'left', cursor: 'pointer', color: 'text.primary', fontWeight: 700, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {record.title}
             </Link>
             <Chip label={({ lead: 'Lead', contact: 'Contact', company: 'Company' })[record.kind]} size="small" color={record.kind === 'lead' ? 'warning' : 'primary'} variant="soft" sx={{ flexShrink: 0 }} />
@@ -863,7 +861,11 @@ function MapRecordRow({ record, compact = false, onAdd, onSelect, selected = fal
           <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', overflowWrap: 'anywhere', lineHeight: 1.4 }}>
             {record.address || formatCoordinates(record.coordinates) || 'No location'}
           </Typography>
-          {onSelect && <Button size="small" href={record.href}>Open record</Button>}
+          {onSelect && (
+            <Button size="small" onClick={() => onSelect(record)} aria-pressed={selected}>
+              {selected ? 'Show all pins' : 'Show only this pin'}
+            </Button>
+          )}
           <Button size="small" onClick={() => onAdd(record)}>Add to gameplan</Button>
           {directions && (
             <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', mt: 0.5 }}>
