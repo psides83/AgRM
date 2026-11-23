@@ -83,6 +83,7 @@ export default function RecordHoverPreview({ table, id, children }) {
             p: 2,
             width: 340,
             maxWidth: "calc(100vw - 32px)",
+            boxSizing: "border-box",
           },
         },
       }}
@@ -97,7 +98,7 @@ export default function RecordHoverPreview({ table, id, children }) {
               Unable to load {label.toLowerCase()} details.
             </Typography>
           ) : (
-            <Stack spacing={1.25}>
+            <Stack direction="column" spacing={1.25}>
               <Box>
                 <Typography variant="caption" color="text.secondary">
                   {label}
@@ -154,7 +155,7 @@ export default function RecordHoverPreview({ table, id, children }) {
 function PreviewRow({ label, value, href }) {
   return (
     <Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>
         {label}
       </Typography>
       {value ? (

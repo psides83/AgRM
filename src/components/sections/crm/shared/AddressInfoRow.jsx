@@ -12,10 +12,17 @@ export default function AddressInfoRow({ record, label = "Address" }) {
       spacing={2}
       sx={{ justifyContent: "space-between", alignItems: "flex-start" }}
     >
-      <Typography variant="body2" sx={{ color: "text.secondary" }}>
+      <Typography
+        variant="body2"
+        sx={{ color: "text.secondary", flexShrink: 0 }}
+      >
         {label}
       </Typography>
-      <Stack spacing={0.5} sx={{ minWidth: 0, alignItems: "flex-end" }}>
+      <Stack
+        direction="column"
+        spacing={0.5}
+        sx={{ minWidth: 0, alignItems: "flex-end" }}
+      >
         <Typography
           variant="body2"
           sx={{ textAlign: "right", fontWeight: 600, overflowWrap: "anywhere" }}
