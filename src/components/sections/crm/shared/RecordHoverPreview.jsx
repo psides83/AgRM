@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Box, Link, Stack, Tooltip, Typography } from "@mui/material";
+import {
+  Avatar,
+  Box,
+  Divider,
+  Link,
+  Skeleton,
+  Stack,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { createClient } from "lib/supabase/client";
 import AddressInfoRow from "./AddressInfoRow";
 import { formatPhone } from "./phoneFormat";
@@ -76,47 +85,90 @@ export default function RecordHoverPreview({ table, id, children }) {
           sx: {
             bgcolor: "background.paper",
             color: "text.primary",
-            boxShadow: 8,
+            boxShadow: 4,
             border: 1,
             borderColor: "divider",
             borderRadius: 2,
-            p: 2,
-            width: 340,
+            p: 2.5,
+            width: 360,
             maxWidth: "calc(100vw - 32px)",
             boxSizing: "border-box",
+            maxHeight: "calc(100vh - 32px)",
+            overflowY: "auto",
           },
         },
       }}
       title={
         <Box aria-live="polite">
           {!result ? (
-            <Typography variant="body2">
-              Loading {label.toLowerCase()} details…
-            </Typography>
+            <Stack
+              direction="column"
+              spacing={1}
+              aria-label={`Loading ${label.toLowerCase()} details`}
+            >
+              <Skeleton variant="rounded" width="65%" height={32} />
+              <Skeleton width="90%" />
+              <Skeleton width="80%" />
+            </Stack>
           ) : !record ? (
             <Typography variant="body2">
               Unable to load {label.toLowerCase()} details.
             </Typography>
           ) : (
-            <Stack direction="column" spacing={1.25}>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  {label}
-                </Typography>
-                <Typography
-                  variant="subtitle1"
-                  sx={{ fontWeight: 700, overflowWrap: "anywhere" }}
+            <Stack direction="column" spacing={1.5}>
+              <Stack
+                direction="row"
+                spacing={1.5}
+                sx={{ alignItems: "center" }}
+              >
+                <Avatar
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    bgcolor: "primary.lighter",
+                    color: "primary.main",
+                    fontSize: 15,
+                    fontWeight: 700,
+                  }}
                 >
-                  {name}
-                </Typography>
-                {(record.title ||
-                  record.company_type ||
-                  (table === "leads" && record.company_name !== name)) && (
-                  <Typography variant="body2" color="text.secondary">
-                    {record.title || record.company_type || record.company_name}
+                  {name
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((part) => part[0])
+                    .join("")
+                    .toUpperCase()}
+                </Avatar>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block", fontWeight: 500 }}
+                  >
+                    {label}
                   </Typography>
-                )}
-              </Box>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{
+                      fontWeight: 700,
+                      overflowWrap: "anywhere",
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {name}
+                  </Typography>
+                  {(record.title ||
+                    record.company_type ||
+                    (table === "leads" && record.company_name !== name)) && (
+                    <Typography variant="body2" color="text.secondary">
+                      {record.title ||
+                        record.company_type ||
+                        record.company_name}
+                    </Typography>
+                  )}
+                </Box>
+              </Stack>
+              <Divider />
               <PreviewRow
                 label="Email"
                 value={record.email}
@@ -141,7 +193,9 @@ export default function RecordHoverPreview({ table, id, children }) {
                   href={`tel:${record.home_phone}`}
                 />
               )}
-              <AddressInfoRow record={record} />
+              <Box sx={{ pt: 1.5, borderTop: 1, borderColor: "divider" }}>
+                <AddressInfoRow record={record} />
+              </Box>
             </Stack>
           )}
         </Box>
@@ -154,7 +208,14 @@ export default function RecordHoverPreview({ table, id, children }) {
 
 function PreviewRow({ label, value, href }) {
   return (
-    <Stack direction="row" spacing={2} sx={{ justifyContent: "space-between" }}>
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: "64px minmax(0, 1fr)",
+        gap: 2,
+        alignItems: "baseline",
+      }}
+    >
       <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>
         {label}
       </Typography>
@@ -162,13 +223,24 @@ function PreviewRow({ label, value, href }) {
         <Link
           href={href}
           variant="body2"
-          sx={{ overflowWrap: "anywhere", textAlign: "right", minWidth: 0 }}
+          sx={{
+            overflowWrap: "anywhere",
+            textAlign: "right",
+            minWidth: 0,
+            fontWeight: 500,
+          }}
         >
           {value}
         </Link>
       ) : (
-        <Typography variant="body2">-</Typography>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ textAlign: "right" }}
+        >
+          Not provided
+        </Typography>
       )}
-    </Stack>
+    </Box>
   );
 }
