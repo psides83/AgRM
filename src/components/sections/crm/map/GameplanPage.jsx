@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Box, Button, MenuItem, Paper, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Divider, MenuItem, Paper, TextField, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import PageHeader from 'components/sections/ecommerce/admin/common/PageHeader';
 import { createClient } from 'lib/supabase/client';
 import paths from 'routes/paths';
 import Gameplan from './Gameplan';
-import { fetchGameplanTargets, createGameplan, localDay, useGameplanDays } from './gameplanData';
+import { fetchGameplanTargets, createGameplan, rescheduleGameplan, localDay, useGameplanDays } from './gameplanData';
 import { fetchMapRecords } from './records';
 
 export default function GameplanPage() {
@@ -19,8 +19,31 @@ export default function GameplanPage() {
   const [saveError, setSaveError] = useState('');
   const [records, setRecords] = useState([]);
   const [recordsError, setRecordsError] = useState('');
+  const [moveDate, setMoveDate] = useState('');
+  const [moveMessage, setMoveMessage] = useState(null);
 
   const date = selectedDate || (days.includes(newDate) ? newDate : days[0]) || '';
+
+  useEffect(() => {
+    setMoveDate('');
+  }, [date]);
+
+  async function reschedule() {
+    setSaving(true);
+    setMoveMessage(null);
+    try {
+      const { error } = await rescheduleGameplan(supabase, date, moveDate);
+      if (error) throw error;
+      await reload();
+      selectDate(moveDate);
+      setNewDate(moveDate);
+      setMoveMessage({ severity: 'success', text: `Gameplan moved to ${moveDate}.` });
+    } catch (error) {
+      setMoveMessage({ severity: 'error', text: error.message });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -57,7 +80,7 @@ export default function GameplanPage() {
           <Typography variant="h6">Your plans</Typography>
           {(daysError || saveError) && <Alert severity="error">{daysError || saveError}</Alert>}
           {days.length > 0 && (
-            <TextField select fullWidth label="Saved gameplan" value={days.includes(date) ? date : ''} onChange={(event) => selectDate(event.target.value)}>
+            <TextField select fullWidth disabled={saving} label="Saved gameplan" value={days.includes(date) ? date : ''} onChange={(event) => { selectDate(event.target.value); setMoveMessage(null); }}>
               {days.map((day) => <MenuItem key={day} value={day}>{day}</MenuItem>)}
             </TextField>
           )}
@@ -66,6 +89,26 @@ export default function GameplanPage() {
           <Button variant="contained" disabled={!newDate || saving || loading} onClick={create}>
             {days.includes(newDate) ? 'Open gameplan' : 'Create gameplan'}
           </Button>
+          {date && (
+            <>
+              <Divider />
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Move gameplan</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Move the {date} plan and all its targets to another day.
+                </Typography>
+              </Box>
+              {moveMessage && <Alert severity={moveMessage.severity}>{moveMessage.text}</Alert>}
+              <TextField fullWidth type="date" label="Move to date" value={moveDate} disabled={saving}
+                error={Boolean(moveDate && moveDate !== date && days.includes(moveDate))}
+                helperText={moveDate && moveDate !== date && days.includes(moveDate) ? 'There is already a gameplan on this date. Choose another day.' : 'Target order, outcomes, and activity links are preserved.'}
+                onChange={(event) => { setMoveDate(event.target.value); setMoveMessage(null); }}
+                slotProps={{ inputLabel: { shrink: true } }} />
+              <Button variant="outlined" disabled={saving || loading || !moveDate || moveDate === date || days.includes(moveDate)} onClick={reschedule}>
+                {saving ? 'Saving…' : 'Move gameplan'}
+              </Button>
+            </>
+          )}
         </Paper>
       </Grid>
       <Grid size={{ xs: 12, md: 8 }}>

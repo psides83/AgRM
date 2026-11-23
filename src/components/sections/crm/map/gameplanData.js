@@ -37,6 +37,13 @@ export function createGameplan(supabase, day) {
   return supabase.from('crm_gameplans').upsert({ plan_date: day }, { ignoreDuplicates: true });
 }
 
+export function rescheduleGameplan(supabase, sourceDate, destinationDate) {
+  return supabase.rpc('reschedule_crm_gameplan', {
+    source_date: sourceDate,
+    destination_date: destinationDate,
+  });
+}
+
 export async function fetchGameplanTargets(supabase, date) {
   const query = (columns) => supabase.from('crm_gameplan_targets').select(columns)
     .eq('plan_date', date).order('position').order('id');
