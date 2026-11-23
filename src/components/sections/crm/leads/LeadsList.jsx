@@ -110,8 +110,8 @@ const LeadsList = () => {
         next_follow_up_at,
         notes,
         created_at,
-        contacts(id, first_name, last_name, account_number, email, phone, mobile_phone),
-        companies(id, name),
+        contacts(id, first_name, last_name, account_number, email, phone, mobile_phone, city, county),
+        companies(id, name, city, county),
         equipment_interests(
           id,
           category,
@@ -141,6 +141,8 @@ const LeadsList = () => {
       setLeads(
         leadRows.map((lead) => ({
           ...lead,
+          city: locationValue(lead.city, lead.contacts?.city, lead.companies?.city),
+          county: locationValue(lead.county, lead.contacts?.county, lead.companies?.county),
           latest_call_activity: latestCallByLead.get(lead.id) || null,
         })),
       );
@@ -1881,6 +1883,10 @@ function formatEnum(value) {
   return String(value)
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function locationValue(...values) {
+  return values.find((value) => String(value || '').trim())?.trim() || '';
 }
 
 export default LeadsList;
