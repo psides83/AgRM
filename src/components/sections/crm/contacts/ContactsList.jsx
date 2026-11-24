@@ -334,7 +334,7 @@ const ContactsList = () => {
                   sortedContacts.map((contact) => (
                     <TableRow key={contact.id} hover>
                       <TableCell>
-                        <Link
+                        <Link recordPreview
                           href={paths.contactDetails(contact.id)}
                           underline="hover"
                           sx={{ color: "text.primary", fontWeight: 700 }}
@@ -361,7 +361,7 @@ const ContactsList = () => {
                           <Stack direction="column" spacing={0.25}>
                             {contact.linkedCompanies.map((company) => (
                               <Box key={company.id}>
-                                <Link
+                                <Link recordPreview
                                   href={paths.companyDetails(company.id)}
                                   underline="hover"
                                   sx={{
@@ -383,7 +383,7 @@ const ContactsList = () => {
                             ))}
                           </Stack>
                         ) : contact.companies?.id ? (
-                          <Link
+                          <Link recordPreview
                             href={paths.companyDetails(contact.companies.id)}
                             underline="hover"
                             sx={{ color: "text.primary", fontWeight: 600 }}

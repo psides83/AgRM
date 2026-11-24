@@ -396,7 +396,7 @@ function ResultRow({ title, subtitle, chip, href }) {
       >
         <Box sx={{ minWidth: 0 }}>
           <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
-            <Link href={href} underline="hover" color="text.primary">
+            <Link recordPreview href={href} underline="hover" color="text.primary">
               {title}
             </Link>
           </Typography>

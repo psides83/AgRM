@@ -475,7 +475,7 @@ function OpenLeads({ leads }) {
               leads.map((lead) => (
                 <TableRow key={lead.id} hover>
                   <TableCell>
-                    <Link
+                    <Link recordPreview
                       href={paths.leadDetails(lead.id)}
                       underline="hover"
                       sx={{ color: 'text.primary', fontWeight: 700 }}
@@ -539,7 +539,7 @@ function FollowUps({ followUps }) {
                 sx={{ justifyContent: 'space-between', mb: 0.75 }}
               >
                 <Typography variant="subtitle2">
-                  <Link href={item.href} underline="hover" color="text.primary">
+                  <Link recordPreview href={item.href} underline="hover" color="text.primary">
                     {item.label}
                   </Link>
                 </Typography>

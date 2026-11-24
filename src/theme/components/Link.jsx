@@ -3,7 +3,7 @@ import RecordHoverPreview, {
   getPreviewRecord,
 } from "components/sections/crm/shared/RecordHoverPreview";
 
-export const LinkBehavior = ({ ref, href, onClick, ...props }) => {
+export const LinkBehavior = ({ ref, href, onClick, recordPreview = false, ...props }) => {
   const handleClick = (event) => {
     if (href === "#!") event.preventDefault();
     onClick?.(event);
@@ -18,7 +18,7 @@ export const LinkBehavior = ({ ref, href, onClick, ...props }) => {
       passHref
     ></Link>
   );
-  const record = getPreviewRecord(href);
+  const record = recordPreview ? getPreviewRecord(href) : null;
 
   return record ? (
     <RecordHoverPreview key={`${record.table}/${record.id}`} {...record}>

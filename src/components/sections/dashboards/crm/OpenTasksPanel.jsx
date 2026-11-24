@@ -130,7 +130,7 @@ function OpenTasksPanel() {
                   useFlexGap
                   sx={{ alignItems: 'center', flexWrap: 'wrap', mb: 0.25 }}
                 >
-                  <Link
+                  <Link recordPreview
                     href={taskHref(task)}
                     underline="hover"
                     sx={{ color: 'text.primary', fontWeight: 700 }}

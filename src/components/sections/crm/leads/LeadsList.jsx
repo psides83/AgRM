@@ -643,7 +643,7 @@ function LeadRow({ lead, selected, onSelect, onEdit, onLogCall }) {
       </TableCell>
       <TableCell sx={{ minWidth: 220 }}>
         <Stack direction="column" spacing={0.5} alignItems="flex-start">
-          <Link
+          <Link recordPreview
             href={paths.leadDetails(lead.id)}
             underline="hover"
             sx={{ color: 'text.primary', fontWeight: 700 }}
@@ -668,7 +668,7 @@ function LeadRow({ lead, selected, onSelect, onEdit, onLogCall }) {
       <TableCell sx={{ minWidth: 220 }}>
         <Stack direction="column" spacing={0.5} alignItems="flex-start">
           {lead.contacts?.id ? (
-            <Link
+            <Link recordPreview
               href={paths.contactDetails(lead.contacts.id)}
               underline="hover"
               sx={{ color: 'text.primary', fontWeight: 600 }}
@@ -683,7 +683,7 @@ function LeadRow({ lead, selected, onSelect, onEdit, onLogCall }) {
             sx={{ color: 'text.secondary', display: 'block' }}
           >
             {lead.companies?.id ? (
-              <Link
+              <Link recordPreview
                 href={paths.companyDetails(lead.companies.id)}
                 underline="hover"
                 sx={{ color: 'text.secondary' }}

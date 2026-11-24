@@ -458,7 +458,7 @@ function EquipmentRow({ item, locations, onQuickUpdate, onEdit, onConvert, onDel
         </Stack>
       </TableCell>
       <TableCell>
-        <Link
+        <Link recordPreview
           href={href}
           underline="hover"
           sx={{ color: 'text.primary', fontWeight: 700 }}

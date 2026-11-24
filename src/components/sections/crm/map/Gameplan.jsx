@@ -172,16 +172,16 @@ function Target({ target, record, origin, disabled, first, last, move, remove, s
   return (
     <Stack direction="column" spacing={1} sx={{ pb: 1.5, borderBottom: 1, borderColor: 'divider' }}>
       <Typography variant="subtitle2">
-        {record ? <Link href={record.href}>{record.title}</Link> : 'CRM record unavailable'} · {target.method}
+        {record ? <Link recordPreview href={record.href}>{record.title}</Link> : 'CRM record unavailable'} · {target.method}
       </Typography>
       {record?.company && (
         <Typography variant="body2">
-          Company: <Link href={paths.companyDetails(record.company.id)}>{record.company.name}</Link>
+          Company: <Link recordPreview href={paths.companyDetails(record.company.id)}>{record.company.name}</Link>
         </Typography>
       )}
       {record?.contact && (
         <Typography variant="body2">
-          Contact: <Link href={paths.contactDetails(record.contact.id)}>{record.contact.name}</Link>
+          Contact: <Link recordPreview href={paths.contactDetails(record.contact.id)}>{record.contact.name}</Link>
         </Typography>
       )}
       {record?.kind === 'lead' && record.subtitle && (
@@ -194,7 +194,7 @@ function Target({ target, record, origin, disabled, first, last, move, remove, s
       )}
       {record?.relatedLeads?.map((lead) => (
         <Typography key={lead.id} variant="body2">
-          <Link href={lead.href}>Lead details</Link>{lead.subtitle && ` · ${lead.subtitle}`}
+          <Link recordPreview href={lead.href}>Lead details</Link>{lead.subtitle && ` · ${lead.subtitle}`}
         </Typography>
       ))}
       {record?.address && <Typography variant="caption">{record.address}</Typography>}

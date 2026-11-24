@@ -353,7 +353,7 @@ const CompaniesList = () => {
                   sortedCompanies.map((company) => (
                     <TableRow key={company.id} hover>
                       <TableCell>
-                        <Link
+                        <Link recordPreview
                           href={paths.companyDetails(company.id)}
                           underline="hover"
                           sx={{ color: "text.primary", fontWeight: 700 }}
@@ -396,7 +396,7 @@ const CompaniesList = () => {
                             {company.linkedContacts
                               .slice(0, 2)
                               .map((contact) => (
-                                <Link
+                                <Link recordPreview
                                   key={contact.id}
                                   href={paths.contactDetails(contact.id)}
                                   underline="hover"

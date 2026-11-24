@@ -534,7 +534,7 @@ function ActivityRow({ activity, onComplete, onEdit }) {
       </TableCell>
       <TableCell sx={{ minWidth: 220 }}>
         {href ? (
-          <Link
+          <Link recordPreview
             href={href}
             underline="hover"
             sx={{ color: "text.primary", fontWeight: 600 }}
